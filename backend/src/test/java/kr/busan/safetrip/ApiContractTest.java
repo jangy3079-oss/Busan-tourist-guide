@@ -28,8 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * [공용] docs/API.md 의 모든 경로가 실제 컨트롤러에 매핑되어 있는지 확인한다.
- * 골격 단계라 구현 안 된 메서드는 501(NOT_IMPLEMENTED)이 정상이다. 404/405 가 나오면 경로·메서드가 계약과 다르다는 뜻.
- * 구현이 끝나 501 대신 200 이 나오면 이 테스트의 기대값을 status().isOk() 로 바꾼다.
+ * 구현 여부와 상관없이 통과한다(501·200·500 모두 OK). 404/405 가 나오면 경로·메서드가 계약과 다르다는 뜻이고,
+ * 400 이 나오면 견본 요청이 검증 규칙과 다르다는 뜻이다. 각 담당이 구현해도 이 공용 테스트는 고칠 필요가 없다.
  */
 class ApiContractTest {
     private MockMvc mvc;
@@ -46,8 +46,10 @@ class ApiContractTest {
                 .build();
     }
 
+    /** 경로가 계약대로 매핑돼 있고 요청 형식이 검증을 통과하는지만 본다 (서비스는 null 의존성이라 구현된 메서드는 500일 수 있음) */
     private void notImplemented(MockHttpServletRequestBuilder req) throws Exception {
-        mvc.perform(req).andExpect(status().isNotImplemented());
+        int st = mvc.perform(req).andReturn().getResponse().getStatus();
+        org.junit.jupiter.api.Assertions.assertTrue(st != 404 && st != 405 && st != 400 && st != 415, "계약 경로/형식 불일치: HTTP " + st);
     }
 
     private MockHttpServletRequestBuilder json(MockHttpServletRequestBuilder r, String body) {

@@ -13,6 +13,7 @@ owner_of() {
     $B/main/java/kr/busan/safetrip/photo/*|$B/test/java/kr/busan/safetrip/photo/*|frontend/lib/features/photo/*|frontend/lib/data/api/photo_api.dart) echo photo; return;;
     $B/main/java/kr/busan/safetrip/emergency/*|$B/test/java/kr/busan/safetrip/emergency/*|frontend/lib/features/emergency/*|frontend/lib/data/api/emergency_api.dart) echo emergency; return;;
   esac
+  if [[ "$1" =~ ^backend/src/(main|test)/resources/(course|photo|emergency)/ ]]; then echo "${BASH_REMATCH[2]}"; return; fi
   if [[ "$1" =~ ^backend/src/main/resources/db/migration/V1[0-9]__ ]]; then echo course; return; fi
   if [[ "$1" =~ ^backend/src/main/resources/db/migration/V2[0-9]__ ]]; then echo photo; return; fi
   if [[ "$1" =~ ^backend/src/main/resources/db/migration/V3[0-9]__ ]]; then echo emergency; return; fi

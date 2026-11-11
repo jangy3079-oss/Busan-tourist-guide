@@ -14,6 +14,7 @@
 |---|---|---|---|
 | 백엔드 패키지 | `course/**` | `photo/**` | `emergency/**` |
 | 프론트 폴더 | `lib/features/course/**`, `lib/data/api/course_api.dart` | `lib/features/photo/**`, `lib/data/api/photo_api.dart` | `lib/features/emergency/**`, `lib/data/api/emergency_api.dart` |
+| 데이터 파일(사전·템플릿 등) | `backend/src/main/resources/course/**` | `backend/src/main/resources/photo/**` | `backend/src/main/resources/emergency/**` |
 | DB 마이그레이션 | `V10~V19` | `V20~V29` | `V30~V39` |
 | 관리자 API | `CourseAdminController` (API-C06) | 없음 | `EmergencyAdminController` (API-E04/E05) |
 | 로그 삭제(Purgeable) | `CoursePlanPurger` | `MatchLogger` | (request_logs 만들 때 추가) |

@@ -10,7 +10,7 @@ import kr.busan.safetrip.common.exception.NotImplementedYetException;
  *
  * 설명이 장소 원문과 어긋나는지 검사. 사진 전용.
  */
-@Component
+@Component("photoOutputValidator") // 코스·사진에 같은 이름 클래스가 있어 빈 이름을 구분
 public class OutputValidator {
     public boolean isValid(String generated, String sourceText) {
         throw new NotImplementedYetException("사진 담당", "OutputValidator.isValid");

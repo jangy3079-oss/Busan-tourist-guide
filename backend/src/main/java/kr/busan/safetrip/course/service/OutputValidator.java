@@ -12,7 +12,7 @@ import kr.busan.safetrip.common.domain.Place;
  *
  * LLM 출력이 근거 데이터(장소명·시간·운영시간)와 어긋나는지 검사. 코스 전용(사진은 photo.OutputValidator).
  */
-@Component
+@Component("courseOutputValidator") // 코스·사진에 같은 이름 클래스가 있어 빈 이름을 구분
 public class OutputValidator {
     public boolean isValid(String generated, List<Place> grounding) {
         throw new NotImplementedYetException("코스 담당", "OutputValidator.isValid");
