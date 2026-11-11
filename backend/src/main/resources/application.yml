@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: busan-safetrip
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/safetrip}
+    username: ${DB_USER:safetrip}
+    password: ${DB_PASSWORD:safetrip}
+  jpa:
+    hibernate:
+      ddl-auto: none        # 스키마는 Flyway 로만 바꾼다
+    open-in-view: false
+  flyway:
+    enabled: true
+
+safetrip:
+  ai:
+    provider: ${AI_PROVIDER:ollama}      # ollama | openai
+    base-url: ${AI_BASE_URL:http://localhost:11434}
+    model: ${AI_MODEL:llama3.1}
+    api-key: ${AI_API_KEY:}
+    timeout-sec: 8
+    max-retry: 1
+    monthly-budget-krw: 0                # TODO: 팀이 정한 월 한도(NFR-C009)
+  tour-api:
+    service-key: ${TOUR_API_KEY:}
+    daily-quota: 1000
+  cors:
+    allowed-origins:
+      - http://localhost:8099
+      - http://localhost:3000
+  retention:
+    log-days: 30
