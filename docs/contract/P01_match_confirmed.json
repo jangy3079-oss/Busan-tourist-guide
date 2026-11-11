@@ -1,0 +1,25 @@
+{
+  "matchId" : "m_51c0",
+  "decision" : "CONFIRMED",
+  "lowAccuracy" : false,
+  "candidates" : [ {
+    "place" : {
+      "contentId" : "2789475",
+      "name" : "해운대암소갈비집",
+      "category" : "음식점",
+      "address" : "부산 해운대구 중동",
+      "lat" : 35.163,
+      "lng" : 129.1636,
+      "overview" : "소갈비 전문점(원문)",
+      "hoursText" : "11:30~22:00",
+      "hoursUncertain" : false,
+      "imageUrl" : null,
+      "source" : "ⓒ한국관광공사",
+      "collectedAt" : "2026-10-12T04:00:00+09:00",
+      "openStatus" : "OPEN"
+    },
+    "score" : 0.96,
+    "distanceM" : 420,
+    "matchedText" : "해운대암소갈비"
+  } ]
+}

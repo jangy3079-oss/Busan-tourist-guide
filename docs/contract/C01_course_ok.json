@@ -1,0 +1,56 @@
+{
+  "status" : "OK",
+  "courseId" : "c_8f2a",
+  "version" : 1,
+  "parentId" : null,
+  "assumptions" : [ {
+    "key" : "durationMin",
+    "value" : "180",
+    "label" : "3시간",
+    "isDefault" : false
+  }, {
+    "key" : "area",
+    "value" : "GWANGALLI",
+    "label" : "광안리",
+    "isDefault" : false
+  } ],
+  "relaxed" : [ "실내 조건 해제" ],
+  "stops" : [ {
+    "order" : 1,
+    "contentId" : "126081",
+    "name" : "광안리해수욕장",
+    "category" : "관광지",
+    "lat" : 35.1532,
+    "lng" : 129.1186,
+    "arriveAt" : "14:00",
+    "departAt" : "15:10",
+    "moveFromPrev" : null,
+    "hoursUncertain" : false,
+    "fixed" : false,
+    "changed" : false
+  }, {
+    "order" : 2,
+    "contentId" : "264570",
+    "name" : "민락수변공원",
+    "category" : "관광지",
+    "lat" : 35.1553,
+    "lng" : 129.1328,
+    "arriveAt" : "15:22",
+    "departAt" : "15:50",
+    "moveFromPrev" : {
+      "mode" : "WALK",
+      "minutes" : 12
+    },
+    "hoursUncertain" : true,
+    "fixed" : false,
+    "changed" : false
+  } ],
+  "path" : [ {
+    "lat" : 35.1532,
+    "lng" : 129.1186
+  }, {
+    "lat" : 35.1553,
+    "lng" : 129.1328
+  } ],
+  "notice" : null
+}

@@ -1,0 +1,11 @@
+{
+  "query" : "광안리 3시간",
+  "lang" : "ko",
+  "startPlaceId" : "2789475",
+  "overrides" : {
+    "visitDate" : null,
+    "startTime" : "15:00",
+    "durationMin" : 180,
+    "area" : "GWANGALLI"
+  }
+}

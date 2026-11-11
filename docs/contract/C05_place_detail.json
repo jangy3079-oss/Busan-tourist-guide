@@ -1,0 +1,15 @@
+{
+  "contentId" : "126081",
+  "name" : "광안리해수욕장",
+  "category" : "관광지",
+  "address" : "부산 수영구 광안해변로 219",
+  "lat" : 35.1532,
+  "lng" : 129.1186,
+  "overview" : "TourAPI 개요 원문",
+  "hoursText" : "연중 개방",
+  "hoursUncertain" : false,
+  "imageUrl" : "https://example.com/a.jpg",
+  "source" : "ⓒ한국관광공사",
+  "collectedAt" : "2026-10-12T04:00:00+09:00",
+  "openStatus" : null
+}

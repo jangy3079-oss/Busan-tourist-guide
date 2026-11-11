@@ -1,0 +1,13 @@
+{
+  "triage" : null,
+  "needTypeSelection" : true,
+  "outOfArea" : false,
+  "topContact" : null,
+  "places" : [ ],
+  "card" : null,
+  "steps" : [ ],
+  "stepsFallback" : false,
+  "sources" : [ ],
+  "extras" : [ ],
+  "dataAsOf" : null
+}
