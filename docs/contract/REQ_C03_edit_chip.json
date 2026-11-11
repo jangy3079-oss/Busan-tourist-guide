@@ -1,0 +1,11 @@
+{
+  "text" : null,
+  "lang" : "ko",
+  "overrides" : {
+    "visitDate" : null,
+    "startTime" : null,
+    "durationMin" : 120,
+    "area" : null
+  },
+  "startPlaceId" : null
+}

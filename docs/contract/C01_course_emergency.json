@@ -1,0 +1,16 @@
+{
+  "status" : "EMERGENCY",
+  "courseId" : null,
+  "version" : null,
+  "parentId" : null,
+  "assumptions" : null,
+  "relaxed" : null,
+  "stops" : null,
+  "path" : null,
+  "notice" : {
+    "emergencyType" : "URGENT",
+    "message" : "긴급 안내로 연결합니다",
+    "examples" : [ ],
+    "suggestions" : [ ]
+  }
+}

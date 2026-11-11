@@ -1,0 +1,16 @@
+{
+  "status" : "OUT_OF_SCOPE",
+  "courseId" : null,
+  "version" : null,
+  "parentId" : null,
+  "assumptions" : null,
+  "relaxed" : null,
+  "stops" : null,
+  "path" : null,
+  "notice" : {
+    "emergencyType" : null,
+    "message" : "광안리·해운대 관광 코스만 도와드려요",
+    "examples" : [ "해운대에서 2시간 산책 코스" ],
+    "suggestions" : [ ]
+  }
+}

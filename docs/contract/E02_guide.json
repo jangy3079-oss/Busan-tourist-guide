@@ -1,0 +1,46 @@
+{
+  "triage" : {
+    "type" : "URGENT",
+    "urgency" : "URGENT",
+    "confidence" : 0.91,
+    "slots" : {
+      "symptom" : "의식 없음"
+    }
+  },
+  "needTypeSelection" : false,
+  "outOfArea" : false,
+  "topContact" : "119",
+  "places" : [ {
+    "id" : "hp_102",
+    "name" : "좋은강안병원 응급실",
+    "kind" : "ER",
+    "lat" : 35.16,
+    "lng" : 129.12,
+    "distanceM" : 640,
+    "phone" : "051-610-9000",
+    "todayHours" : "24시간",
+    "openStatus" : "OPEN",
+    "er" : {
+      "availableBeds" : 3,
+      "message" : null,
+      "noTreatment" : false,
+      "fetchedAt" : "2026-11-11T14:02:00+09:00"
+    }
+  } ],
+  "card" : {
+    "ko" : "제 친구가 쓰러졌어요. 119를 불러주세요.",
+    "translated" : "My friend collapsed. Please call 119.",
+    "address" : "부산 수영구 광안해변로 219"
+  },
+  "steps" : [ "숨을 쉬는지 확인하세요", "119 안내에 따라 가슴압박을 하세요" ],
+  "stepsFallback" : false,
+  "sources" : [ {
+    "id" : "kb_cpr_01",
+    "title" : "심폐소생술 안내(질병관리청)"
+  } ],
+  "extras" : [ "SILENT_REPORT" ],
+  "dataAsOf" : {
+    "places" : "2026-11-11T04:00:00+09:00",
+    "source" : "국립중앙의료원"
+  }
+}

@@ -1,0 +1,6 @@
+# 공용
+.DS_Store
+.env
+*.iml
+.idea/
+.vscode/
