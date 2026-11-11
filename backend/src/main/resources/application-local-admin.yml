@@ -1,0 +1,3 @@
+# 관리자 API(@Profile("local-admin"))를 켜는 로컬 전용 프로필. 배포 환경에서는 이 프로필을 켜지 않는다(NFR-E005).
+safetrip:
+  admin-enabled: true
