@@ -1,0 +1,26 @@
+{
+  "ko": {
+    "today": "오늘", "now": "지금 {0}", "hours": "{0}시간", "minutes": "{0}분",
+    "area.GWANGALLI": "광안리", "area.HAEUNDAE": "해운대", "area.ALL": "광안리·해운대 전체",
+    "emergency": "긴급 상황으로 보여요. 긴급 안내로 연결할게요",
+    "outOfScope": "광안리·해운대 관광 코스만 도와드려요", "outOfScopeExample": "해운대에서 2시간 산책 코스",
+    "noCourse": "조건에 맞는 코스가 없어요", "suggestLonger": "시간을 더 길게 잡아 보세요", "suggestArea": "지역을 광안리·해운대 전체로 넓혀 보세요",
+    "relax.categories": "요청 장소 유형 조건 해제", "relax.area": "지역 조건 해제"
+  },
+  "en": {
+    "today": "Today", "now": "Now {0}", "hours": "{0} h", "minutes": "{0} min",
+    "area.GWANGALLI": "Gwangalli", "area.HAEUNDAE": "Haeundae", "area.ALL": "Gwangalli & Haeundae",
+    "emergency": "This sounds like an emergency. Connecting you to emergency help",
+    "outOfScope": "We only plan courses around Gwangalli and Haeundae", "outOfScopeExample": "2-hour walk in Haeundae",
+    "noCourse": "No course matches your conditions", "suggestLonger": "Try allowing more time", "suggestArea": "Try both Gwangalli and Haeundae",
+    "relax.categories": "Place type condition removed", "relax.area": "Area condition removed"
+  },
+  "ja": {
+    "today": "今日", "now": "今 {0}", "hours": "{0}時間", "minutes": "{0}分",
+    "area.GWANGALLI": "広安里", "area.HAEUNDAE": "海雲台", "area.ALL": "広安里・海雲台全体",
+    "emergency": "緊急の状況のようです。緊急案内につなぎます",
+    "outOfScope": "広安里・海雲台の観光コースのみご案内できます", "outOfScopeExample": "海雲台で2時間の散歩コース",
+    "noCourse": "条件に合うコースがありません", "suggestLonger": "時間を長くしてみてください", "suggestArea": "地域を広安里・海雲台全体に広げてみてください",
+    "relax.categories": "場所の種類の条件を解除", "relax.area": "地域の条件を解除"
+  }
+}
