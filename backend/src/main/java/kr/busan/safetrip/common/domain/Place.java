@@ -53,6 +53,10 @@ public class Place {
     @Column(name = "content_type_id")
     private Integer contentTypeId;
 
+    /** TourAPI 세부 분류 코드(lclsSystm3, 예: NA020900 해수욕장). 수집 전이면 null */
+    @Column(name = "lcls_code")
+    private String lclsCode;
+
     /** 대표 이미지(TourAPI firstimage)와 저작권 구분(Type1, Type3). 변경 금지 유형은 원본 그대로 표시(DATA-C04) */
     @Column(name = "image_url", columnDefinition = "text")
     private String imageUrl;
@@ -78,6 +82,7 @@ public class Place {
     public String getHoursStatus() { return hoursStatus; }
     public String getOverview() { return overview; }
     public Integer getContentTypeId() { return contentTypeId; }
+    public String getLclsCode() { return lclsCode; }
     public String getImageUrl() { return imageUrl; }
     public String getImageCopyright() { return imageCopyright; }
     public java.time.Instant getCollectedAt() { return collectedAt; }

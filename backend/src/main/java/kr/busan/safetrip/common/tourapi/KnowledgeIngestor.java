@@ -130,13 +130,14 @@ public class KnowledgeIngestor {
         if (lat == 0 || lng == 0) return; // 좌표가 없으면 지도·거리 계산에 쓸 수 없다
         if (cfg.cafeCodes().stream().anyMatch(c -> i.path("lclsSystm3").asText().startsWith(c))) category = "카페";
         String address = (i.path("addr1").asText() + " " + i.path("addr2").asText()).strip();
-        jdbc.update("INSERT INTO place (content_id, name, category, address, lat, lng, content_type_id, image_url, image_copyright, modified_time, ingest_status) "
-                        + "VALUES (?,?,?,?,?,?,?,?,?,?,'LISTED') ON CONFLICT (content_id) DO UPDATE SET name = EXCLUDED.name, category = EXCLUDED.category, "
+        jdbc.update("INSERT INTO place (content_id, name, category, address, lat, lng, content_type_id, image_url, image_copyright, modified_time, lcls_code, ingest_status) "
+                        + "VALUES (?,?,?,?,?,?,?,?,?,?,?,'LISTED') ON CONFLICT (content_id) DO UPDATE SET name = EXCLUDED.name, category = EXCLUDED.category, "
                         + "address = EXCLUDED.address, lat = EXCLUDED.lat, lng = EXCLUDED.lng, content_type_id = EXCLUDED.content_type_id, "
-                        + "image_url = EXCLUDED.image_url, image_copyright = EXCLUDED.image_copyright, modified_time = EXCLUDED.modified_time, "
+                        + "image_url = EXCLUDED.image_url, image_copyright = EXCLUDED.image_copyright, modified_time = EXCLUDED.modified_time, lcls_code = EXCLUDED.lcls_code, "
                         + "ingest_status = CASE WHEN place.modified_time IS DISTINCT FROM EXCLUDED.modified_time THEN 'LISTED' ELSE place.ingest_status END",
                 i.path("contentid").asText(), i.path("title").asText(), category, address, lat, lng, typeId,
-                blankToNull(i.path("firstimage").asText()), blankToNull(i.path("cpyrhtDivCd").asText()), i.path("modifiedtime").asText());
+                blankToNull(i.path("firstimage").asText()), blankToNull(i.path("cpyrhtDivCd").asText()), i.path("modifiedtime").asText(),
+                blankToNull(i.path("lclsSystm3").asText()));
     }
 
     private void detailAll() {
