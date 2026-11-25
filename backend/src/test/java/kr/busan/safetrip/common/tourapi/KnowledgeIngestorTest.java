@@ -84,7 +84,7 @@ class KnowledgeIngestorTest {
         when(jdbc.queryForList(contains("hours_text"))).thenReturn(List.of(Map.of("id", 1L, "hours_text", "11:00~22:00", "rest_text", "매주 월요일")));
         ingestor.run();
         assertEquals("DONE", state());
-        verify(jdbc).update(contains("INSERT INTO place "), eq("1"), eq("카페"), eq("카페"), eq("부산광역시 수영구"), eq(35.1), eq(129.1), eq(39), any(), any(), any());
+        verify(jdbc).update(contains("INSERT INTO place "), eq("1"), eq("카페"), eq("카페"), eq("부산광역시 수영구"), eq(35.1), eq(129.1), eq(39), any(), any(), any(), eq("FD050100"));
         verify(jdbc).update(contains("ingest_status = 'DONE'"), eq("개요"), eq("11:00~22:00"), eq("매주 월요일"), eq(1L));
         verify(jdbc).update(contains("hours_status"), eq("PARSED"), eq(1L));
         verify(jdbc, times(6)).update(contains("INSERT INTO place_hours"), eq(1L), anyInt(), eq(660), eq(1320));
