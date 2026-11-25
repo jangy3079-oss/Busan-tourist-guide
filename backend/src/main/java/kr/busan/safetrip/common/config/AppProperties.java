@@ -14,7 +14,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AppProperties(Ai ai, TourApi tourApi, Cors cors, Retention retention) {
 
     /** NFR-C005: provider 값만 바꿔 Ollama <-> OpenAI 교체 */
-    public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int maxRetry, long monthlyBudgetKrw) {}
+    public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int maxRetry, long monthlyBudgetKrw,
+                     double inputKrwPerMTok, double outputKrwPerMTok) {}
 
     /** TourAPI 일일 호출 한도·재개 지점(FR-C017) */
     public record TourApi(String serviceKey, int dailyQuota) {}
