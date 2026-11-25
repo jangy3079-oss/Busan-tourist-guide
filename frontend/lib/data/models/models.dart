@@ -18,8 +18,9 @@ class AreaInfo {
 class MapPoint {
   final double lat, lng;
   final String? label; // 핀 안 글자 (기본: 순번)
+  final String? name; // 핀 위 말풍선 (없으면 안 보임)
   final bool isEr, isFixed;
-  const MapPoint(this.lat, this.lng, {this.label, this.isEr = false, this.isFixed = false});
+  const MapPoint(this.lat, this.lng, {this.label, this.name, this.isEr = false, this.isFixed = false});
 }
 
 // ---------------- 긴급 (API-E01/E02) ----------------
@@ -34,7 +35,7 @@ class HelpPlace {
   final bool isEr, openNow;
   final String? phone; // FR-E014 전화 걸기
   const HelpPlace(this.id, this.name, this.kind, this.lat, this.lng, this.distM, this.status, this.sub, {this.isEr = false, this.openNow = true, this.phone});
-  MapPoint get point => MapPoint(lat, lng, isEr: isEr);
+  MapPoint get point => MapPoint(lat, lng, name: name, isEr: isEr);
 }
 
 /// API-E01 즉시 응답: 키워드만으로 1초 안에 오는 연락 버튼 강조 정보
@@ -69,7 +70,7 @@ class CourseStop {
   final double lat, lng;
   final bool changed, fixed, hoursUncertain; // hoursUncertain → '방문 전 확인'(FR-C009)
   const CourseStop(this.id, this.time, this.name, this.desc, this.lat, this.lng, {this.changed = false, this.fixed = false, this.hoursUncertain = false});
-  MapPoint get point => MapPoint(lat, lng, isFixed: fixed);
+  MapPoint get point => MapPoint(lat, lng, name: name, isFixed: fixed);
 }
 
 /// 가정 칩 하나 (FR-C003). key: visitDate | startTime | durationMin | area, value는 서버 값(예: '180', 'GWANGALLI')
