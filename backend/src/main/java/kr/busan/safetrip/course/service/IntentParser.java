@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -85,13 +87,18 @@ public class IntentParser {
         Optional<EmType> em = detectEmergency(text);
         if (em.isPresent()) return new Intent(null, null, null, null, List.of(), null, false, em);
         try {
-            String prompt = settings.intentPrompt().replace("{today}", today.toString())
+            String prompt = settings.intentPrompt().replace("{today}", today.toString()).replace("{calendar}", calendar(today))
                     .replace("{categories}", String.join(", ", settings.intent().categories()));
             return fromLlm(ai.complete(new AiRequest("course.intent", prompt, text, true, Duration.ofSeconds(8))));
         } catch (RuntimeException e) {
             log.warn("course.intent LLM 실패 → 규칙 대체: {}", e.getClass().getSimpleName());
             return byRules(text);
         }
+    }
+
+    /** 요일 계산을 LLM 에 맡기면 "이번 주 토요일"을 틀린다(#141). 오늘부터 14일 */
+    static String calendar(LocalDate today) {
+        return IntStream.range(0, 14).mapToObj(today::plusDays).map(d -> d + "=" + d.getDayOfWeek()).collect(Collectors.joining(", "));
     }
 
     /** 긴급 키워드 판정. ponytail: 긴급 담당 KeywordRuleEngine 미구현이면 긴급 아님으로 진행(로컬 시험용), 구현되면 이 catch 는 안 탄다 */

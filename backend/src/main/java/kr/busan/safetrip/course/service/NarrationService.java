@@ -67,8 +67,11 @@ public class NarrationService {
     private CourseDtos.NarrationResponse fromLlm(String courseId, List<CourseDtos.Stop> stops, List<Place> grounding, Lang lang) {
         int itemMax = settings.intent().narrationMaxChars();
         int titleMax = settings.intent().titleMaxChars();
+        // LLM 은 글자 수를 조금씩 넘긴다. 줄인 값을 알려 주고 검증은 원래 한도로 한다
+        int titleAsk = (int) (titleMax * settings.intent().promptLengthRatio());
+        int itemAsk = (int) (itemMax * settings.intent().promptLengthRatio());
         String prompt = settings.narrationPrompt().replace("{lang}", languageName(lang))
-                .replace("{titleMax}", String.valueOf(titleMax)).replace("{itemMax}", String.valueOf(itemMax));
+                .replace("{titleMax}", String.valueOf(titleAsk)).replace("{itemMax}", String.valueOf(itemAsk));
         StringBuilder data = new StringBuilder("<places>\n");
         for (Place p : grounding) {
             String ov = p.getOverview() == null ? "" : p.getOverview();
@@ -76,7 +79,7 @@ public class NarrationService {
                     .append(" | category=").append(p.getCategory())
                     .append(" | overview=").append(ov, 0, Math.min(ov.length(), OVERVIEW_CHARS)).append('\n');
         }
-        data.append("</places>");
+        data.append("</places>\n").append(settings.msg(lang, "narration.reminder", titleAsk, itemAsk)); // 원문이 한국어라 끝에서 다시 말하지 않으면 한국어로 답한다(#141)
         String raw = ai.complete(new AiRequest("course.narration", prompt, data.toString(), true, Duration.ofSeconds(8)));
 
         JsonNode n;

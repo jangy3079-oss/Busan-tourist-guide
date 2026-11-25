@@ -28,7 +28,7 @@ public class CourseSettings {
                          List<String> categories, Map<Area, String> areaAddress,
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
-                         int narrationMaxChars, int titleMaxChars, int wantedPerCategory, String preferenceNoise) {}
+                         int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise) {}
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private final Intent intent = read("/course/intent.json", new TypeReference<>() {});
@@ -45,7 +45,8 @@ public class CourseSettings {
     /** 다국어 문구. {0} 자리에 arg. 없는 키는 키 그대로 */
     public String msg(Lang lang, String key, Object... args) {
         String s = messages.get(lang.name().toLowerCase()).getOrDefault(key, key);
-        return args.length == 0 ? s : s.replace("{0}", String.valueOf(args[0]));
+        for (int i = 0; i < args.length; i++) s = s.replace("{" + i + "}", String.valueOf(args[i]));
+        return s;
     }
 
     private static <T> T read(String path, TypeReference<T> type) {
