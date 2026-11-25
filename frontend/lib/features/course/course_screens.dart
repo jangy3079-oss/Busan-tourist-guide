@@ -105,8 +105,8 @@ class CourseResultScreen extends ConsumerWidget {
               final label = a?.label ?? c.chips[i];
               final changed = c.changedChipIndex == i;
               return ActionChip(
-                onPressed: a == null || st.replanning ? null : () => showAssumptionSheet(context, ref, a),
-                avatar: a == null ? null : Ic('edit', size: 13, color: changed ? C.blueD : C.text3),
+                onPressed: a == null || a.key == 'indoor' || st.replanning ? null : () => showAssumptionSheet(context, ref, a), // 실내 칩은 보기 전용(API-C03 에 바꾸는 값이 없음)
+                avatar: a == null || a.key == 'indoor' ? null : Ic('edit', size: 13, color: changed ? C.blueD : C.text3),
                 label: Text(changed ? '$label · 바뀜' : (a?.isDefault ?? false) ? '$label · 기본값' : label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: changed ? C.blueD : C.text2)),
                 backgroundColor: changed ? C.blueT2 : Colors.white, side: BorderSide(color: changed ? C.blue : C.line2),
               );
