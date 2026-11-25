@@ -114,7 +114,7 @@ public class SpringAiService implements AIService {
         if (request.system() != null) messages.addObject().put("role", "system").put("content", request.system());
         messages.addObject().put("role", "user").put("content", request.user());
         if (request.jsonMode()) body.putObject("response_format").put("type", "json_object");
-        if (ollama()) body.put("reasoning_effort", "none"); // qwen 계열이 생각하느라 제한 시간을 다 쓰는 것을 막는다
+        if (ollama()) body.put("reasoning_effort", "none").put("temperature", 0).put("seed", 0); // 생각하느라 제한 시간을 다 쓰는 것과, 같은 문장에 답이 달라지는 것을 막는다
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(cfg.baseUrl().replaceAll("(/v1)?/*$", "") + "/v1/chat/completions"))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
