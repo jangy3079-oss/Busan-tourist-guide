@@ -30,7 +30,7 @@ import kr.busan.safetrip.course.dto.CourseDtos;
 public class CoursePlanner {
     /** course/planner.json 모양 */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Config(int minStops, int maxStops, Map<String, Integer> stayMin, int defaultStayMin,
+    public record Config(int minStops, int relaxedMinStops, int maxStops, Map<String, Integer> stayMin, int defaultStayMin,
                          int walkMaxM, double walkMPerMin, double taxiMPerMin, int taxiBaseMin, double detour,
                          int maxNodes, double wStop, double wRank, double wDistPerKm, double wWantedCategory) {}
 
@@ -55,7 +55,7 @@ public class CoursePlanner {
     }
 
     /**
-     * DFS 로 3~5곳의 순서를 고른다(FR-C006, #78). 첫 장소는 순위가 높은 것부터 시도해 코스가 되는 첫 번째를 쓴다.
+     * DFS 로 3~5곳(장소 수 완화면 2곳까지, FR-C007)의 순서를 고른다(FR-C006, #78). 첫 장소는 순위가 높은 것부터 시도해 코스가 되는 첫 번째를 쓴다.
      * 탐색 횟수 한도(maxNodes)는 시간이 아니라 횟수라 결과가 달라지지 않는다. 난수·현재 시각을 쓰지 않으므로 같은 입력이면 같은 코스다(NFR-C006).
      *
      * @param candidates 좋은 순서로 정렬된 후보(CandidateRetriever 순위)
@@ -70,17 +70,26 @@ public class CoursePlanner {
         List<String> wanted = intent.categories() == null ? List.of() : intent.categories().stream().distinct().toList();
         Search s = new Search(candidates, open, wanted, end);
         int all = (1 << wanted.size()) - 1;
-        for (int i = 0; i < candidates.size(); i++) {
-            if (intent.startPlaceId() != null && !intent.startPlaceId().equals(candidates.get(i).getContentId())) continue;
-            int leave = start + s.stay[i];
-            if (leave > end || !s.isOpen(i, start, leave)) continue;
-            s.path[0] = i;
-            s.used[i] = true;
-            s.dfs(1, leave, all & ~s.wantedBit[i], 0);
-            s.used[i] = false;
-            if (s.best != null) return stops(s, start, intent.startPlaceId() != null);
+        // 장소 수를 줄여도 되는 요청이어도 원래 개수(minStops)를 먼저 찾는다
+        for (s.min = cfg.minStops(); s.min >= (intent.fewerStops() ? cfg.relaxedMinStops() : cfg.minStops()); s.min--) {
+            s.nodes = 0;
+            for (int i = 0; i < candidates.size(); i++) {
+                if (intent.startPlaceId() != null && !intent.startPlaceId().equals(candidates.get(i).getContentId())) continue;
+                int leave = start + s.stay[i];
+                if (leave > end || !s.isOpen(i, start, leave)) continue;
+                s.path[0] = i;
+                s.used[i] = true;
+                s.dfs(1, leave, all & ~s.wantedBit[i], 0);
+                s.used[i] = false;
+                if (s.best != null) return stops(s, start, intent.startPlaceId() != null);
+            }
         }
         return List.of();
+    }
+
+    /** 완화하지 않았을 때의 최소 장소 수(FR-C006) */
+    public int minStops() {
+        return cfg.minStops();
     }
 
     /** 한 번의 탐색 상태. 후보가 20곳 안팎이라 가지치기한 전수 탐색으로 충분하다 */
@@ -89,7 +98,7 @@ public class CoursePlanner {
         final int end;
         final int[][][] spans; // 장소별 여는 시간. null = 불확실(막지 않음)
         final int[] lastArrive; // 이보다 늦게 도착하면 닫기 전에 다 못 머문다
-        int nodes;
+        int nodes, min;
         final int[] stay, wantedBit, path = new int[cfg.maxStops()];
         final boolean[] used;
         final CourseDtos.Move[][] move;
@@ -142,7 +151,7 @@ public class CoursePlanner {
 
         /** 점수가 같으면 먼저 찾은 쪽(순위가 높은 쪽)을 남긴다 */
         void dfs(int size, int now, int wantedLeft, double score) {
-            if (size >= cfg.minStops() && wantedLeft == 0 && score > bestScore) {
+            if (size >= min && wantedLeft == 0 && score > bestScore) {
                 bestScore = score;
                 best = Arrays.copyOf(path, size);
             }

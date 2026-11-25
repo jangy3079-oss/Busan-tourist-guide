@@ -143,4 +143,13 @@ class CoursePlannerTest {
         assertEquals(5, planner.plan(intent(540, List.of("음식점"), null), many, h).size());
         assertTrue(System.nanoTime() - t0 < 3_000_000_000L, "ms=" + (System.nanoTime() - t0) / 1_000_000);
     }
+
+    /** SDD TC-C07: 3곳이 안 되면 장소 수를 줄인다. 3곳이 되면 줄이지 않는다 */
+    @Test
+    void fewerStopsOnlyWhenNeeded() {
+        assertTrue(planner.plan(intent(130, List.of(), null), cands, ALL_DAY).isEmpty());
+        assertEquals(2, planner.plan(intent(130, List.of(), null).withFewerStops(), cands, ALL_DAY).size());
+        assertTrue(planner.plan(intent(50, List.of(), null).withFewerStops(), cands, ALL_DAY).isEmpty()); // 2곳도 안 됨
+        assertEquals(planner.plan(intent(240, List.of(), null), cands, ALL_DAY), planner.plan(intent(240, List.of(), null).withFewerStops(), cands, ALL_DAY));
+    }
 }
