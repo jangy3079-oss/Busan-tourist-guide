@@ -20,7 +20,7 @@
     {
       "type": "URGENT",
       "group": "CARDIAC_ARREST",
-      "ko": ["심정지", "심장이 멈", "심장이 안 뛰", "심폐소생술", "맥박이 없", "제세동기"],
+      "ko": ["심정지", "심장이 멈", "심장이+멎었", "심장이+멎은", "심장이 안 뛰", "심폐소생술", "맥박이 없", "제세동기"],
       "en": ["cardiac arrest", "heart stopped", "no pulse", "need cpr", "defibrillator"],
       "ja": ["心停止", "心臓が止ま", "脈がな", "心肺蘇生"]
     },
@@ -42,7 +42,7 @@
       "type": "URGENT",
       "group": "BLEEDING",
       "ko": ["피가+안멈", "피가+멈추지", "피가+계속", "대량 출혈", "심한 출혈", "피를 토", "토혈", "각혈"],
-      "en": ["bleeding", "won't stop bleeding", "not stop bleeding", "heavy bleeding", "severe bleeding", "vomiting blood", "coughing up blood"],
+      "en": ["is bleeding", "he's bleeding", "she's bleeding", "i'm bleeding", "bleeding a lot", "bleeding badly", "bleeding heavily", "bleeding+won't stop", "bleeding+not stop", "heavy bleeding", "severe bleeding", "vomiting blood", "coughing up blood"],
       "ja": ["血が止ま", "出血が止ま", "大量出血", "吐血", "喀血", "血を吐"]
     },
     {
@@ -55,9 +55,9 @@
     {
       "type": "URGENT",
       "group": "TRAUMA",
-      "ko": ["뼈가 부러", "골절", "머리를 심하게", "머리를 다쳤", "교통사고", "차에 치였", "추락", "칼에+찔", "칼에+베였"],
-      "en": ["broken bone", "fractured", "hit by a car", "car accident", "head injury", "fell from", "been stabbed"],
-      "ja": ["骨が折れ", "骨折", "車にひかれ", "交通事故", "頭を強く打", "転落", "刺され"]
+      "ko": ["뼈가 부러", "골절", "머리를+부딪", "머리를 다쳤", "교통사고", "차에 치였", "추락", "칼에+찔", "칼에+베였"],
+      "en": ["broken bone", "fractured", "hit by a car", "car accident", "head injury", "hit+head", "fell from", "been stabbed"],
+      "ja": ["骨が折れ", "骨折", "車にひかれ", "交通事故", "頭を+打", "転落", "刺され"]
     },
     {
       "type": "URGENT",
@@ -90,9 +90,16 @@
     {
       "type": "URGENT",
       "group": "DROWNING",
-      "ko": ["물에+빠졌", "바다에+빠졌", "사람이+빠졌", "익수", "파도에 휩쓸", "물에 떠내려"],
+      "ko": ["물에+빠졌", "바다에+빠졌", "사람이+물에+빠", "사람이+바다에+빠", "익수", "파도에 휩쓸", "물에 떠내려"],
       "en": ["drowning", "fell into the water", "fell into the sea", "swept out to sea"],
       "ja": ["溺れ", "海に落ち", "水に落ち", "波にさらわれ"]
+    },
+    {
+      "type": "URGENT",
+      "group": "AMBULANCE",
+      "ko": ["구급차", "응급차", "119 불러", "119 신고", "119에 전화"],
+      "en": ["ambulance", "paramedic", "call 119", "dial 119"],
+      "ja": ["救急車", "119番", "119を呼", "救急隊"]
     },
     {
       "type": "FIRE",
@@ -104,7 +111,7 @@
     {
       "type": "THREAT",
       "group": "THREAT",
-      "ko": ["따라와", "따라오", "뒤쫓아", "쫓아와", "스토킹", "스토커", "폭행", "때렸", "추행", "성추행", "위협", "납치", "흉기", "칼을 들", "칼로 위협"],
+      "ko": ["따라와", "따라오", "뒤쫓아", "쫓아와", "스토킹", "스토커", "폭행", "때렸", "추행", "성추행", "치한", "위협", "납치", "흉기", "칼을 들", "칼로 위협"],
       "en": ["following me", "chasing me", "stalking me", "assaulted", "attacked", "punched me", "beat me up", "harassing me", "groped", "threatening me", "threatened me", "kidnapped", "has a knife", "with a knife", "has a gun"],
       "ja": ["つけられて", "後をつけ", "ストーカー", "暴行", "殴られ", "襲われ", "痴漢", "セクハラ", "脅され", "脅迫", "誘拐", "拉致", "ナイフを持", "刃物"]
     },

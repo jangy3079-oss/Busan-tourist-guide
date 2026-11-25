@@ -92,3 +92,10 @@ text,expectedType,expectedGroup
 "I have a headache",MILD,GENERAL
 "頭が痛いです",MILD,GENERAL
 "熱があります",MILD,GENERAL
+"심장이 멎은 것 같아요",URGENT,CARDIAC_ARREST
+"Call an ambulance",URGENT,AMBULANCE
+"Help! My friend fell and hit his head",URGENT,TRAUMA
+"救急車を呼んでください",URGENT,AMBULANCE
+"치한이 있어요",THREAT,THREAT
+"bleeding edge tech museum",,
+"사람이 많이 빠졌으면 좋겠어요 한적한 곳",,

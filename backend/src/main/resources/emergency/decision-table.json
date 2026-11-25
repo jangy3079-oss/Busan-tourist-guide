@@ -1,0 +1,93 @@
+{
+  "_comment": "상황 유형별 안내 결정표(SRS 3.4.1, FR-E009). 위에서부터 처음 맞는 행을 쓴다. group 이 없는 행은 그 유형의 기본 행.",
+  "rows": [
+    {
+      "type": "URGENT",
+      "topContact": "119",
+      "primary": ["ER"],
+      "fallback": [],
+      "alsoShow": [],
+      "noPlaces": false,
+      "extras": [],
+      "note": "응급실(병상 표시, 진료불가 뒤로). 없으면 119 안내만"
+    },
+    {
+      "type": "MILD",
+      "group": "NEEDS_MEDS",
+      "topContact": "1330",
+      "primary": ["PHARMACY"],
+      "fallback": ["ER"],
+      "alsoShow": [],
+      "noPlaces": false,
+      "extras": [],
+      "note": "복통·설사·가벼운 상처·두드러기 등. 편의점에 설사약·연고 없음"
+    },
+    {
+      "type": "MILD",
+      "topContact": "1330",
+      "primary": ["PHARMACY"],
+      "fallback": ["CONVENIENCE"],
+      "alsoShow": ["ER"],
+      "noPlaces": false,
+      "extras": [],
+      "note": "열·두통·소화불량·근육통 일반 경증. 상비약 판매 편의점 대체 / 응급실 참고 표시"
+    },
+    {
+      "type": "LOST",
+      "group": "STOLEN",
+      "topContact": "112",
+      "primary": ["POLICE"],
+      "fallback": [],
+      "alsoShow": ["TOURIST_INFO"],
+      "noPlaces": false,
+      "extras": ["EMBASSY"]
+    },
+    {
+      "type": "LOST",
+      "topContact": "1330",
+      "primary": ["POLICE"],
+      "fallback": [],
+      "alsoShow": ["TOURIST_INFO"],
+      "noPlaces": false,
+      "extras": ["EMBASSY"]
+    },
+    {
+      "type": "THREAT",
+      "topContact": "112",
+      "primary": ["POLICE"],
+      "fallback": [],
+      "alsoShow": ["CONVENIENCE"],
+      "noPlaces": false,
+      "extras": ["SILENT_REPORT"]
+    },
+    {
+      "type": "FIRE",
+      "topContact": "119",
+      "primary": [],
+      "fallback": [],
+      "alsoShow": [],
+      "noPlaces": true,
+      "extras": []
+    },
+    {
+      "type": "WAY",
+      "topContact": "1330",
+      "primary": ["TOURIST_INFO"],
+      "fallback": ["POLICE"],
+      "alsoShow": [],
+      "noPlaces": false,
+      "extras": []
+    },
+    {
+      "type": "NON",
+      "topContact": "1330",
+      "primary": [],
+      "fallback": [],
+      "alsoShow": [],
+      "noPlaces": true,
+      "extras": []
+    }
+  ],
+  "maxPlaces": 3,
+  "radiusStepsM": [1000, 3000]
+}
