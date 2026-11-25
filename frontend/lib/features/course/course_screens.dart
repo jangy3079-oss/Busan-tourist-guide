@@ -181,7 +181,7 @@ Future<void> showEvidenceSheet(BuildContext context, WidgetRef ref, String conte
       builder: (ctx, snap) {
         final e = snap.data;
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(height: 120, decoration: BoxDecoration(borderRadius: BorderRadius.circular(rMd), gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFBFDDEB), Color(0xFF8FC3DB), Color(0xFFE7D7B2), Color(0xFFD9C79C)], stops: [0, .55, .56, 1]))),
+          _EvidenceImage(e?.imageUrl),
           const SizedBox(height: 12),
           Text(placeName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           const Text('근거 카드 · 공식 관광정보 원문', style: TextStyle(fontSize: 13.5, color: C.text3)),
@@ -193,6 +193,36 @@ Future<void> showEvidenceSheet(BuildContext context, WidgetRef ref, String conte
       },
     ),
   );
+}
+
+/// 대표 이미지. 변경 금지(Type3) 사진이 있어 자르지 않고 전체를 보여 준다(DATA-C04). 없거나 못 불러오면 기본 이미지
+class _EvidenceImage extends StatelessWidget {
+  final String? url;
+  const _EvidenceImage(this.url);
+  static const _base = DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFBFDDEB), Color(0xFF8FC3DB), Color(0xFFE7D7B2), Color(0xFFD9C79C)], stops: [0, .55, .56, 1])));
+  @override
+  Widget build(BuildContext context) {
+    final u = url?.replaceFirst('http://', 'https://');
+    final has = u != null && u.isNotEmpty;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(rMd),
+      child: SizedBox(
+        height: has ? 200 : 120, width: double.infinity,
+        child: !has
+            ? _base
+            : ColoredBox(
+                color: C.subtle,
+                child: Image.network(
+                  u,
+                  fit: BoxFit.contain,
+                  semanticLabel: '대표 이미지',
+                  webHtmlElementStrategy: WebHtmlElementStrategy.prefer, // 이미지 서버에 CORS 헤더가 없어 <img> 로 그린다
+                  errorBuilder: (_, _, _) => _base,
+                ),
+              ),
+      ),
+    );
+  }
 }
 
 PlacePin? _fixedPin(Course c) {
