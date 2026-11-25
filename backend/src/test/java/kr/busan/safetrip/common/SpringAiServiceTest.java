@@ -39,6 +39,8 @@ class SpringAiServiceTest {
     private HttpServer server;
     private int[] statuses = {200};
     private String[] contents = {"안녕"};
+    private String finish = "stop";
+    private String model = "m";
     private long delayMs = 0;
 
     @BeforeEach
@@ -55,7 +57,7 @@ class SpringAiServiceTest {
             }
             try { Thread.sleep(delayMs); } catch (InterruptedException ignored) { }
             String text = contents[Math.min(n, contents.length - 1)].replace("\"", "\\\"");
-            byte[] res = ("{\"choices\":[{\"message\":{\"content\":\"" + text + "\"}}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}")
+            byte[] res = ("{\"choices\":[{\"finish_reason\":\"" + finish + "\",\"message\":{\"content\":\"" + text + "\"}}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}")
                     .getBytes(StandardCharsets.UTF_8);
             ex.sendResponseHeaders(statuses[Math.min(n, statuses.length - 1)], res.length);
             ex.getResponseBody().write(res);
@@ -69,8 +71,8 @@ class SpringAiServiceTest {
         server.stop(0);
     }
 
-    private static AppProperties props(String provider, String url, String key, double price) {
-        return new AppProperties(new AppProperties.Ai(provider, url, "m", key, 8, 1, 1000, price, price), null, null, null, null);
+    private AppProperties props(String provider, String url, String key, double price) {
+        return new AppProperties(new AppProperties.Ai(provider, url, model, key, 8, 1, 1000, price, price), null, null, null, null);
     }
 
     private SpringAiService ai(String provider, String key) {
@@ -146,6 +148,29 @@ class SpringAiServiceTest {
         assertTrue(body.contains("max_tokens"), body);
         assertTrue(body.contains("sys"), body); // 기존 시스템 지시문은 유지
         assertEquals("Bearer k", auths.get(0));
+    }
+
+    /** 생각이 켜져 있으면 답이 max_tokens 에서 잘린다. 끄는 값은 모델마다 다르고 틀리면 400 */
+    @Test
+    void claudeTurnsThinkingOffPerModel() {
+        model = "claude-haiku-5-5";
+        ai("claude", "k").complete(req(false, 0));
+        assertTrue(bodies.get(0).contains("\"thinking\":{\"type\":\"disabled\"}"), bodies.get(0));
+        model = "claude-sonnet-5-5";
+        ai("claude", "k").complete(req(false, 0));
+        assertTrue(bodies.get(1).contains("\"thinking\":{\"type\":\"between_tools\"}"), bodies.get(1));
+        model = "claude-opus-5-5";
+        ai("claude", "k").complete(req(false, 0));
+        assertFalse(bodies.get(2).contains("thinking"), bodies.get(2));
+        ai("openai", "k").complete(req(false, 0));
+        assertFalse(bodies.get(3).contains("thinking"), bodies.get(3));
+    }
+
+    @Test
+    void truncatedAnswerIsFailureWithoutRetry() {
+        finish = "length";
+        assertEquals(ErrorCode.AI_UNAVAILABLE, fail(ai("claude", "k"), req(false, 1)));
+        assertEquals(1, bodies.size());
     }
 
     @Test

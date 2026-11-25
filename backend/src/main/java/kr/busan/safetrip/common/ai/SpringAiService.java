@@ -37,7 +37,7 @@ public class SpringAiService implements AIService {
     private static final Logger log = LoggerFactory.getLogger(SpringAiService.class);
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String JSON_ONLY = "Respond with a single JSON object only. No prose, no code fences.";
-    private static final int CLAUDE_MAX_TOKENS = 1024;
+    private static final int CLAUDE_MAX_TOKENS = 4096;
 
     private final AppProperties.Ai cfg;
     private final AiBudget budget;
@@ -83,6 +83,7 @@ public class SpringAiService implements AIService {
             in = body.path("usage").path("prompt_tokens").asLong();
             out = body.path("usage").path("completion_tokens").asLong();
             String text = body.path("choices").path(0).path("message").path("content").asText("").strip();
+            if ("length".equals(body.path("choices").path(0).path("finish_reason").asText())) throw new Failure("truncated", false, false); // 잘린 답은 쓰지 않는다. 다시 불러도 또 잘린다
             if (text.isEmpty()) throw new Failure("empty", true, false);
             return request.jsonMode() ? jsonObject(text) : text;
         } catch (Failure e) {
@@ -119,7 +120,11 @@ public class SpringAiService implements AIService {
         if (system != null) messages.addObject().put("role", "system").put("content", system);
         messages.addObject().put("role", "user").put("content", request.user());
         if (request.jsonMode() && !claude()) body.putObject("response_format").put("type", "json_object");
-        if (claude()) body.put("max_tokens", CLAUDE_MAX_TOKENS); // 기본값이 문서에 없어 명시한다
+        if (claude()) {
+            body.put("max_tokens", CLAUDE_MAX_TOKENS); // 기본값이 문서에 없어 명시한다
+            String off = thinkingOff(cfg.model());
+            if (off != null) body.putObject("thinking").put("type", off); // 기본으로 켜진 생각이 max_tokens 와 제한 시간을 나눠 써 답이 잘린다
+        }
         if (ollama()) body.put("reasoning_effort", "none").put("temperature", 0).put("seed", 0); // 생각하느라 제한 시간을 다 쓰는 것과, 같은 문장에 답이 달라지는 것을 막는다
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(cfg.baseUrl().replaceAll("(/v1)?/*$", "") + "/v1/chat/completions"))
                 .header("Content-Type", "application/json")
@@ -171,6 +176,13 @@ public class SpringAiService implements AIService {
     /** Claude API(OpenAI 호환 주소). temperature 1 미만은 400 이라 보내지 않는다 */
     private boolean claude() {
         return "claude".equals(cfg.provider());
+    }
+
+    /** 생각을 끄는 값은 모델마다 다르고 틀리면 400 이다. 모르는 모델은 null(보내지 않음) */
+    private static String thinkingOff(String model) {
+        if (model.startsWith("claude-haiku-5")) return "disabled";
+        if (model.startsWith("claude-sonnet-5-5")) return "between_tools";
+        return null;
     }
 
     private static String join(String system, String extra) {
