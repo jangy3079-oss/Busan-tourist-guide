@@ -1,12 +1,12 @@
-// [공통] 지도 위젯 (COMP-C09). 지금은 프로토타입과 같은 그림용 지도(CustomPainter).
-// TODO(코스 담당): 카카오맵 JS SDK(HtmlElementView)로 교체. 아래 MapView의 생성자 인터페이스(핀·경로·영역)는 그대로 유지하면
-// 코스·사진·긴급 화면은 수정이 필요 없다.
+// [공통] 지도 위젯 (COMP-C09). 카카오맵 JS SDK 를 쓰고, 키가 없거나 못 불러오면 그림 지도(CustomPainter)를 보여 준다.
+// 키: --dart-define=KAKAO_MAP_JS_KEY=... (카카오 개발자 사이트에 실행 주소 등록 필요). 코스·사진·긴급이 같은 MapView 를 쓴다.
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../core/theme.dart';
 import '../data/mock_data.dart';
 import '../data/models/models.dart';
+import 'kakao_map_stub.dart' if (dart.library.js_interop) 'kakao_map_web.dart';
 
 class MapView extends StatelessWidget {
   final List<MapPoint> pins;
@@ -33,11 +33,23 @@ class MapView extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => ClipRRect(
-        borderRadius: BorderRadius.circular(rLg),
-        child: AspectRatio(
-          aspectRatio: 340 / height,
-          child: Stack(children: [
+  Widget build(BuildContext context) => FutureBuilder<bool>(
+        future: loadKakaoMap(),
+        builder: (_, s) => ClipRRect(
+          borderRadius: BorderRadius.circular(rLg),
+          child: AspectRatio(
+            aspectRatio: 340 / height,
+            child: s.data == true
+                // 카카오 로고·저작권 표시가 아래쪽에 있어 설명 글자를 얹지 않는다
+                ? kakaoMap(
+                    pins: pins, path: route ? (path ?? pins) : const [],
+                    me: showMe ? MapPoint(kAreas[area]!.lat, kAreas[area]!.lng) : null, onPinTap: onPinTap)
+                : s.connectionState == ConnectionState.done ? _drawn() : const ColoredBox(color: C.subtle),
+          ),
+        ),
+      );
+
+  Widget _drawn() => Stack(children: [
             Positioned.fill(child: LayoutBuilder(builder: (ctx, box) {
               final paint = CustomPaint(painter: _MapPainter(pins, path, route, showMe, area, height));
               if (onPinTap == null) return paint;
@@ -55,9 +67,7 @@ class MapView extends StatelessWidget {
                 child: Text(caption, style: const TextStyle(fontSize: 10.5, color: C.text3, fontWeight: FontWeight.w600)),
               ),
             ),
-          ]),
-        ),
-      );
+          ]);
 }
 
 /// 위경도 → 340×H 그림 좌표. 그림과 핀 누르기 판정이 같은 식을 쓴다.
