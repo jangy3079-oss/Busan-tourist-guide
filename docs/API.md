@@ -87,6 +87,7 @@
     {"key": "startTime", "value": "14:00", "label": "지금 14:00", "isDefault": true},
     {"key": "durationMin", "value": "180", "label": "3시간", "isDefault": false},
     {"key": "area", "value": "GWANGALLI", "label": "광안리", "isDefault": false}
+                                      // 실내를 말했을 때만 {"key": "indoor", "value": "true", "label": "실내 위주", "isDefault": false} 추가(FR-C002, 보기 전용)
   ],
   "relaxed": ["실내 조건 해제"],      // 조건 완화로 푼 항목(FR-C007), 없으면 []
   "stops": [{
