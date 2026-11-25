@@ -28,13 +28,16 @@ import kr.busan.safetrip.common.exception.ErrorCode;
  * 상태: 완료
  * 수정 규칙: 3인 합의 후 수정(PR 리뷰 3명 모두 승인). 혼자 고치지 말 것.
  *
- * Ollama 와 OpenAI 가 같이 지원하는 /v1/chat/completions 로 호출한다. 교체는 설정값(AI_PROVIDER·AI_BASE_URL·AI_MODEL·AI_API_KEY)만.
+ * Ollama·OpenAI·Claude 가 같이 지원하는 /v1/chat/completions 로 호출한다. 교체는 설정값(AI_PROVIDER·AI_BASE_URL·AI_MODEL·AI_API_KEY)만.
+ * provider=claude 면 JSON 모드를 response_format 대신 지시문으로 요구한다(#142).
  * 로그에는 용도·모델·지연·성공·토큰만 남긴다(프롬프트·사용자 문장·응답·키 금지).
  */
 @Service
 public class SpringAiService implements AIService {
     private static final Logger log = LoggerFactory.getLogger(SpringAiService.class);
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final String JSON_ONLY = "Respond with a single JSON object only. No prose, no code fences.";
+    private static final int CLAUDE_MAX_TOKENS = 1024;
 
     private final AppProperties.Ai cfg;
     private final AiBudget budget;
@@ -111,9 +114,12 @@ public class SpringAiService implements AIService {
     private HttpRequest httpRequest(AiRequest request) {
         ObjectNode body = JSON.createObjectNode().put("model", cfg.model()).put("stream", false);
         ArrayNode messages = body.putArray("messages");
-        if (request.system() != null) messages.addObject().put("role", "system").put("content", request.system());
+        // Claude 의 OpenAI 호환 주소는 response_format json_object 를 400 으로 거부한다(#142). JSON 은 지시문으로 요구하고 응답은 jsonObject() 로 확인한다
+        String system = request.jsonMode() && claude() ? join(request.system(), JSON_ONLY) : request.system();
+        if (system != null) messages.addObject().put("role", "system").put("content", system);
         messages.addObject().put("role", "user").put("content", request.user());
-        if (request.jsonMode()) body.putObject("response_format").put("type", "json_object");
+        if (request.jsonMode() && !claude()) body.putObject("response_format").put("type", "json_object");
+        if (claude()) body.put("max_tokens", CLAUDE_MAX_TOKENS); // 기본값이 문서에 없어 명시한다
         if (ollama()) body.put("reasoning_effort", "none").put("temperature", 0).put("seed", 0); // 생각하느라 제한 시간을 다 쓰는 것과, 같은 문장에 답이 달라지는 것을 막는다
         HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(cfg.baseUrl().replaceAll("(/v1)?/*$", "") + "/v1/chat/completions"))
                 .header("Content-Type", "application/json")
@@ -160,6 +166,15 @@ public class SpringAiService implements AIService {
 
     private boolean ollama() {
         return "ollama".equals(cfg.provider());
+    }
+
+    /** Claude API(OpenAI 호환 주소). temperature 1 미만은 400 이라 보내지 않는다 */
+    private boolean claude() {
+        return "claude".equals(cfg.provider());
+    }
+
+    private static String join(String system, String extra) {
+        return system == null || system.isBlank() ? extra : system + "\n\n" + extra;
     }
 
     private boolean hasKey() {

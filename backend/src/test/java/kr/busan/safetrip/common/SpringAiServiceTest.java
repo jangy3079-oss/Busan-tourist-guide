@@ -135,6 +135,26 @@ class SpringAiServiceTest {
     }
 
     @Test
+    void claudeAsksJsonByInstructionNotResponseFormat() {
+        contents = new String[]{"{\"a\":1}"};
+        assertEquals("{\"a\":1}", ai("claude", "k").complete(req(true, 0)));
+        String body = bodies.get(0);
+        assertFalse(body.contains("response_format"), body);
+        assertFalse(body.contains("temperature"), body);
+        assertFalse(body.contains("seed"), body);
+        assertTrue(body.contains("JSON object only"), body);
+        assertTrue(body.contains("max_tokens"), body);
+        assertTrue(body.contains("sys"), body); // 기존 시스템 지시문은 유지
+        assertEquals("Bearer k", auths.get(0));
+    }
+
+    @Test
+    void claudeTextModeHasNoJsonInstruction() {
+        assertEquals("안녕", ai("claude", "k").complete(req(false, 0)));
+        assertFalse(bodies.get(0).contains("JSON object only"));
+    }
+
+    @Test
     void blockedWithoutBudgetOrKeyOrBudgetCheck() {
         assertEquals(ErrorCode.AI_UNAVAILABLE, fail(ai("openai", " "), req(false, null)));
         when(budget.allows()).thenReturn(false);
