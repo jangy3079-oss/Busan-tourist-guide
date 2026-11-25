@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -57,6 +58,21 @@ class KeywordRuleEngineImplTest {
         assertThat(engine.detect(input)).contains(expectedType);
     }
 
+    @ParameterizedTest(name = "[{index}] {0} -> {1}/{2}")
+    @CsvFileSource(resources = "/emergency/keyword-cases.csv", numLinesToSkip = 1)
+    void matchesRegressionCsv(String text, EmType expectedType, String expectedGroup) {
+        Optional<KeywordRuleEngineImpl.Match> match = engine.match(text);
+        if (expectedType == null) {
+            assertThat(match).as("expected empty for: %s", text).isEmpty();
+            assertThat(engine.detect(text)).isEmpty();
+        } else {
+            assertThat(match).as("expected %s/%s for: %s", expectedType, expectedGroup, text).isPresent();
+            assertThat(match.get().type()).isEqualTo(expectedType);
+            assertThat(match.get().group()).isEqualTo(expectedGroup);
+            assertThat(engine.detect(text)).contains(expectedType);
+        }
+    }
+
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {
@@ -78,6 +94,31 @@ class KeywordRuleEngineImplTest {
     void ignoresNonEmergencyAndFalsePositiveTraps(String input) {
         assertThat(engine.match(input)).isEmpty();
         assertThat(engine.detect(input)).isEmpty();
+    }
+
+    @Test
+    void matchesAndRuleRegardlessOfPartOrderAndRejectsSinglePart() {
+        KeywordRuleEngineImpl custom = new KeywordRuleEngineImpl(new KeywordRuleEngineImpl.RawConfig(
+                List.of(EmType.URGENT),
+                List.of(EmType.URGENT),
+                List.of(new KeywordRuleEngineImpl.RawGroup(
+                        EmType.URGENT,
+                        "CHEST_PAIN",
+                        List.of("가슴++아파+"),
+                        List.of("chest + hurt"),
+                        List.of()))));
+
+        // 순서대로 / 역순 / 사이에 다른 말 포함 모두 매칭
+        assertThat(custom.match("가슴이 너무 아파요")).isPresent();
+        assertThat(custom.match("아파요, 가슴이 너무")).isPresent();
+        assertThat(custom.match("It hurts in my chest")).isPresent();
+        assertThat(custom.match("My CHEST really hurts")).isPresent();
+
+        // 한 조각만 있으면 미매칭
+        assertThat(custom.match("가슴이 뻥 뚫리는 바다")).isEmpty();
+        assertThat(custom.match("다리가 너무 아파요")).isEmpty();
+        assertThat(custom.match("My leg hurts")).isEmpty();
+        assertThat(custom.match("Treasure chest museum")).isEmpty();
     }
 
     @Test
