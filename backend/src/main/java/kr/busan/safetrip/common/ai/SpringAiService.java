@@ -38,6 +38,8 @@ public class SpringAiService implements AIService {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String JSON_ONLY = "Respond with a single JSON object only. No prose, no code fences.";
     private static final int CLAUDE_MAX_TOKENS = 4096;
+    /** 남은 시간이 이보다 짧으면 재시도해도 답이 오기 전에 끊긴다 */
+    private static final Duration MIN_RETRY = Duration.ofMillis(500);
 
     private final AppProperties.Ai cfg;
     private final AiBudget budget;
@@ -52,23 +54,25 @@ public class SpringAiService implements AIService {
     public String complete(AiRequest request) {
         if (!ollama() && !hasKey()) throw unavailable("AI 키가 설정되지 않았습니다.");
         int retries = request.maxRetry() != null ? request.maxRetry() : cfg.maxRetry();
+        long end = System.nanoTime() + Duration.ofSeconds(cfg.totalTimeoutSec()).toNanos();
         for (int attempt = 0; ; attempt++) {
             if (!allowed()) {
                 log.warn("ai purpose={} result=blockedByBudget", request.purpose());
                 throw unavailable("AI 사용 한도를 넘었거나 단가가 설정되지 않았습니다.");
             }
             try {
-                return call(request);
+                return call(request, Duration.ofNanos(end - System.nanoTime()));
             } catch (Failure e) {
-                if (!e.retryable || attempt >= retries) {
+                if (!e.retryable || attempt >= retries || end - System.nanoTime() < MIN_RETRY.toNanos()) {
                     throw e.timeout ? new BusinessException(ErrorCode.AI_TIMEOUT, "AI 응답이 늦습니다.") : unavailable("AI 를 사용할 수 없습니다.");
                 }
             }
         }
     }
 
-    private String call(AiRequest request) {
+    private String call(AiRequest request, Duration left) {
         Duration timeout = request.timeout() != null ? request.timeout() : Duration.ofSeconds(cfg.timeoutSec());
+        if (timeout.compareTo(left) > 0) timeout = left;
         HttpRequest http1 = httpRequest(request);
         long start = System.nanoTime();
         long in = 0;
