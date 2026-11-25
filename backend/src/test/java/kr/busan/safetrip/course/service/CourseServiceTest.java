@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import kr.busan.safetrip.common.api.Lang;
+import kr.busan.safetrip.common.api.PlaceDetail;
 import kr.busan.safetrip.common.domain.Place;
 import kr.busan.safetrip.common.domain.PlaceRepository;
 import kr.busan.safetrip.course.dto.CourseDtos;
@@ -34,6 +36,7 @@ class CourseServiceTest {
     private final Map<String, Place> byId = new HashMap<>();
     private final Map<Long, CoursePlan> saved = new HashMap<>();
     private final CourseService service;
+    private final List<IntentParser.Intent> searched = new ArrayList<>();
 
     CourseServiceTest() {
         for (Place p : List.of(place("1", "관광지", 35.1532, 129.1186), place("2", "관광지", 35.1553, 129.1328),
@@ -44,8 +47,11 @@ class CourseServiceTest {
         CourseSettings settings = new CourseSettings();
         IntentParser parser = new IntentParser(t -> Optional.empty(), req -> { throw new RuntimeException("down"); }, settings);
         CandidateRetriever retriever = mock(CandidateRetriever.class);
-        when(retriever.retrieve(any())).thenAnswer(inv -> byId.values().stream()
-                .sorted((a, b) -> a.getContentId().compareTo(b.getContentId())).toList());
+        when(retriever.retrieve(any())).thenAnswer(inv -> {
+            searched.add(inv.getArgument(0));
+            return byId.values().stream()
+                .sorted((a, b) -> a.getContentId().compareTo(b.getContentId())).toList();
+        });
         PlaceRepository places = mock(PlaceRepository.class);
         when(places.findByContentId(anyString())).thenAnswer(inv -> Optional.ofNullable(byId.get(inv.<String>getArgument(0))));
         CoursePlanRepository plans = mock(CoursePlanRepository.class);
@@ -72,6 +78,9 @@ class CourseServiceTest {
         when(p.getLat()).thenReturn(lat);
         when(p.getLng()).thenReturn(lng);
         when(p.getHoursText()).thenReturn("09:00~18:00");
+        when(p.getHoursStatus()).thenReturn("PARSED");
+        when(p.getRestText()).thenReturn("연중무휴");
+        when(p.getImageUrl()).thenReturn("http://img");
         return p;
     }
 
@@ -105,6 +114,25 @@ class CourseServiceTest {
         assertFalse(v2.assumptions().get(2).isDefault());
         assertEquals("GWANGALLI", v2.assumptions().get(3).value());
         assertTrue(v2.stops().get(v2.stops().size() - 1).departAt().compareTo("17:00") <= 0);
+    }
+
+    /** 취향 문장: 처음 요청(마스킹) + 장소를 더하는 수정 문장. 빼기·시간 변경은 처음 요청만 */
+    @Test
+    void preferenceFollowsFirstRequest() {
+        CourseDtos.CourseResponse v1 = service.create(new CourseDtos.CreateRequest("광안리 4시간 a@b.co", "ko", null, null));
+        assertEquals("광안리 4시간 [email]", searched.get(0).preference());
+        CourseDtos.CourseResponse v2 = service.edit(v1.courseId(), new CourseDtos.EditRequest("2번 빼고 카페 넣어줘", "ko", null, null));
+        assertEquals("광안리 4시간 [email]\n2번 빼고 카페 넣어줘", searched.get(searched.size() - 1).preference());
+        service.edit(v2.courseId(), new CourseDtos.EditRequest("5시간으로", "ko", null, null));
+        assertEquals("광안리 4시간 [email]", searched.get(searched.size() - 1).preference());
+    }
+
+    @Test
+    void evidenceShowsOriginalTextAndImage() {
+        PlaceDetail d = service.evidence("1", Lang.KO);
+        assertEquals("09:00~18:00\n연중무휴", d.hoursText());
+        assertFalse(d.hoursUncertain());
+        assertEquals("http://img", d.imageUrl());
     }
 
     @Test

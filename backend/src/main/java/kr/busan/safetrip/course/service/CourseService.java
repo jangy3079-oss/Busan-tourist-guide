@@ -111,7 +111,7 @@ public class CourseService {
                 date != null ? date : today,
                 time != null ? time : LocalTime.now(clock).truncatedTo(ChronoUnit.MINUTES),
                 dur != null ? dur : settings.intent().defaultDurationMin(),
-                area, parsed.categories(), req.startPlaceId());
+                area, parsed.categories(), req.startPlaceId()).withPreference(PiiMasker.mask(req.query()));
         List<CourseDtos.Assumption> assumptions = assumptions(lang, intent, date == null, time == null, dur == null, area == null);
 
         List<String> relaxed = new ArrayList<>();
@@ -175,7 +175,8 @@ public class CourseService {
         for (CourseDtos.Stop st : prev.stops()) {
             if (!excluded.contains(st.contentId())) places.findByContentId(st.contentId()).ifPresent(kept::add);
         }
-        IntentParser.Intent intent = new IntentParser.Intent(date, time, dur, area, cats, start, false, Optional.empty());
+        IntentParser.Intent intent = new IntentParser.Intent(date, time, dur, area, cats, start, false, Optional.empty())
+                .withPreference(preference(prevPlan, cats.isEmpty() ? null : PiiMasker.mask(req.text())));
         List<CourseDtos.Assumption> assumptions = assumptions(lang, intent, dDef, tDef, mDef, aDef);
 
         List<String> relaxed = new ArrayList<>();
@@ -213,11 +214,30 @@ public class CourseService {
     public PlaceDetail evidence(String contentId, Lang lang) {
         Place p = places.findByContentId(contentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "장소 없음: " + contentId));
-        boolean uncertain = p.getHoursText() == null || p.getHoursText().isBlank();
+        boolean uncertain = !"PARSED".equals(p.getHoursStatus());
         return new PlaceDetail(p.getContentId(), p.getName(), p.getCategory(), p.getAddress(), p.getLat(), p.getLng(),
-                p.getOverview(), p.getHoursText(), uncertain, null, SOURCE,
+                p.getOverview(), hoursText(p), uncertain, p.getImageUrl(), SOURCE,
                 p.getCollectedAt() == null ? null : p.getCollectedAt().atZone(ZoneId.of("Asia/Seoul")).toOffsetDateTime().toString(),
                 null);
+    }
+
+    /** 운영시간·휴무일 원문을 줄로 잇는다(문장은 바꾸지 않는다) */
+    private static String hoursText(Place p) {
+        if (p.getRestText() == null) return p.getHoursText();
+        return p.getHoursText() == null ? p.getRestText() : p.getHoursText() + "\n" + p.getRestText();
+    }
+
+    /** 취향 = 맨 처음 요청 문장 + (장소를 더하거나 바꾸는 수정이면) 수정 문장. 저장된 값은 이미 마스킹돼 있다 */
+    private String preference(CoursePlan plan, String editText) {
+        CoursePlan root = plan;
+        while (root.getParentId() != null) {
+            CoursePlan up = plans.findById(root.getParentId()).orElse(null);
+            if (up == null) break; // 30일이 지나 지워진 버전
+            root = up;
+        }
+        String first = root.getQueryText();
+        if (editText == null) return first;
+        return first == null ? editText : first + "\n" + editText;
     }
 
     /** FR-C007 탐색 → 안 되면 relaxOrder 순서로 하나씩 풀고 다시 탐색. 푼 항목은 relaxed 에 문구로 쌓는다 */

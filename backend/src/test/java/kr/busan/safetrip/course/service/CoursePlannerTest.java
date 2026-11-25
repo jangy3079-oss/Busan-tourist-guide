@@ -24,7 +24,7 @@ class CoursePlannerTest {
         when(p.getCategory()).thenReturn(cat);
         when(p.getLat()).thenReturn(lat);
         when(p.getLng()).thenReturn(lng);
-        when(p.getHoursText()).thenReturn(id.equals("4") ? null : "09:00~18:00");
+        when(p.getHoursStatus()).thenReturn(id.equals("4") ? "UNCERTAIN" : "PARSED");
         return p;
     }
 

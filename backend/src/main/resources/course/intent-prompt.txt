@@ -7,3 +7,4 @@ Rules:
 - area = null if both or unspecified. durationMin = total time in minutes, null if not stated.
 - visitDate/startTime = null if not stated. Resolve relative dates ("tomorrow") from today.
 - categories = place types the user explicitly wants, chosen only from: {categories}. [] if none.
+- A meal or a dish ("저녁은 회", "dinner", "夕食") means 음식점. Coffee or dessert means 카페. A museum or gallery means 문화시설. Walking, sea or night views mean 관광지.
