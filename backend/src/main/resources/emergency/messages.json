@@ -1,0 +1,18 @@
+{
+  "_comment": "긴급 모듈 다국어 UI·라벨 문구(FR-E010, NFR-E006, NFR-E009). 코드 하드코딩 금지.",
+  "ko": {
+    "hours.alwaysOpen": "24시간",
+    "hours.closed": "휴무",
+    "hours.unknown": "운영시간 미확인"
+  },
+  "en": {
+    "hours.alwaysOpen": "24 hours",
+    "hours.closed": "Closed today",
+    "hours.unknown": "Hours unknown"
+  },
+  "ja": {
+    "hours.alwaysOpen": "24時間",
+    "hours.closed": "休業",
+    "hours.unknown": "営業時間不明"
+  }
+}
