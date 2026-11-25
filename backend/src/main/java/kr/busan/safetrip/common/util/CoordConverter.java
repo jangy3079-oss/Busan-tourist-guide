@@ -20,7 +20,7 @@ public final class CoordConverter {
     private CoordConverter() {}
 
     /**
-     * x = 동쪽(가로, 수영·해운대는 약 39만~40만), y = 북쪽(세로, 약 18만~19만). 값이 없거나 대한민국 밖이면 거절한다.
+     * x = 동쪽(가로, 수영·해운대는 약 39만~40만), y = 북쪽(세로, 약 18만~19만). 0 이하(빈 값)이거나 대한민국 밖이면 거절한다.
      * x·y 를 바꿔 넣으면 경기도로 나와 여기서는 못 거른다. 적재할 때 대상 지역 안인지 확인해야 한다.
      */
     public static LatLng epsg5174ToWgs84(double x, double y) {
@@ -50,7 +50,7 @@ public final class CoordConverter {
             la = Math.atan2(wz + WGS_E2 * w * Math.sin(la), p);
         }
         double outLat = Math.toDegrees(la), outLng = Math.toDegrees(Math.atan2(wy, wx));
-        if (!(outLat > 32 && outLat < 39.5 && outLng > 123.5 && outLng < 132.5)) {
+        if (!(x > 0 && y > 0 && outLat > 32 && outLat < 39.5 && outLng > 123.5 && outLng < 132.5)) {
             throw new IllegalArgumentException("EPSG:5174 좌표가 대한민국 범위를 벗어남");
         }
         return new LatLng(outLat, outLng);

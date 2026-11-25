@@ -24,7 +24,8 @@ class CoordConverterTest {
 
     @Test
     void rejectsOutOfKorea() {
-        assertThrows(IllegalArgumentException.class, () -> CoordConverter.epsg5174ToWgs84(0, 0));
+        assertThrows(IllegalArgumentException.class, () -> CoordConverter.epsg5174ToWgs84(0, 0)); // 빈 좌표
+        assertThrows(IllegalArgumentException.class, () -> CoordConverter.epsg5174ToWgs84(2_000_000, 500_000));
         assertThrows(IllegalArgumentException.class, () -> CoordConverter.epsg5174ToWgs84(Double.NaN, 1));
     }
 }
