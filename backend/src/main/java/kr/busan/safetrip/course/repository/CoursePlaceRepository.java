@@ -1,5 +1,6 @@
 package kr.busan.safetrip.course.repository;
 
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -36,4 +37,22 @@ public interface CoursePlaceRepository extends Repository<Place, Long> {
             ORDER BY e.embedding <=> CAST(CAST(:vec AS text) AS vector) NULLS LAST, p.content_id
             """, nativeQuery = true)
     List<Place> candidates(@Param("addr") String addr, @Param("dow") int dayOfWeek, @Param("vec") String vec);
+
+    /** 방문일에 여는 시간(분). 전날 자정을 넘겨 여는 시간은 -1440 해서 넣는다(전날 18:00~26:00 → -360~120) */
+    @Query(value = """
+            SELECT p.content_id AS contentId,
+                   CASE WHEN h.day_of_week = :dow THEN h.open_min ELSE h.open_min - 1440 END AS openMin,
+                   CASE WHEN h.day_of_week = :dow THEN h.close_min ELSE h.close_min - 1440 END AS closeMin
+            FROM place_hours h JOIN place p ON p.id = h.place_id
+            WHERE p.content_id IN (:ids) AND (h.day_of_week = :dow OR (h.day_of_week = :prev AND h.close_min > 1440))
+            """, nativeQuery = true)
+    List<OpenSpan> hours(@Param("ids") Collection<String> contentIds, @Param("dow") int dayOfWeek, @Param("prev") int previousDay);
+
+    interface OpenSpan {
+        String getContentId();
+
+        int getOpenMin();
+
+        int getCloseMin();
+    }
 }

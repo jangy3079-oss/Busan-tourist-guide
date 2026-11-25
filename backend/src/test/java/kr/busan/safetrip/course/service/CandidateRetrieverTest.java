@@ -63,6 +63,20 @@ class CandidateRetrieverTest {
         assertEquals(List.of("p21", "p22", "p23"), r.subList(12, 15)); // 카페 3곳 + 순위대로 12곳
     }
 
+    /** FR-C002 실내 조건: 실내 분류만, 코드가 없으면 뺀다 */
+    @Test
+    void indoorFilter() {
+        List<Place> all = new java.util.ArrayList<>();
+        for (String code : new String[]{"NA020900", "FD010100", "VE010200", "VE070600", null}) {
+            Place p = place(String.valueOf(code), "관광지");
+            when(p.getLclsCode()).thenReturn(code);
+            all.add(p);
+        }
+        when(repo.candidates("수영구", 5, null)).thenReturn(all);
+        assertEquals(5, retriever.retrieve(intent(List.of(), null, null)).size());
+        assertEquals(List.of("FD010100", "VE070600"), ids(retriever.retrieve(intent(List.of(), null, null).withIndoor(true))));
+    }
+
     @Test
     void fallsBackWithoutVector() {
         when(embeddings.embed(anyString())).thenThrow(new IllegalStateException());

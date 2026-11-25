@@ -28,7 +28,8 @@ public class CourseSettings {
                          List<String> categories, Map<Area, String> areaAddress,
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
-                         int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise) {}
+                         int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise,
+                         List<String> indoorCodes, List<String> indoorKeywords) {}
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private final Intent intent = read("/course/intent.json", new TypeReference<>() {});

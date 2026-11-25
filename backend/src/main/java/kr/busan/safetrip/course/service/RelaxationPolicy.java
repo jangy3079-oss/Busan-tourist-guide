@@ -30,6 +30,7 @@ public class RelaxationPolicy {
         IntentParser.Intent r = switch (key) {
             case "categories" -> i.with(i.visitDate(), i.startTime(), i.durationMin(), i.area(), List.of(), i.startPlaceId());
             case "area" -> i.with(i.visitDate(), i.startTime(), i.durationMin(), null, i.categories(), i.startPlaceId());
+            case "indoor" -> i.withIndoor(false);
             default -> throw new IllegalStateException("모르는 완화 단계: " + key);
         };
         return new Relaxed(r, key);
