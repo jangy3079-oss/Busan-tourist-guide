@@ -14,8 +14,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "safetrip")
 public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors cors, Retention retention) {
 
-    /** NFR-C005: provider 값만 바꿔 Ollama <-> OpenAI 교체 */
-    public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int maxRetry, long monthlyBudgetKrw,
+    /** NFR-C005: provider 값만 바꿔 Ollama <-> OpenAI <-> Claude 교체. timeoutSec = 한 번, totalTimeoutSec = 재시도까지 합친 한도 */
+    public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int totalTimeoutSec, int maxRetry, long monthlyBudgetKrw,
                      double inputKrwPerMTok, double outputKrwPerMTok) {}
 
     /** ADR-C05: 임베딩 모델. dimension 은 place_embedding 의 vector 차원과 같아야 한다. LLM 설정과 따로 둔다 */
