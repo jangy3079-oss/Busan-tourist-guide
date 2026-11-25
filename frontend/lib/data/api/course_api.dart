@@ -9,12 +9,12 @@ class ApiCourseRepository implements CourseRepository {
   ApiCourseRepository(this.api);
 
   @override
-  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides}) async =>
-      _result(await api.post('/courses', {'query': query, 'lang': langCode(lang), 'startPlaceId': startPlaceId, 'overrides': _overrides(overrides)}));
+  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides, bool notEmergency = false}) async =>
+      _result(await api.post('/courses', {'query': query, 'lang': langCode(lang), 'startPlaceId': startPlaceId, 'overrides': _overrides(overrides), if (notEmergency) 'notEmergency': true}));
 
   @override
-  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId}) async =>
-      _result(await api.post('/courses/$courseId/edits', {'text': text, 'lang': langCode(lang), 'overrides': _overrides(overrides), 'startPlaceId': startPlaceId}));
+  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId, bool notEmergency = false}) async =>
+      _result(await api.post('/courses/$courseId/edits', {'text': text, 'lang': langCode(lang), 'overrides': _overrides(overrides), 'startPlaceId': startPlaceId, if (notEmergency) 'notEmergency': true}));
 
   Map<String, dynamic>? _overrides(CourseOverrides? o) => o == null
       ? null

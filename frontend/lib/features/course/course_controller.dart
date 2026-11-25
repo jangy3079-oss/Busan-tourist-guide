@@ -60,19 +60,20 @@ class CourseController extends Notifier<CourseState> {
   void clearHint() => state = state.copy(emergencyHint: null, editNotice: null, editError: null);
 
   /// API-C01 → (OK면) API-C02. 결과 화면의 칩·출발 장소 변경은 API-C03(changeAssumption/changeStartPlace)
-  Future<void> start(String text, {String? startPlaceId, List<ChatMsg>? seedChat, CourseOverrides? overrides}) async {
+  Future<void> start(String text, {String? startPlaceId, List<ChatMsg>? seedChat, CourseOverrides? overrides, bool notEmergency = false}) async {
     final my = ++_token;
     _previous = null;
     final startId = startPlaceId ?? state.startPlace?.contentId;
     final lang = ref.read(langProvider);
-    _retry = () => start(text, startPlaceId: startPlaceId, seedChat: seedChat, overrides: overrides);
+    _retry = () => start(text, startPlaceId: startPlaceId, seedChat: seedChat, overrides: overrides, notEmergency: notEmergency);
+    _continue = () => start(text, startPlaceId: startPlaceId, seedChat: seedChat, overrides: overrides, notEmergency: true);
     state = state.copy(
       chat: seedChat ?? [ChatMsg(text, me: true), ChatMsg(ct('finding', lang), typing: true)],
       loading: true, course: null, narration: null, narrationFailed: false, error: null, emergencyHint: null, lastText: text,
       startPlace: startPlaceId != null ? null : state.startPlace);
     final CourseResult res;
     try {
-      res = await ref.read(courseRepoProvider).create(text, lang, startPlaceId: startId, overrides: overrides);
+      res = await ref.read(courseRepoProvider).create(text, lang, startPlaceId: startId, overrides: overrides, notEmergency: notEmergency);
     } catch (e) {
       if (my == _token) state = state.copy(loading: false, error: e, chat: [for (final m in state.chat) if (!m.typing) m]);
       return;
@@ -90,7 +91,8 @@ class CourseController extends Notifier<CourseState> {
     _narrate(my);
   }
 
-  Future<void> edit(String text) async {
+  Future<void> edit(String text, {bool notEmergency = false}) async {
+    _continue = () => edit(text, notEmergency: true);
     final my = ++_token;
     final before = state.course;
     state = state.copy(emergencyHint: null, editError: null, lastText: text);
@@ -98,7 +100,7 @@ class CourseController extends Notifier<CourseState> {
     state = state.copy(editing: true, replanning: false);
     final CourseResult res;
     try {
-      res = await ref.read(courseRepoProvider).edit(before.id, ref.read(langProvider), text: text);
+      res = await ref.read(courseRepoProvider).edit(before.id, ref.read(langProvider), text: text, notEmergency: notEmergency);
     } catch (e) {
       _editFailed(my, e);
       return;
@@ -177,7 +179,10 @@ class CourseController extends Notifier<CourseState> {
 
   bool get canRevert => _previous != null;
 
-  void Function()? _retry;
+  void Function()? _retry, _continue;
+
+  /// 긴급 확인 시트에서 "코스 계속 만들기": 같은 문장을 긴급이 아니라고 알리고 다시 보낸다 (FR-C013)
+  void continueCourse() => _continue?.call();
 
   /// 실패한 코스 요청을 같은 내용으로 다시 보낸다
   void retry() => _retry?.call();

@@ -36,7 +36,10 @@ Future<void> handleCourseEmergency(BuildContext context, WidgetRef ref, EmType t
         _openEmergency(context, ref, text, submit: false);
       }),
       const SizedBox(height: 8),
-      Btn(tr('bStay', l), onTap: () => Navigator.of(context).pop()),
+      Btn(tr('bStay', l), onTap: () {
+        Navigator.of(context).pop();
+        ref.read(courseProvider.notifier).continueCourse();
+      }),
     ]),
   );
 }
