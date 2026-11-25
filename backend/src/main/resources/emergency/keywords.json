@@ -1,0 +1,147 @@
+{
+  "_comment": "위급 키워드 사전(DATA-E10). 근거: 응급의료에 관한 법률 시행규칙 별표 1 응급증상 + 팀 추가. 수정 후 API-E05로 다시 읽음(FR-E022).",
+  "priority": ["URGENT", "FIRE", "THREAT", "WAY", "LOST", "MILD"],
+  "urgentTypes": ["URGENT", "FIRE", "THREAT"],
+  "groups": [
+    {
+      "type": "URGENT",
+      "group": "UNCONSCIOUS",
+      "ko": ["쓰러졌", "쓰러져", "의식이 없", "의식 없", "의식을 잃", "기절했", "기절해", "실신", "깨어나지 않", "정신을 잃"],
+      "en": ["fainted", "unconscious", "passed out", "collapsed", "not responding", "unresponsive", "lost consciousness", "blacked out"],
+      "ja": ["倒れて", "倒れました", "倒れた", "意識がな", "意識を失", "気絶", "失神", "反応がな"]
+    },
+    {
+      "type": "URGENT",
+      "group": "BREATHING",
+      "ko": ["숨을 안 쉬", "숨 안 쉬", "숨을 못 쉬", "숨이 안 쉬", "숨쉬기 힘들", "숨쉬기 어렵", "호흡곤란", "숨이 막혀", "질식", "목에 걸려"],
+      "en": ["not breathing", "can't breathe", "cannot breathe", "cant breathe", "stopped breathing", "difficulty breathing", "choking", "suffocating"],
+      "ja": ["息をしていな", "息をしていませ", "息ができ", "呼吸困難", "息苦し", "窒息", "喉に詰ま"]
+    },
+    {
+      "type": "URGENT",
+      "group": "CARDIAC_ARREST",
+      "ko": ["심정지", "심장이 멈", "심장이 안 뛰", "심폐소생술", "맥박이 없", "제세동기"],
+      "en": ["cardiac arrest", "heart stopped", "no pulse", "need cpr", "defibrillator"],
+      "ja": ["心停止", "心臓が止ま", "脈がな", "心肺蘇生"]
+    },
+    {
+      "type": "URGENT",
+      "group": "CHEST_PAIN",
+      "ko": ["가슴이 아파", "가슴 통증", "흉통", "가슴을 쥐어짜", "심장마비", "뇌졸중", "말이 어눌"],
+      "en": ["chest pain", "heart attack", "having a stroke", "stroke symptoms", "slurred speech"],
+      "ja": ["胸が痛", "胸の痛み", "胸痛", "心臓発作", "脳卒中"]
+    },
+    {
+      "type": "URGENT",
+      "group": "SEIZURE",
+      "ko": ["경련", "발작", "거품을 물", "간질"],
+      "en": ["seizure", "convulsion", "convulsing", "having a fit"],
+      "ja": ["けいれん", "痙攣", "発作", "泡を吹"]
+    },
+    {
+      "type": "URGENT",
+      "group": "BLEEDING",
+      "ko": ["피가 안 멈", "피가 멈추지", "피가 계속", "대량 출혈", "심한 출혈", "피를 토", "토혈", "각혈"],
+      "en": ["won't stop bleeding", "wont stop bleeding", "not stop bleeding", "heavy bleeding", "severe bleeding", "bleeding heavily", "vomiting blood"],
+      "ja": ["血が止まら", "出血が止まら", "大量出血", "吐血", "喀血", "血を吐"]
+    },
+    {
+      "type": "URGENT",
+      "group": "SEVERE_BURN",
+      "ko": ["심한 화상", "화상을 입", "크게 데였", "불에 데였", "전신 화상"],
+      "en": ["severe burn", "badly burned", "third degree burn", "serious burn"],
+      "ja": ["ひどいやけど", "重度のやけど", "大やけど", "ひどい火傷"]
+    },
+    {
+      "type": "URGENT",
+      "group": "TRAUMA",
+      "ko": ["뼈가 부러", "골절", "머리를 심하게", "머리를 다쳤", "교통사고", "차에 치였", "추락", "칼에 찔"],
+      "en": ["broken bone", "fractured", "hit by a car", "car accident", "head injury", "fell from", "been stabbed"],
+      "ja": ["骨が折れ", "骨折", "車にひかれ", "交通事故", "頭を強く打", "転落", "刺され"]
+    },
+    {
+      "type": "URGENT",
+      "group": "POISONING",
+      "ko": ["약물 과다", "약을 너무 많이", "독극물", "농약", "세제를 마셨", "일산화탄소"],
+      "en": ["overdose", "swallowed poison", "poisoned", "carbon monoxide", "took too many pills"],
+      "ja": ["薬物過剰", "過剰摂取", "薬を飲みすぎ", "毒を飲", "一酸化炭素"]
+    },
+    {
+      "type": "URGENT",
+      "group": "ANAPHYLAXIS",
+      "ko": ["아나필락시스", "얼굴이 부어", "얼굴이 부었", "얼굴이 붓", "목이 부어", "목이 부었", "목이 붓", "입술이 부어", "입술이 부었", "심한 알레르기"],
+      "en": ["anaphylaxis", "face is swelling", "throat is swelling", "swollen throat", "severe allergic", "epipen"],
+      "ja": ["アナフィラキシー", "顔が腫れ", "喉が腫れ", "唇が腫れ", "重度のアレルギー"]
+    },
+    {
+      "type": "URGENT",
+      "group": "EYE_EMERGENCY",
+      "ko": ["눈에 화학물질", "눈에 세제", "눈에 락스", "갑자기 안 보여", "갑자기 눈이 안", "시력을 잃"],
+      "en": ["chemical in eye", "chemical in my eye", "bleach in eye", "sudden vision loss", "suddenly blind"],
+      "ja": ["目に薬品", "目に化学物質", "急に目が見えな", "突然見えな", "視力を失"]
+    },
+    {
+      "type": "URGENT",
+      "group": "SELF_HARM",
+      "ko": ["자살", "극단적 선택", "손목을 그었", "뛰어내리려", "목숨을 끊"],
+      "en": ["suicide", "kill myself", "slit wrist", "self harm"],
+      "ja": ["自殺", "手首を切", "飛び降りよう", "命を絶"]
+    },
+    {
+      "type": "URGENT",
+      "group": "DROWNING",
+      "ko": ["물에 빠졌", "바다에 빠졌", "익수", "파도에 휩쓸", "물에 떠내려"],
+      "en": ["drowning", "fell into the water", "fell into the sea", "swept out to sea"],
+      "ja": ["溺れ", "海に落ち", "水に落ち", "波にさらわれ"]
+    },
+    {
+      "type": "FIRE",
+      "group": "FIRE",
+      "ko": ["불이 났", "불났", "불이 번", "불이 붙", "불길", "화재", "연기가 나", "연기가 심", "연기가 자욱", "폭발", "가스 냄새", "가스 누출", "지진", "해일", "쓰나미"],
+      "en": ["there is a fire", "is on fire", "caught fire", "fire broke out", "hotel fire", "building fire", "fire alarm", "smell smoke", "thick smoke", "explosion", "gas leak", "smell gas", "earthquake", "tsunami"],
+      "ja": ["火事", "火災", "火が出", "燃えてい", "煙が出", "煙が充満", "爆発", "ガス漏れ", "ガスの臭い", "ガス臭い", "地震", "津波", "避難警報"]
+    },
+    {
+      "type": "THREAT",
+      "group": "THREAT",
+      "ko": ["따라와", "따라오", "뒤쫓아", "쫓아와", "스토킹", "스토커", "폭행", "때렸", "추행", "성추행", "위협", "납치", "흉기", "칼을 들", "칼로 위협"],
+      "en": ["following me", "chasing me", "stalking me", "assaulted", "attacked me", "punched me", "beat me up", "harassing me", "groped", "threatening me", "threatened me", "kidnapped", "has a knife", "with a knife", "has a gun"],
+      "ja": ["つけられて", "後をつけ", "ストーカー", "暴行", "殴られ", "襲われ", "痴漢", "セクハラ", "脅され", "脅迫", "誘拐", "拉致", "ナイフを持", "刃物"]
+    },
+    {
+      "type": "WAY",
+      "group": "WAY",
+      "ko": ["길을 잃", "길 잃", "숙소를 못 찾", "호텔을 못 찾", "길을 모르", "어디인지 모르", "말이 안 통", "한국어가 안 통", "소통이 안", "돌아가는 길을 모르"],
+      "en": ["i'm lost", "i’m lost", "im lost", "i am lost", "got lost", "lost my way", "can't find my hotel", "cant find my hotel", "cannot find my hotel", "don't speak korean", "language barrier"],
+      "ja": ["道に迷", "迷子", "ホテルが見つから", "宿が見つから", "帰り道がわから", "どこにいるかわから", "言葉が通じな", "日本語が通じな", "韓国語がわからな", "通じません"]
+    },
+    {
+      "type": "LOST",
+      "group": "STOLEN",
+      "ko": ["도난", "소매치기", "훔쳐", "훔쳤", "도둑맞", "털렸", "날치기"],
+      "en": ["stolen", "pickpocket", "stole my", "robbed", "mugged", "thief took", "snatched my"],
+      "ja": ["盗まれ", "スリにあ", "スリに遭", "スリ被害", "スリされた", "盗難", "ひったくり", "奪われ", "置き引き", "盗られた"]
+    },
+    {
+      "type": "LOST",
+      "group": "LOST",
+      "ko": ["잃어버렸", "잃어버려", "분실", "지갑을 잃", "여권을 잃", "휴대폰을 잃", "폰을 잃", "가방을 잃", "두고 내렸"],
+      "en": ["lost my", "i lost", "misplaced my", "missing passport", "missing wallet", "left my bag", "left my phone", "left my wallet", "left my passport"],
+      "ja": ["紛失", "なくしてしま", "なくしました", "なくした", "財布をなく", "パスポートをなく", "携帯をなく", "スマホをなく", "落としてしま"]
+    },
+    {
+      "type": "MILD",
+      "group": "NEEDS_MEDS",
+      "ko": ["복통", "배가 아파", "배가 아프", "배아파", "설사", "가벼운 상처", "찰과상", "두드러기", "피부 발진", "벌레 물렸", "벌레에 물"],
+      "en": ["stomachache", "abdominal cramps", "stomach pain", "abdominal pain", "diarrhea", "minor cut", "small cut", "hives", "skin rash", "bug bite", "insect bite"],
+      "ja": ["腹痛", "お腹が痛", "おなかが痛", "下痢", "軽い傷", "すり傷", "擦り傷", "じんましん", "蕁麻疹", "虫刺され", "虫に刺され"]
+    },
+    {
+      "type": "MILD",
+      "group": "GENERAL",
+      "ko": ["열이 나", "열이 있", "열이 많", "열나요", "고열", "미열", "두통", "머리가 아파", "머리가 아프", "소화불량", "소화가 안", "체했어요", "근육통", "감기 걸렸", "감기 기운", "목이 아파", "몸살"],
+      "en": ["fever", "headache", "indigestion", "muscle pain", "muscle ache", "sore throat", "have a cold", "caught a cold", "runny nose", "body ache"],
+      "ja": ["熱があ", "熱が出", "高熱", "発熱", "微熱", "頭痛", "頭が痛", "消化不良", "胃もたれ", "筋肉痛", "風邪", "喉が痛"]
+    }
+  ]
+}
