@@ -9,6 +9,8 @@
   "taxiMPerMin": 400,
   "taxiBaseMin": 5,
   "detour": 1.3,
+  "maxNodes": 300000,
+  "wStop": 1.0,
   "wRank": 1.0,
   "wDistPerKm": 0.3,
   "wWantedCategory": 0.8

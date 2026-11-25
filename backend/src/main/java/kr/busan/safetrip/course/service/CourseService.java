@@ -176,7 +176,8 @@ public class CourseService {
             if (!excluded.contains(st.contentId())) places.findByContentId(st.contentId()).ifPresent(kept::add);
         }
         IntentParser.Intent intent = new IntentParser.Intent(date, time, dur, area, cats, start, false, Optional.empty())
-                .withPreference(preference(prevPlan, cats.isEmpty() ? null : PiiMasker.mask(req.text())));
+                .withPreference(preference(prevPlan, cats.isEmpty() ? null : PiiMasker.mask(req.text())))
+                .withIndoor(a.containsKey("indoor"));
         List<CourseDtos.Assumption> assumptions = assumptions(lang, intent, dDef, tDef, mDef, aDef);
 
         List<String> relaxed = new ArrayList<>();
@@ -243,16 +244,28 @@ public class CourseService {
     /** FR-C007 탐색 → 안 되면 relaxOrder 순서로 하나씩 풀고 다시 탐색. 푼 항목은 relaxed 에 문구로 쌓는다 */
     private List<CourseDtos.Stop> search(IntentParser.Intent intent, Lang lang, List<String> relaxed,
                                          Function<IntentParser.Intent, List<Place>> candidates) {
-        List<CourseDtos.Stop> stops = planner.plan(intent, candidates.apply(intent));
+        List<CourseDtos.Stop> stops = plan(intent, candidates);
         for (int step = 0; stops.isEmpty(); step++) {
             RelaxationPolicy.Relaxed r = relaxation.relax(intent, step);
             if (r == null) break;
             if (r.intent().equals(intent)) continue; // 이미 풀려 있던 조건
             intent = r.intent();
             relaxed.add(settings.msg(lang, "relax." + r.key()));
-            stops = planner.plan(intent, candidates.apply(intent));
+            stops = plan(intent, candidates);
         }
         return stops;
+    }
+
+    /** 후보와 방문일 영업시간을 모아 순수 함수인 탐색기에 넘긴다 */
+    private List<CourseDtos.Stop> plan(IntentParser.Intent intent, Function<IntentParser.Intent, List<Place>> candidates) {
+        List<Place> pool = candidates.apply(intent);
+        if (pool.isEmpty()) return List.of();
+        int dow = intent.visitDate().getDayOfWeek().getValue();
+        Map<String, List<int[]>> open = new HashMap<>();
+        for (CoursePlaceRepository.OpenSpan h : coursePlaces.hours(pool.stream().map(Place::getContentId).toList(), dow, dow == 1 ? 7 : dow - 1)) {
+            open.computeIfAbsent(h.getContentId(), k -> new ArrayList<>()).add(new int[]{h.getOpenMin(), h.getCloseMin()});
+        }
+        return planner.plan(intent, pool, open);
     }
 
     /** 새 버전 저장(질의는 마스킹 값만, NFR-C003). result 에 응답 JSON 을 넣어 수정·설명이 다시 읽는다 */
@@ -291,13 +304,15 @@ public class CourseService {
                                                     boolean dDef, boolean tDef, boolean mDef, boolean aDef) {
         String hm = String.format("%02d:%02d", i.startTime().getHour(), i.startTime().getMinute());
         int m = i.durationMin();
-        return List.of(
+        List<CourseDtos.Assumption> r = new ArrayList<>(List.of(
                 new CourseDtos.Assumption("visitDate", i.visitDate().toString(), dDef ? settings.msg(lang, "today") : i.visitDate().toString(), dDef),
                 new CourseDtos.Assumption("startTime", hm, tDef ? settings.msg(lang, "now", hm) : hm, tDef),
                 new CourseDtos.Assumption("durationMin", String.valueOf(m),
                         m % 60 == 0 ? settings.msg(lang, "hours", m / 60) : settings.msg(lang, "minutes", m), mDef),
                 new CourseDtos.Assumption("area", i.area() == null ? null : i.area().name(),
-                        settings.msg(lang, "area." + (i.area() == null ? "ALL" : i.area().name())), aDef));
+                        settings.msg(lang, "area." + (i.area() == null ? "ALL" : i.area().name())), aDef)));
+        if (i.indoorOnly()) r.add(new CourseDtos.Assumption("indoor", "true", settings.msg(lang, "indoor"), false)); // 말했을 때만 보인다
+        return r;
     }
 
     private CourseDtos.CourseResponse emergency(Lang lang, EmType type) {
@@ -306,7 +321,7 @@ public class CourseService {
 
     private CourseDtos.CourseResponse noCourse(Lang lang) {
         return notice(Status.NO_COURSE, new CourseDtos.Notice(null, settings.msg(lang, "noCourse"), List.of(),
-                List.of(settings.msg(lang, "suggestLonger"), settings.msg(lang, "suggestArea"))));
+                List.of(settings.msg(lang, "suggestLonger"), settings.msg(lang, "suggestStart"), settings.msg(lang, "suggestArea"))));
     }
 
     private static CourseDtos.CourseResponse notice(Status status, CourseDtos.Notice n) {

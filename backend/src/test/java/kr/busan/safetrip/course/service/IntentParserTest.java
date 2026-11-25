@@ -54,6 +54,15 @@ class IntentParserTest {
     }
 
     @Test
+    void indoorOnly() {
+        assertTrue(parser("{\"indoorOnly\":true}").parse("비 오는 날 해운대", TODAY).indoorOnly());
+        assertFalse(parser("{}").parse("해운대 산책", TODAY).indoorOnly());
+        assertTrue(parser(null).parse("비 오는 날 해운대 실내 코스", TODAY).indoorOnly()); // 규칙 대체
+        assertTrue(parser(null).parse("Rainy day in Haeundae", TODAY).indoorOnly());
+        assertFalse(parser(null).parse("해운대 열차 training", TODAY).indoorOnly());
+    }
+
+    @Test
     void rulesWhenLlmDown() {
         IntentParser.Intent i = parser(null).parse("광안리에서 바다 보면서 3시간, 저녁은 회", TODAY);
         assertEquals(Area.GWANGALLI, i.area());

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -63,11 +64,32 @@ class CourseServiceTest {
             return p;
         });
         when(plans.findById(anyLong())).thenAnswer(inv -> Optional.ofNullable(saved.get(inv.<Long>getArgument(0))));
+        CoursePlaceRepository coursePlaces = mock(CoursePlaceRepository.class);
+        when(coursePlaces.hours(any(), anyInt(), anyInt())).thenAnswer(inv -> byId.keySet().stream().map(CourseServiceTest::allDay).toList());
         NarrationService narration = new NarrationService(req -> { throw new RuntimeException("down"); }, places,
                 mock(CoursePlaceRepository.class), new OutputValidator(), settings);
         service = new CourseService(parser, retriever, new CoursePlanner(), narration, new RelaxationPolicy(settings), settings,
-                plans, mock(CoursePlaceRepository.class), places, new ObjectMapper(),
+                plans, coursePlaces, places, new ObjectMapper(),
                 Clock.fixed(Instant.parse("2026-11-13T05:00:00Z"), ZoneId.of("Asia/Seoul"))); // 14:00 KST
+    }
+
+    private static CoursePlaceRepository.OpenSpan allDay(String id) {
+        return new CoursePlaceRepository.OpenSpan() {
+            public String getContentId() { return id; }
+            public int getOpenMin() { return 0; }
+            public int getCloseMin() { return 1440; }
+        };
+    }
+
+    /** FR-C002 실내 조건은 칩으로 보이고, 수정해도 이어진다 */
+    @Test
+    void indoorIsKeptOnEdit() {
+        CourseDtos.CourseResponse c = service.create(new CourseDtos.CreateRequest("비 오는 날 광안리 실내 4시간", "ko", null, null));
+        assertTrue(searched.get(0).indoorOnly());
+        assertTrue(c.assumptions().stream().anyMatch(a -> a.key().equals("indoor") && a.label().equals("실내 위주")), c.toString());
+        searched.clear();
+        service.edit(c.courseId(), new CourseDtos.EditRequest("2번 빼줘", "ko", null, null));
+        assertTrue(searched.get(0).indoorOnly());
     }
 
     private static Place place(String id, String cat, double lat, double lng) {

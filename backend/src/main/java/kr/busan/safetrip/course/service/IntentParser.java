@@ -40,21 +40,26 @@ public class IntentParser {
     /**
      * 코스 조건. null = 문장에 없었음(CourseService 가 기본값·칩 값으로 채움, FR-C003).
      * area = null 이면 권역 전체, categories = 꼭 넣어야 할 장소 유형, startPlaceId = 1번 고정(FR-C014).
+     * indoorOnly = 실내 장소만(FR-C002).
      * preference = 취향 문장(마스킹한 요청 문장, FR-C005 벡터 검색용). null 이면 벡터 순위를 쓰지 않는다.
      */
     public record Intent(LocalDate visitDate, LocalTime startTime, Integer durationMin, Area area,
-                         List<String> categories, String startPlaceId, boolean outOfScope, Optional<EmType> emergency, String preference) {
+                         List<String> categories, String startPlaceId, boolean outOfScope, Optional<EmType> emergency, String preference, boolean indoorOnly) {
         public Intent(LocalDate visitDate, LocalTime startTime, Integer durationMin, Area area,
                       List<String> categories, String startPlaceId, boolean outOfScope, Optional<EmType> emergency) {
-            this(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, null);
+            this(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, null, false);
         }
 
         public Intent with(LocalDate d, LocalTime t, Integer dur, Area a, List<String> cats, String start) {
-            return new Intent(d, t, dur, a, cats, start, outOfScope, emergency, preference);
+            return new Intent(d, t, dur, a, cats, start, outOfScope, emergency, preference, indoorOnly);
         }
 
         public Intent withPreference(String p) {
-            return new Intent(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, p);
+            return new Intent(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, p, indoorOnly);
+        }
+
+        public Intent withIndoor(boolean v) {
+            return new Intent(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, preference, v);
         }
     }
 
@@ -192,7 +197,8 @@ public class IntentParser {
         LocalTime time = null;
         try { if (n.path("visitDate").isTextual()) date = LocalDate.parse(n.get("visitDate").asText()); } catch (Exception ignored) { }
         try { if (n.path("startTime").isTextual()) time = LocalTime.parse(n.get("startTime").asText()); } catch (Exception ignored) { }
-        return new Intent(date, time, dur, area, cats, null, n.path("outOfScope").asBoolean(false), Optional.empty());
+        return new Intent(date, time, dur, area, cats, null, n.path("outOfScope").asBoolean(false), Optional.empty())
+                .withIndoor(n.path("indoorOnly").asBoolean(false));
     }
 
     /** NFR-C002 규칙 대체: 시간·지역·장소 유형·범위 밖 키워드만 본다 */
@@ -211,7 +217,8 @@ public class IntentParser {
         cfg.categoryKeywords().forEach((cat, ks) -> {
             if (ks.stream().anyMatch(k -> t.contains(k.toLowerCase(Locale.ROOT)))) cats.add(cat);
         });
-        return new Intent(null, null, duration(t), area, cats, null, out, Optional.empty());
+        return new Intent(null, null, duration(t), area, cats, null, out, Optional.empty())
+                .withIndoor(cfg.indoorKeywords().stream().anyMatch(t::contains));
     }
 
     /** "3시간", "90분", "2 hours" → 분. 없으면 null */
