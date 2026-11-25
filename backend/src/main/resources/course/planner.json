@@ -1,6 +1,7 @@
 {
   "_comment": "코스 탐색 설정(NFR-C005). PoC 임시값 — 팀 확정 후 조정. 거리 m, 시간 분.",
   "minStops": 3,
+  "relaxedMinStops": 2,
   "maxStops": 5,
   "stayMin": { "관광지": 60, "문화시설": 60, "쇼핑": 40, "음식점": 60, "카페": 40 },
   "defaultStayMin": 45,

@@ -28,6 +28,7 @@ public class RelaxationPolicy {
         if (step >= order.size()) return null;
         String key = order.get(step);
         IntentParser.Intent r = switch (key) {
+            case "stops" -> i.withFewerStops();
             case "categories" -> i.with(i.visitDate(), i.startTime(), i.durationMin(), i.area(), List.of(), i.startPlaceId());
             case "area" -> i.with(i.visitDate(), i.startTime(), i.durationMin(), null, i.categories(), i.startPlaceId());
             case "indoor" -> i.withIndoor(false);

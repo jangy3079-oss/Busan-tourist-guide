@@ -253,6 +253,8 @@ public class CourseService {
             relaxed.add(settings.msg(lang, "relax." + r.key()));
             stops = plan(intent, candidates);
         }
+        // 장소 수를 줄여도 된다고 했지만 다른 조건을 풀어 원래 개수를 채웠으면 알리지 않는다
+        if (stops.size() >= planner.minStops()) relaxed.remove(settings.msg(lang, "relax.stops"));
         return stops;
     }
 

@@ -20,7 +20,7 @@
   "_indoor": "TourAPI 세부 분류 코드(lclsSystm3) 앞부분. 같은 분류에 실내·야외가 섞이면 넣지 않는다(전망대, 산업관광, 기타문화시설 등)",
   "indoorCodes": ["FD", "SH01", "SH04", "SH05", "EX0202", "EX0501", "EX0505", "VE0204", "VE0601", "VE0703", "VE0704", "VE0706", "VE0902", "VE0903", "VE1201"],
   "indoorKeywords": ["실내", "비 오", "비오는", "비가 오", "비가 와", "우천", "indoor", "rainy", " raining", " rains", "室内", "屋内", "雨"],
-  "relaxOrder": ["categories", "area", "indoor"],
+  "relaxOrder": ["stops", "categories", "area", "indoor"],
   "narrationMaxChars": 60,
   "titleMaxChars": 40,
   "promptLengthRatio": 0.75,

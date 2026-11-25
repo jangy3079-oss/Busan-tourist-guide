@@ -81,6 +81,38 @@ class CourseServiceTest {
         };
     }
 
+    /** FR-C007 1단계: 짧은 코스는 장소 수를 줄이고, 줄였다고 알린다 */
+    @Test
+    void shortCourseHasFewerStops() {
+        CourseDtos.CourseResponse c = service.create(new CourseDtos.CreateRequest("광안리 2시간 10분 산책", "ko", null,
+                new CourseDtos.Overrides(null, null, 130, null)));
+        assertEquals(2, c.stops().size(), c.toString());
+        assertEquals(List.of("장소 수를 줄임"), c.relaxed());
+    }
+
+    /** 없는 유형을 요청하면 유형을 푼다. 3곳을 채웠으므로 장소 수를 줄였다고 하지 않는다 */
+    @Test
+    void doesNotClaimFewerStopsWhenFull() {
+        CourseDtos.CourseResponse c = service.create(new CourseDtos.CreateRequest("광안리 4시간 쇼핑", "ko", null, null));
+        assertTrue(c.stops().size() >= 3, c.toString());
+        assertEquals(List.of("요청 장소 유형 조건 해제"), c.relaxed());
+    }
+
+    /** 완화는 정해진 4단계 순서다(FR-C007) */
+    @Test
+    void relaxesInFourSteps() {
+        RelaxationPolicy p = new RelaxationPolicy(new CourseSettings());
+        IntentParser.Intent i = new IntentParser.Intent(java.time.LocalDate.of(2026, 11, 13), java.time.LocalTime.NOON, 240,
+                kr.busan.safetrip.common.api.Area.GWANGALLI, List.of("카페"), null, false, Optional.empty()).withIndoor(true);
+        List<String> keys = new ArrayList<>();
+        for (int step = 0; p.relax(i, step) != null; step++) keys.add(p.relax(i, step).key());
+        assertEquals(List.of("stops", "categories", "area", "indoor"), keys);
+        assertTrue(p.relax(i, 0).intent().fewerStops());
+        assertTrue(p.relax(i, 1).intent().categories().isEmpty());
+        assertEquals(null, p.relax(i, 2).intent().area());
+        assertFalse(p.relax(i, 3).intent().indoorOnly());
+    }
+
     /** FR-C002 실내 조건은 칩으로 보이고, 수정해도 이어진다 */
     @Test
     void indoorIsKeptOnEdit() {
