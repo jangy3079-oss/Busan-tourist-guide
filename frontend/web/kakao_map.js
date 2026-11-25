@@ -42,30 +42,40 @@
   }
 
   function render(el, json, onTap) {
-    var o = JSON.parse(json);
-    var k = window.kakao.maps;
     el.style.width = '100%';
     el.style.height = '100%';
     // 보기 전용 지도는 입력을 받지 않는다. 받으면 페이지 스크롤과 위에 뜬 시트의 누르기를 지도가 가로챈다
     el.style.pointerEvents = onTap ? 'auto' : 'none';
     var st = maps.get(el);
     if (!st) {
-      st = { items: [], fit: function () {} };
+      st = { items: [] };
       maps.set(el, st);
-      var first = o.pins[0] || o.me;
-      st.map = new k.Map(el, { center: new k.LatLng(first ? first.lat : 35.1556, first ? first.lng : 129.1243), level: 5 });
-      // 화면에 붙기 전에 만들어져 크기가 0일 수 있으므로 크기가 바뀔 때마다 다시 맞춘다
-      st.observer = new ResizeObserver(function () { st.map.relayout(); st.fit(); });
+      // 화면에 붙기 전(크기 0)에 지도를 만들면 가운데가 왼쪽 위로 잡힌다. 크기가 생긴 뒤 만들고, 바뀌면 다시 맞춘다
+      st.observer = new ResizeObserver(function () { st.fitted = null; draw(el, st); });
       st.observer.observe(el);
+    }
+    st.options = JSON.parse(json);
+    st.onTap = onTap;
+    draw(el, st);
+  }
+
+  function draw(el, st) {
+    if (!el.clientWidth || !el.clientHeight) return;
+    var k = window.kakao.maps;
+    var o = st.options;
+    var ll = function (p) { return new k.LatLng(p.lat, p.lng); };
+    if (st.map) st.map.relayout();
+    else {
+      var first = o.pins[0] || o.me;
+      st.map = new k.Map(el, { center: first ? ll(first) : new k.LatLng(35.1556, 129.1243), level: 5 });
     }
     st.items.forEach(function (x) { x.setMap(null); });
     st.items = [];
-    var ll = function (p) { return new k.LatLng(p.lat, p.lng); };
     if (o.path.length > 1) {
       st.items.push(new k.Polyline({ map: st.map, path: o.path.map(ll), strokeWeight: 3, strokeColor: '#2563EB', strokeOpacity: 0.9, strokeStyle: 'shortdash' }));
     }
     o.pins.forEach(function (p, i) {
-      st.items.push(new k.CustomOverlay({ map: st.map, position: ll(p), content: pinEl(p, i, onTap), yAnchor: 1, zIndex: 10 + i }));
+      st.items.push(new k.CustomOverlay({ map: st.map, position: ll(p), content: pinEl(p, i, st.onTap), yAnchor: 1, zIndex: 10 + i }));
     });
     if (o.me) {
       var m = document.createElement('div');
@@ -73,14 +83,19 @@
       st.items.push(new k.CustomOverlay({ map: st.map, position: ll(o.me), content: m, yAnchor: 0.5 }));
     }
     var pts = o.pins.concat(o.me ? [o.me] : []);
-    st.fit = function () {
-      if (!pts.length) return;
-      if (pts.length === 1) { st.map.setCenter(ll(pts[0])); st.map.setLevel(4); return; }
+    // 핀을 골라 색만 바뀐 때는 사용자가 옮기고 확대한 화면을 유지한다
+    var where = pts.map(function (p) { return p.lat + ',' + p.lng; }).join(' ');
+    if (st.fitted === where) return;
+    st.fitted = where;
+    if (pts.length === 1) {
+      st.map.setCenter(ll(pts[0]));
+      st.map.setLevel(4);
+    } else if (pts.length) {
       var b = new k.LatLngBounds();
       pts.forEach(function (p) { b.extend(ll(p)); });
-      st.map.setBounds(b, 48, 28, 20, 28); // 핀과 이름이 잘리지 않게 여백
-    };
-    st.fit();
+      if (o.pins.some(function (p) { return p.name; })) st.map.setBounds(b, 56, 48, 20, 48); // 핀과 이름이 잘리지 않게 여백
+      else st.map.setBounds(b, 32, 16, 6, 16);
+    }
   }
 
   function dispose(el) {
