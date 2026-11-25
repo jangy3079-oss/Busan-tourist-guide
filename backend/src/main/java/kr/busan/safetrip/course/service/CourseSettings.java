@@ -19,7 +19,7 @@ import kr.busan.safetrip.common.api.Lang;
  * 상태: 완료
  * 수정 규칙: 코스 담당만 수정. 사진·긴급 담당은 수정 금지(필요하면 코스 담당에게 요청).
  *
- * resources/course/ 의 설정(intent.json)·문구(messages.json)·프롬프트(intent-prompt.txt)를 읽는다. 값은 코드가 아니라 파일에서 바꾼다.
+ * resources/course/ 의 설정(intent.json)·문구(messages.json)·프롬프트(*-prompt.txt)를 읽는다. 값은 코드가 아니라 파일에서 바꾼다.
  */
 @Component
 public class CourseSettings {
@@ -27,15 +27,20 @@ public class CourseSettings {
     public record Intent(int defaultDurationMin, int minDurationMin, int maxDurationMin, int topK,
                          List<String> categories, Map<Area, String> areaAddress,
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
-                         List<String> outOfScopeKeywords, List<String> relaxOrder) {}
+                         List<String> outOfScopeKeywords, List<String> relaxOrder,
+                         int narrationMaxChars, int titleMaxChars) {}
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private final Intent intent = read("/course/intent.json", new TypeReference<>() {});
     private final Map<String, Map<String, String>> messages = read("/course/messages.json", new TypeReference<>() {});
     private final String intentPrompt = text("/course/intent-prompt.txt");
+    private final String editPrompt = text("/course/edit-prompt.txt");
+    private final String narrationPrompt = text("/course/narration-prompt.txt");
 
     public Intent intent() { return intent; }
     public String intentPrompt() { return intentPrompt; }
+    public String editPrompt() { return editPrompt; }
+    public String narrationPrompt() { return narrationPrompt; }
 
     /** 다국어 문구. {0} 자리에 arg. 없는 키는 키 그대로 */
     public String msg(Lang lang, String key, Object... args) {

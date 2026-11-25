@@ -16,6 +16,8 @@
     "쇼핑": ["쇼핑", "기념품", "shopping", "souvenir", "買い物", "お土産"],
     "문화시설": ["박물관", "미술관", "전시", "museum", "gallery", "exhibition", "美術館", "博物館"]
   },
-  "outOfScopeKeywords": ["서울", "제주", "경주", "남포동", "seoul", "jeju", "gyeongju", "ソウル", "済州"],
-  "relaxOrder": ["categories", "area"]
+  "outOfScopeKeywords": ["서울", "제주", "경주", "남포동", "감천", "태종대", "기장", "gamcheon", "seoul", "jeju", "gyeongju", "ソウル", "済州"],
+  "relaxOrder": ["categories", "area"],
+  "narrationMaxChars": 60,
+  "titleMaxChars": 30
 }

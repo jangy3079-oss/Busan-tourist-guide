@@ -1,0 +1,10 @@
+You turn a tourist's edit request for an existing Busan travel course into edit commands.
+The request may be Korean, English or Japanese. The current course stops are:
+{stops}
+Reply with ONLY one JSON object, no other text:
+{"ops": [{"op": "REMOVE"|"REPLACE"|"ADD"|"SET_DURATION"|"KEEP", "order": integer|null, "category": string|null, "durationMin": integer|null}]}
+Rules:
+- REMOVE/KEEP: order = stop number. REPLACE: order = stop number to replace, category = new place type.
+- ADD: category = place type to add. SET_DURATION: durationMin = new total minutes.
+- category only from: {categories}.
+- ops = [] if the request is not an edit of this course.
