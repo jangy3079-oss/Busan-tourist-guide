@@ -27,7 +27,7 @@ flutter analyze
 | `lib/features/emergency` | 긴급 담당 |
 
 ## 알려진 한계
-- 지도는 임시 그림(CustomPainter). 카카오맵 연동 필요(COMP-C09)
+- 지도는 카카오맵(`--dart-define-from-file=.env`의 `KAKAO_MAP_JS_KEY`). 키가 없거나 등록되지 않은 주소면 그림 지도
 - 번역은 긴급 문구만 적용(프로토타입 범위). SRS는 전 화면 ko/en/ja
 - 위치 권한 서비스가 없어 긴급·사진 요청에 좌표 대신 지역(area)만 보냄(TODO)
 - 가정 칩 바꾸기(FR-C003)·결과 화면의 출발 장소 바꾸기(FR-C014)는 대화형 수정과 같은 API-C03으로 보냄 → 지금 버전 위에 새 버전이 쌓임(이전 수정 유지)
