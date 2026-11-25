@@ -24,10 +24,10 @@
 ### 오류 코드
 | code | HTTP | 언제 | 화면 처리 |
 |---|---|---|---|
-| `INVALID_INPUT` | 400 | 500자 초과, 빈 문장, 잘못된 lang·좌표 | 입력 안내(프론트에서 먼저 막는 것이 원칙) |
+| `INVALID_INPUT` | 400 (메서드 오류는 405) | 500자 초과, 빈 문장, 잘못된 lang·좌표·지역 값, 필수 값 없음, 본문 형식·Content-Type 오류 | 입력 안내(프론트에서 먼저 막는 것이 원칙) |
 | `UNSUPPORTED_MEDIA` | 415 | jpg/jpeg/png 아님 | 사진 형식 안내(FR-P002) |
 | `PAYLOAD_TOO_LARGE` | 413 | 사진 10MB 초과 | 사진 크기 안내(FR-P002) |
-| `NOT_FOUND` | 404 | 없는 courseId·contentId | 처음부터 다시 |
+| `NOT_FOUND` | 404 | 없는 courseId·contentId·경로 | 처음부터 다시 |
 | `AI_UNAVAILABLE` / `AI_TIMEOUT` | 503 / 504 | 재시도 후에도 LLM 실패이고 대체 경로도 없을 때(설명 API는 템플릿으로 대체하므로 보통 안 옴) | 일시 오류 안내 |
 | `UPSTREAM_UNAVAILABLE` | 503 | 외부 API(OCR 등) 실패 | 일시 오류 안내 |
 | `NOT_IMPLEMENTED` | 501 | 아직 구현 안 된 골격 | 개발 중에만 |
@@ -152,7 +152,7 @@
 | `POST /api/v1/admin/knowledge/ingest` | TourAPI 수집·운영시간 구조화. 한도로 멈추면 다음 실행 때 이어서 |
 | `POST /api/v1/admin/knowledge/name-norm` | 모든 장소 `name_norm` 재생성(정규화 규칙 변경 시) |
 | `GET /api/v1/admin/knowledge/status` | 진행 상황 |
-응답 `{"processed": 120, "remaining": 340, "failed": 2, "state": "RUNNING|PAUSED_QUOTA|DONE"}`
+응답 `{"processed": 120, "remaining": 340, "failed": 2, "state": "IDLE|RUNNING|PAUSED_QUOTA|FAILED|DONE"}`
 
 ---
 

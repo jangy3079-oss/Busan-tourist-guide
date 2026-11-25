@@ -39,8 +39,26 @@ public class Place {
     @Column(name = "hours_text", columnDefinition = "text")
     private String hoursText;
 
+    /** 휴무일 원문 */
+    @Column(name = "rest_text", columnDefinition = "text")
+    private String restText;
+
+    /** PARSED 면 place_hours 에 요일별 시간이 있다. 그 외는 운영시간 불확실(FR-C018) */
+    @Column(name = "hours_status")
+    private String hoursStatus;
+
     @Column(columnDefinition = "text")
     private String overview;
+
+    @Column(name = "content_type_id")
+    private Integer contentTypeId;
+
+    /** 대표 이미지(TourAPI firstimage)와 저작권 구분(Type1, Type3). 변경 금지 유형은 원본 그대로 표시(DATA-C04) */
+    @Column(name = "image_url", columnDefinition = "text")
+    private String imageUrl;
+
+    @Column(name = "image_copyright")
+    private String imageCopyright;
 
     @Column(name = "collected_at")
     private java.time.Instant collectedAt;
@@ -56,6 +74,11 @@ public class Place {
     public double getLat() { return lat; }
     public double getLng() { return lng; }
     public String getHoursText() { return hoursText; }
+    public String getRestText() { return restText; }
+    public String getHoursStatus() { return hoursStatus; }
     public String getOverview() { return overview; }
+    public Integer getContentTypeId() { return contentTypeId; }
+    public String getImageUrl() { return imageUrl; }
+    public String getImageCopyright() { return imageCopyright; }
     public java.time.Instant getCollectedAt() { return collectedAt; }
 }
