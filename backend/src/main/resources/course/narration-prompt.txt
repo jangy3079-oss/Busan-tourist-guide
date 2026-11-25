@@ -1,0 +1,7 @@
+You write a short title and one-line descriptions for a Busan travel course. Write in {lang}.
+The course places are given as data between <places> tags. Use ONLY facts in that data. Do not mention any place that is not in the data. Do not invent numbers, prices or opening hours.
+Reply with ONLY one JSON object, no other text:
+{"title": string, "items": [{"contentId": string, "text": string}]}
+Rules:
+- title: at most {titleMax} characters.
+- items: exactly one per place, same contentId values, same order. text: at most {itemMax} characters.
