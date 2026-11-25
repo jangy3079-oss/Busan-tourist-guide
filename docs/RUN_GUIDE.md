@@ -57,7 +57,7 @@ curl localhost:8080/api/v1/admin/knowledge/status              # state=DONE, pro
 ## 5. 시연 영상 촬영 전 확인
 - [ ] `main` 최신, `mvn test`와 `flutter test` 통과
 - [ ] 로컬 DB에 장소 349곳 (`/api/v1/admin/knowledge/status`)
-- [ ] 임베딩 모델을 한 번 불러 두기: `ollama run bge-m3` 또는 코스 요청 한 번
+- [ ] 임베딩 모델을 한 번 불러 두기: 코스 요청을 한 번 보내면 됨(첫 요청은 버림)
 - [ ] 카카오 지도가 보이는지 (`localhost:8099`)
 - [ ] 긴급 문장을 코스에 넣었을 때 긴급 화면으로 가는지 (#101)
 - [ ] **출발 시각은 낮으로.** '지금'을 기본값으로 쓰므로 밤에 찍으면 문 닫은 곳이 많아 코스가 짧아집니다. 문장에 "내일 오전 11시부터"처럼 시각을 넣거나 칩으로 바꿉니다
