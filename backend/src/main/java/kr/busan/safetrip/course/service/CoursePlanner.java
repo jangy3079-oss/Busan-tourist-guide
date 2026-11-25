@@ -121,8 +121,8 @@ public class CoursePlanner {
     }
 
     private static CourseDtos.Stop stop(int order, Place p, LocalTime arrive, LocalTime depart, CourseDtos.Move mv, boolean fixed) {
-        // ponytail: 운영시간 판정 전이라 원문이 없으면 '방문 전 확인'만 표시. HoursParser(공용) 완료 후 영업 중 필터 추가
-        boolean hoursUncertain = p.getHoursText() == null || p.getHoursText().isBlank();
+        // ponytail: 휴무 요일은 CandidateRetriever 가 거른다. 도착~출발 시각의 영업 여부는 아직 보지 않는다(#78)
+        boolean hoursUncertain = !"PARSED".equals(p.getHoursStatus());
         return new CourseDtos.Stop(order, p.getContentId(), p.getName(), p.getCategory(), p.getLat(), p.getLng(),
                 arrive.format(HM), depart.format(HM), mv, hoursUncertain, fixed, false);
     }

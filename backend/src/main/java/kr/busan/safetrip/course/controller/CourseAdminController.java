@@ -16,7 +16,7 @@ import kr.busan.safetrip.course.dto.CourseDtos;
 /**
  * [코스 담당] COMP-C01 CourseAdminController
  * 요구사항: FR-C017, C018, P020
- * 상태: 엔드포인트 골격
+ * 상태: 수집·상태 완료 / name-norm 은 사진 담당 NameNormalizer 이후(#135)
  * 수정 규칙: 코스 담당만 수정. 사진·긴급 담당은 수정 금지(필요하면 코스 담당에게 요청).
  *
  * 지식베이스 수집 관리자 API(API-C06). local-admin 프로필에서만 뜬다.
@@ -34,8 +34,7 @@ public class CourseAdminController {
     /** API-C06 TourAPI 수집·운영시간 구조화(중단 지점부터 재개) */
     @PostMapping("/ingest")
     public CourseDtos.IngestStatus ingest() {
-        throw new NotImplementedYetException("코스 담당", "CourseAdminController.ingest (KnowledgeIngestor 호출 후 상태 반환)");
-
+        return status(ingestor.ingest());
     }
 
     /** API-C06 name_norm 재생성(FR-P020) */
@@ -48,7 +47,10 @@ public class CourseAdminController {
     /** API-C06 진행 상황 */
     @GetMapping("/status")
     public CourseDtos.IngestStatus status() {
-        throw new NotImplementedYetException("코스 담당", "CourseAdminController.status");
+        return status(ingestor.status());
+    }
 
+    private static CourseDtos.IngestStatus status(KnowledgeIngestor.Status s) {
+        return new CourseDtos.IngestStatus(s.processed(), s.remaining(), s.failed(), s.state());
     }
 }

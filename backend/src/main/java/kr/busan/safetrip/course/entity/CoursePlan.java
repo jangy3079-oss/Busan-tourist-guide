@@ -45,6 +45,7 @@ public class CoursePlan {
     public void setResult(String result) { this.result = result; }
 
     public Long getId() { return id; }
+    public String getQueryText() { return queryText; }
     public Long getParentId() { return parentId; }
     public int getVersion() { return version; }
     public String getResult() { return result; }

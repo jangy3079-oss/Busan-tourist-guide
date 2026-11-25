@@ -38,11 +38,21 @@ public class IntentParser {
     /**
      * 코스 조건. null = 문장에 없었음(CourseService 가 기본값·칩 값으로 채움, FR-C003).
      * area = null 이면 권역 전체, categories = 꼭 넣어야 할 장소 유형, startPlaceId = 1번 고정(FR-C014).
+     * preference = 취향 문장(마스킹한 요청 문장, FR-C005 벡터 검색용). null 이면 벡터 순위를 쓰지 않는다.
      */
     public record Intent(LocalDate visitDate, LocalTime startTime, Integer durationMin, Area area,
-                         List<String> categories, String startPlaceId, boolean outOfScope, Optional<EmType> emergency) {
+                         List<String> categories, String startPlaceId, boolean outOfScope, Optional<EmType> emergency, String preference) {
+        public Intent(LocalDate visitDate, LocalTime startTime, Integer durationMin, Area area,
+                      List<String> categories, String startPlaceId, boolean outOfScope, Optional<EmType> emergency) {
+            this(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, null);
+        }
+
         public Intent with(LocalDate d, LocalTime t, Integer dur, Area a, List<String> cats, String start) {
-            return new Intent(d, t, dur, a, cats, start, outOfScope, emergency);
+            return new Intent(d, t, dur, a, cats, start, outOfScope, emergency, preference);
+        }
+
+        public Intent withPreference(String p) {
+            return new Intent(visitDate, startTime, durationMin, area, categories, startPlaceId, outOfScope, emergency, p);
         }
     }
 
