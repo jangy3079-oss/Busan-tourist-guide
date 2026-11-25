@@ -152,7 +152,7 @@
 | `POST /api/v1/admin/knowledge/ingest` | TourAPI 수집·운영시간 구조화. 한도로 멈추면 다음 실행 때 이어서 |
 | `POST /api/v1/admin/knowledge/name-norm` | 모든 장소 `name_norm` 재생성(정규화 규칙 변경 시) |
 | `GET /api/v1/admin/knowledge/status` | 진행 상황 |
-응답 `{"processed": 120, "remaining": 340, "failed": 2, "state": "RUNNING|PAUSED_QUOTA|DONE"}`
+응답 `{"processed": 120, "remaining": 340, "failed": 2, "state": "IDLE|RUNNING|PAUSED_QUOTA|FAILED|DONE"}`
 
 ---
 

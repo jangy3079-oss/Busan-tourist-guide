@@ -35,8 +35,14 @@ safetrip:
     input-krw-per-m-tok: ${AI_INPUT_KRW_PER_MTOK:0}        # 100만 토큰당 원. 유료인데 0 이면 호출을 막는다
     output-krw-per-m-tok: ${AI_OUTPUT_KRW_PER_MTOK:0}
   tour-api:
+    base-url: https://apis.data.go.kr/B551011/KorService2
     service-key: ${TOUR_API_KEY:}
     daily-quota: 1000
+    regions:              # 법정동 코드: 부산 26, 수영구 500, 해운대구 350
+      - { regn-cd: "26", signgu-cd: "500" }
+      - { regn-cd: "26", signgu-cd: "350" }
+    content-types: { 12: 관광지, 14: 문화시설, 38: 쇼핑, 39: 음식점 }
+    cafe-codes: [FD05]    # lclsSystm3 앞부분
   cors:
     allowed-origins:
       - http://localhost:8099

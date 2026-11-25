@@ -10,8 +10,8 @@ FR(257개 항목 중 C/P/E 기능요구)에는 없지만, SRS의 NFR·SDD 구조
 | A2 | **AI 월 비용 한도 가드**(초과 시 호출 차단/대체 경로) | NFR-C009, P007 | 완료(`AiBudget`) |
 | A3 | **입력 검증 공통화**: 500자·빈 문장·허용 lang, 오류→`ErrorResponse` 매핑(ERR-xxx 번호 확정) | SRS 오류 코드 | 완료(번호만 확정 필요) |
 | A4 | **로그 마스킹 + 30일 삭제 스케줄러** | NFR-C003/P003/E004 | 완료(`PiiMasker`,`RetentionScheduler`) |
-| A5 | **TourAPI 클라이언트**: 일일 한도 카운트, 중단 지점 저장·재개, 재시도 | FR-C017(수집은 FR이나 클라이언트 자체는 비FR) | `TourApiClient` TODO |
-| A6 | **HoursParser**: 운영시간 문자열 파서(휴무·브레이크타임·24시간·미상) — 코스·긴급 공용 | FR-C·E010의 전제 | TODO |
+| A5 | **TourAPI 클라이언트**: 일일 한도 카운트, 중단 지점 저장·재개, 재시도 | FR-C017(수집은 FR이나 클라이언트 자체는 비FR) | 완료 |
+| A6 | **HoursParser**: 운영시간 문자열 파서(휴무·브레이크타임·24시간·미상) — 코스·긴급 공용 | FR-C·E010의 전제 | 규칙 완료, LLM 구조화 TODO |
 | A7 | **좌표계 변환**(관리자 CSV의 TM/UTM-K → WGS84) | FR-E021 | 없음 → `common/util/CoordConverter` 추가 필요 |
 | A8 | **DB 마이그레이션·pgvector 설정**, 임베딩 차원 확정, `place_embedding` | SDD 데이터 | V1 일부, 임베딩 TODO |
 | A9 | **환경변수·비밀키 관리**(API 키는 코드/깃에 넣지 않기), `.env.example` | 보안 | 완료(`backend/.env.example`) |
