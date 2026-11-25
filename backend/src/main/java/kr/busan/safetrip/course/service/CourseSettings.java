@@ -29,7 +29,10 @@ public class CourseSettings {
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
                          int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise,
-                         List<String> indoorCodes, List<String> indoorKeywords) {}
+                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted) {}
+
+    /** 요청하지 않으면 빼고, 요청해도 뒤로 보내는 분류(#151) */
+    public record Demoted(String category, List<String> codes, List<String> keywords) {}
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private final Intent intent = read("/course/intent.json", new TypeReference<>() {});
