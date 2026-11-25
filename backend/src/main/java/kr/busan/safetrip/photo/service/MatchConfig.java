@@ -9,7 +9,7 @@ import org.yaml.snakeyaml.Yaml;
 
 /**
  * [사진 담당] 사진 매칭 설정 (DATA-P05)
- * 요구사항: NFR-P005, FR-P002, FR-P004, FR-P006~P009
+ * 요구사항: NFR-P005, NFR-P004, FR-P002, FR-P004, FR-P006~P009, FR-P011·P012
  * 상태: 완료
  * 수정 규칙: 사진 담당만 수정. 코스·긴급 담당은 수정 금지(필요하면 사진 담당에게 요청).
  *
@@ -27,13 +27,17 @@ public class MatchConfig {
                            double listMin, int maxCandidates) {}
     public record Search(List<Integer> radiusStepsM, List<Integer> contentTypes) {}
     public record Normalize(List<String> branchSuffixes, Map<String, String> confusables) {}
+    public record Ocr(double minBlockConfidence, int timeoutSec, int maxRetry) {}
+    /** templates: 언어 코드(ko·en·ja) → 템플릿, categoryNames: 업종 → (언어 코드 → 이름) */
+    public record Narration(int maxChars, Map<String, String> templates, Map<String, Map<String, String>> categoryNames) {}
 
     private final Image image;
-    private final double minBlockConfidence;
+    private final Ocr ocr;
     private final Score score;
     private final Decision decision;
     private final Search search;
     private final Normalize normalize;
+    private final Narration narration;
 
     public MatchConfig() {
         this(DEFAULT_RESOURCE);
@@ -57,7 +61,8 @@ public class MatchConfig {
 
         this.image = new Image((List<String>) img.get("allowedFormats"), num(img, "maxBytes").longValue(),
                 num(img, "maxLongEdgePx").intValue());
-        this.minBlockConfidence = num(ocr, "minBlockConfidence").doubleValue();
+        this.ocr = new Ocr(num(ocr, "minBlockConfidence").doubleValue(), num(ocr, "timeoutSec").intValue(),
+                num(ocr, "maxRetry").intValue());
         this.score = new Score(num(sc, "levenshteinWeight").doubleValue(), num(sc, "diceWeight").doubleValue(),
                 num(sc, "containmentFloor").doubleValue(), num(sc, "containmentMinLength").intValue(),
                 num(sc, "textWeight").doubleValue(), num(sc, "distanceWeight").doubleValue());
@@ -69,6 +74,9 @@ public class MatchConfig {
         Map<String, String> confusables = new java.util.LinkedHashMap<>();
         if (conf != null) conf.forEach((k, v) -> confusables.put(String.valueOf(k), String.valueOf(v)));
         this.normalize = new Normalize((List<String>) no.get("branchSuffixes"), confusables);
+        Map<String, Object> na = (Map<String, Object>) root.get("narration");
+        this.narration = new Narration(num(na, "maxChars").intValue(), (Map<String, String>) na.get("templates"),
+                (Map<String, Map<String, String>>) na.get("categoryNames"));
     }
 
     private static Number num(Map<String, Object> m, String key) {
@@ -78,9 +86,11 @@ public class MatchConfig {
     }
 
     public Image image() { return image; }
-    public double minBlockConfidence() { return minBlockConfidence; }
+    public double minBlockConfidence() { return ocr.minBlockConfidence(); }
+    public Ocr ocr() { return ocr; }
     public Score score() { return score; }
     public Decision decision() { return decision; }
     public Search search() { return search; }
     public Normalize normalize() { return normalize; }
+    public Narration narration() { return narration; }
 }

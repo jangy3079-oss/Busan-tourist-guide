@@ -3,6 +3,7 @@
 # 값을 바꾸면 아래 변경 이력에 한 줄 남긴다.
 # 변경 이력:
 #   2026-11-25 초기값 작성 (사진 담당)
+#   2026-11-25 ocr 제한시간·재시도, narration(설명 길이·템플릿·업종 이름) 추가
 
 image:
   allowedFormats: [jpg, jpeg, png]   # FR-P002
@@ -11,6 +12,8 @@ image:
 
 ocr:
   minBlockConfidence: 0.5            # FR-P004: 이 값 미만 블록은 매칭에서 제외
+  timeoutSec: 8                      # NFR-P004: 넘으면 1회 재시도, 그래도 실패면 OCR_FAIL
+  maxRetry: 1
 
 score:
   levenshteinWeight: 0.5             # 자모 편집거리 유사도 비중
@@ -38,3 +41,18 @@ normalize:
   confusables:
     "0": o
     "|": l
+
+narration:
+  maxChars: 60                       # FR-P011: 설명 길이 상한(언어 공통)
+  # FR-P012 템플릿 설명. {name}=한글 원문 상호, {category}=업종(언어별 이름), {address}=주소 원문
+  templates:
+    ko: "{name}은(는) {address}에 있는 {category}입니다."
+    en: "{name} is a {category} at {address}."
+    ja: "{name}は{address}にある{category}です。"
+  # 업종(place.category) 언어별 이름. 없으면 원문 그대로
+  categoryNames:
+    관광지: { ko: 관광지, en: tourist spot, ja: 観光地 }
+    문화시설: { ko: 문화시설, en: cultural facility, ja: 文化施設 }
+    쇼핑: { ko: 쇼핑 장소, en: shop, ja: ショッピングスポット }
+    음식점: { ko: 음식점, en: restaurant, ja: 飲食店 }
+    카페: { ko: 카페, en: cafe, ja: カフェ }
