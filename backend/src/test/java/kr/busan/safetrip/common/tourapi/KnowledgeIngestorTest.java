@@ -22,16 +22,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
+import kr.busan.safetrip.common.ai.EmbeddingService;
 import kr.busan.safetrip.common.config.AppProperties;
+import kr.busan.safetrip.common.exception.BusinessException;
+import kr.busan.safetrip.common.exception.ErrorCode;
 
 /** [공용] TourApiClient 응답 해석·한도, KnowledgeIngestor 중단·재개 (모의 응답) */
 class KnowledgeIngestorTest {
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
     private final TourApiClient api = mock(TourApiClient.class);
+    private final EmbeddingService embeddings = mock(EmbeddingService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
-    private final AppProperties props = new AppProperties(null, new AppProperties.TourApi("http://localhost:1", "k", 10,
+    private final AppProperties props = new AppProperties(null, null, new AppProperties.TourApi("http://localhost:1", "k", 10,
             List.of(new AppProperties.Region("26", "500")), Map.of(39, "음식점"), List.of("FD05")), null, null);
-    private final KnowledgeIngestor ingestor = new KnowledgeIngestor(api, jdbc, props, events);
+    private final KnowledgeIngestor ingestor = new KnowledgeIngestor(api, jdbc, props, embeddings, events);
 
     @BeforeEach
     void setUp() throws Exception {
@@ -85,6 +89,28 @@ class KnowledgeIngestorTest {
         verify(jdbc).update(contains("hours_status"), eq("PARSED"), eq(1L));
         verify(jdbc, times(6)).update(contains("INSERT INTO place_hours"), eq(1L), anyInt(), eq(660), eq(1320));
         verify(events).publishEvent(any(KnowledgeIngestor.PlacesCollected.class));
+    }
+
+    /** 바뀐 장소만 16건씩 묶어 벡터를 만든다 */
+    @Test
+    void embedsInBatches() {
+        when(embeddings.model()).thenReturn("bge-m3");
+        when(jdbc.queryForList(contains("place_embedding"), eq("bge-m3"))).thenReturn(LongStream.rangeClosed(1, 20)
+                .mapToObj(i -> Map.<String, Object>of("id", i, "text", "t" + i, "hash", "h" + i)).toList());
+        when(embeddings.embedAll(any())).thenAnswer(inv -> inv.<List<String>>getArgument(0).stream().map(t -> new float[]{1}).toList());
+        ingestor.run();
+        assertEquals("DONE", state());
+        verify(embeddings, times(2)).embedAll(any());
+        verify(jdbc).update(contains("INSERT INTO place_embedding"), eq(20L), eq("[1.0]"), eq("bge-m3"), eq("h20"));
+    }
+
+    @Test
+    void embeddingFailureIsReported() {
+        when(embeddings.model()).thenReturn("bge-m3");
+        when(jdbc.queryForList(contains("place_embedding"), eq("bge-m3"))).thenReturn(List.of(Map.of("id", 1L, "text", "t", "hash", "h")));
+        when(embeddings.embedAll(any())).thenThrow(new BusinessException(ErrorCode.AI_UNAVAILABLE, "x"));
+        ingestor.run();
+        assertEquals("FAILED", state()); // 모은 장소는 남아 있고 다음 실행에서 벡터만 이어서 만든다
     }
 
     @Test

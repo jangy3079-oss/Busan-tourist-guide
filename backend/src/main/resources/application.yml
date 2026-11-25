@@ -34,6 +34,11 @@ safetrip:
     monthly-budget-krw: ${AI_MONTHLY_BUDGET_KRW:3000}      # 유료 provider 만 센다(NFR-C009)
     input-krw-per-m-tok: ${AI_INPUT_KRW_PER_MTOK:0}        # 100만 토큰당 원. 유료인데 0 이면 호출을 막는다
     output-krw-per-m-tok: ${AI_OUTPUT_KRW_PER_MTOK:0}
+  embedding:
+    base-url: ${EMBED_BASE_URL:http://localhost:11434}
+    model: ${EMBED_MODEL:bge-m3}
+    dimension: 1024       # place_embedding 차원(V4). 모델을 바꾸면 새 마이그레이션과 전체 재생성이 필요하다
+    timeout-sec: 3
   tour-api:
     base-url: https://apis.data.go.kr/B551011/KorService2
     service-key: ${TOUR_API_KEY:}

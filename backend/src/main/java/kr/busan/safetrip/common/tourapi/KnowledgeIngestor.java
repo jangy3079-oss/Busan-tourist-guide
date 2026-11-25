@@ -3,6 +3,7 @@ package kr.busan.safetrip.common.tourapi;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,12 +12,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import kr.busan.safetrip.common.ai.EmbeddingService;
 import kr.busan.safetrip.common.config.AppProperties;
 
 /**
  * [공용] COMP-C07 KnowledgeIngestor
  * 요구사항: FR-C017, C018, P020, NFR-C008
- * 상태: 완료(임베딩 생성은 #14, 이름 정규화는 사진 담당이 PlacesCollected 를 받아 처리)
+ * 상태: 완료(이름 정규화는 사진 담당이 PlacesCollected 를 받아 처리)
  * 수정 규칙: 3인 합의 후 수정(PR 리뷰 3명 모두 승인). 혼자 고치지 말 것.
  *
  * 목록(LISTED) → 상세·운영시간(DONE/FAILED). 상태를 place.ingest_status 에 두므로 한도로 멈추거나 서버를 껐다 켜도 남은 장소부터 잇는다.
@@ -32,6 +34,7 @@ public class KnowledgeIngestor {
 
     private static final Logger log = LoggerFactory.getLogger(KnowledgeIngestor.class);
     private static final int MAX_FAILS_IN_A_ROW = 5;
+    private static final int EMBED_BATCH = 16;
     /** detailIntro2 의 운영시간·휴무일 필드(유형마다 이름이 다르다) */
     private static final Map<Integer, String[]> HOURS_FIELDS = Map.of(
             12, new String[]{"usetime", "restdate"},
@@ -42,14 +45,16 @@ public class KnowledgeIngestor {
     private final TourApiClient api;
     private final JdbcTemplate jdbc;
     private final AppProperties.TourApi cfg;
+    private final EmbeddingService embeddings;
     private final ApplicationEventPublisher events;
     private final AtomicBoolean running = new AtomicBoolean();
     private volatile String state = "IDLE";
 
-    public KnowledgeIngestor(TourApiClient api, JdbcTemplate jdbc, AppProperties props, ApplicationEventPublisher events) {
+    public KnowledgeIngestor(TourApiClient api, JdbcTemplate jdbc, AppProperties props, EmbeddingService embeddings, ApplicationEventPublisher events) {
         this.api = api;
         this.jdbc = jdbc;
         this.cfg = props.tourApi();
+        this.embeddings = embeddings;
         this.events = events;
     }
 
@@ -76,13 +81,14 @@ public class KnowledgeIngestor {
         return new Status(((Number) n.get("done")).intValue(), ((Number) n.get("listed")).intValue(), ((Number) n.get("failed")).intValue(), state);
     }
 
-    /** 한 번 실행(동기). 상태는 운영시간 구조화까지 끝난 뒤에 바꾼다 */
+    /** 한 번 실행(동기). 상태는 운영시간 구조화·임베딩까지 끝난 뒤에 바꾼다 */
     void run() {
         state = "RUNNING";
         String end = "FAILED";
         try {
             end = collect();
             structureHours();
+            embed();
         } catch (RuntimeException e) {
             end = "FAILED";
             log.error("수집 중단: {} {}", e.getClass().getSimpleName(), e instanceof TourApiClient.TourApiException ? e.getMessage() : "");
@@ -175,6 +181,23 @@ public class KnowledgeIngestor {
             jdbc.update("INSERT INTO place_hours (place_id, day_of_week, open_min, close_min) VALUES (?,?,?,?)",
                     id, day.getValue(), open, close <= open ? close + 1440 : close); // 자정을 넘기면 1440 을 더한다(25:00 = 1500)
         }));
+    }
+
+    /** 본문이나 모델이 바뀐 장소만 벡터를 다시 만든다. 본문 = 이름·유형·주소·개요(한국어, ADR-C05) */
+    private void embed() {
+        String text = "concat_ws(E'\\n', name, category, address, regexp_replace(coalesce(overview, ''), '<[^>]*>', ' ', 'g'))";
+        List<Map<String, Object>> rows = jdbc.queryForList("SELECT p.id, " + text + " AS text, md5(" + text + ") AS hash FROM place p "
+                + "LEFT JOIN place_embedding e ON e.place_id = p.id "
+                + "WHERE p.collected_at IS NOT NULL AND (e.place_id IS NULL OR e.model <> ? OR e.text_hash <> md5(" + text + ")) ORDER BY p.id", embeddings.model());
+        for (int from = 0; from < rows.size(); from += EMBED_BATCH) {
+            List<Map<String, Object>> batch = rows.subList(from, Math.min(from + EMBED_BATCH, rows.size()));
+            List<float[]> vectors = embeddings.embedAll(new ArrayList<>(batch.stream().map(r -> (String) r.get("text")).toList()));
+            for (int i = 0; i < batch.size(); i++) {
+                jdbc.update("INSERT INTO place_embedding (place_id, embedding, model, text_hash) VALUES (?, CAST(? AS vector), ?, ?) "
+                                + "ON CONFLICT (place_id) DO UPDATE SET embedding = EXCLUDED.embedding, model = EXCLUDED.model, text_hash = EXCLUDED.text_hash",
+                        batch.get(i).get("id"), EmbeddingService.literal(vectors.get(i)), embeddings.model(), batch.get(i).get("hash"));
+            }
+        }
     }
 
     private static String blankToNull(String s) {

@@ -13,7 +13,7 @@ FR(257개 항목 중 C/P/E 기능요구)에는 없지만, SRS의 NFR·SDD 구조
 | A5 | **TourAPI 클라이언트**: 일일 한도 카운트, 중단 지점 저장·재개, 재시도 | FR-C017(수집은 FR이나 클라이언트 자체는 비FR) | 완료 |
 | A6 | **HoursParser**: 운영시간 문자열 파서(휴무·브레이크타임·24시간·미상) — 코스·긴급 공용 | FR-C·E010의 전제 | 규칙 완료, LLM 구조화 TODO |
 | A7 | **좌표계 변환**(관리자 CSV의 TM/UTM-K → WGS84) | FR-E021 | 없음 → `common/util/CoordConverter` 추가 필요 |
-| A8 | **DB 마이그레이션·pgvector 설정**, 임베딩 차원 확정, `place_embedding` | SDD 데이터 | V1 일부, 임베딩 TODO |
+| A8 | **DB 마이그레이션·pgvector 설정**, 임베딩 차원 확정, `place_embedding` | SDD 데이터 | 완료(bge-m3 1024차원, V4) |
 | A9 | **환경변수·비밀키 관리**(API 키는 코드/깃에 넣지 않기), `.env.example` | 보안 | 완료(`backend/.env.example`) |
 | A10 | **헬스체크·요청 ID 로깅·기본 지표** | NFR 모니터링 | 헬스체크 완료 |
 | A11 | **CI**(GitHub Actions: `mvn test` + `flutter analyze/test`) | 협업 | 없음 |

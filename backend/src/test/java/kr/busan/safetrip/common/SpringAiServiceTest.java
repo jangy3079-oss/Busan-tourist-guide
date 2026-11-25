@@ -70,7 +70,7 @@ class SpringAiServiceTest {
     }
 
     private static AppProperties props(String provider, String url, String key, double price) {
-        return new AppProperties(new AppProperties.Ai(provider, url, "m", key, 8, 1, 1000, price, price), null, null, null);
+        return new AppProperties(new AppProperties.Ai(provider, url, "m", key, 8, 1, 1000, price, price), null, null, null, null);
     }
 
     private SpringAiService ai(String provider, String key) {

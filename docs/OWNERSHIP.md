@@ -59,9 +59,9 @@
 | `common/api/Lang, EmType, MapPointDto` | 세 모듈 공통 값 | 완료 |
 | `common/util/GeoUtil, PiiMasker, Purgeable, RetentionScheduler` | 거리·마스킹·30일 삭제 | 완료 |
 | `common/web/HealthController` | 헬스체크 | 완료 |
-| `common/ai/AIService, AiRequest, SpringAiService, AiBudget` (COMP-C08) | LLM 단일 통로, 월 비용 한도 | 완료 |
+| `common/ai/AIService, AiRequest, SpringAiService, AiBudget, EmbeddingService` (COMP-C08) | LLM 단일 통로, 월 비용 한도, 임베딩 | 완료 |
 | `common/domain/Place, PlaceRepository` (COMP-C09) | 장소 | 골격 |
-| `common/tourapi/TourApiClient, HoursParser, KnowledgeIngestor` (COMP-C07) | TourAPI 수집·운영시간 파서 | 완료(LLM 구조화·임베딩 TODO) |
+| `common/tourapi/TourApiClient, HoursParser, KnowledgeIngestor` (COMP-C07) | TourAPI 수집·운영시간 파서 | 완료(LLM 구조화 TODO) |
 | `common/keyword/KeywordRuleEngine` | 위급 키워드 계약(구현은 긴급) | 인터페이스 |
 | `db/migration/V1~V9` | place, pgvector | 완료(임베딩 TODO) |
 | `ArchitectureTest` | 소유권 경계 검사 | 완료 |
