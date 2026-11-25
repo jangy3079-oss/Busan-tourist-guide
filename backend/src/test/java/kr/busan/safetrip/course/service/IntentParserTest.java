@@ -1,6 +1,7 @@
 package kr.busan.safetrip.course.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -39,6 +40,17 @@ class IntentParserTest {
         assertEquals(180, i.durationMin());
         assertEquals(LocalDate.of(2026, 11, 14), i.visitDate());
         assertEquals(List.of("음식점"), i.categories()); // 허용 목록 밖 값은 버림
+    }
+
+    /** 요일 계산을 LLM 에 맡기지 않게 날짜표를 준다(#141) */
+    @Test
+    void promptHasCalendar() {
+        String[] system = new String[1];
+        new IntentParser(t -> Optional.empty(), req -> { system[0] = req.system(); return "{}"; }, settings)
+                .parse("이번 주 토요일 해운대", LocalDate.of(2026, 11, 25));
+        assertTrue(system[0].contains("2026-11-25=WEDNESDAY, 2026-11-26=THURSDAY"), system[0]);
+        assertTrue(system[0].contains("2026-11-28=SATURDAY"), system[0]);
+        assertFalse(system[0].contains("{calendar}"), system[0]);
     }
 
     @Test

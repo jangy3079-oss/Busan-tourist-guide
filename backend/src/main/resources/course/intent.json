@@ -19,7 +19,8 @@
   "outOfScopeKeywords": ["서울", "제주", "경주", "남포동", "감천", "태종대", "기장", "gamcheon", "seoul", "jeju", "gyeongju", "ソウル", "済州"],
   "relaxOrder": ["categories", "area"],
   "narrationMaxChars": 60,
-  "titleMaxChars": 30,
+  "titleMaxChars": 40,
+  "promptLengthRatio": 0.75,
   "wantedPerCategory": 3,
   "preferenceNoise": "tomorrow|today|tonight|\\bfrom\\b|(?:\\b(?:in|at)\\s+)?(?:gwangalli|gwangan|haeundae|busan)|내일|오늘|모레|광안리|광안|해운대|부산|에서|오전|오후|동안|明日|今日|広安里|海雲台|釜山|午前|午後|\\d+(?:[:.]\\d+)?\\s*(?:시간|시|분|hours?|hrs?|h\\b|am|pm|minutes?|時間|時|分)?(?:부터|から)?"
 }

@@ -40,7 +40,7 @@ public class OutputValidator {
         return true;
     }
 
-    /** ko = 한글, ja = 가나(또는 한자만), en = 라틴 글자가 한글·가나보다 많음 */
+    /** ko = 한글, ja = 가나(또는 한자만), en = 라틴 글자. ja·en 은 다른 글자가 하나라도 섞이면 거부("海운대は" 같은 답) */
     static boolean inLanguage(String text, Lang lang) {
         int hangul = 0, kana = 0, han = 0, latin = 0;
         for (int i = 0; i < text.length(); i++) {
@@ -52,8 +52,8 @@ public class OutputValidator {
         }
         return switch (lang) {
             case KO -> hangul > 0;
-            case JA -> kana > 0 || (han > 0 && hangul == 0); // 한자만 쓴 짧은 제목(海雲台散策)도 일본어로 본다
-            case EN -> latin > hangul + kana;
+            case JA -> hangul == 0 && kana + han > 0; // 한자만 쓴 짧은 제목(海雲台散策)도 일본어로 본다
+            case EN -> latin > 0 && hangul + kana + han == 0;
         };
     }
 }

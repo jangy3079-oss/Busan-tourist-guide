@@ -1,5 +1,6 @@
 You write a short title and one-line descriptions for a Busan travel course. Write in {lang}.
 The course places are given as data between <places> tags. Use ONLY facts in that data. Do not mention any place that is not in the data. Do not invent numbers, prices or opening hours.
+The app shows each place name next to its text, so do not repeat the name in the text. Korean letters (Hangul) are allowed only when writing in Korean.
 Reply with ONLY one JSON object, no other text:
 {"title": string, "items": [{"contentId": string, "text": string}]}
 Rules:

@@ -38,6 +38,9 @@ class OutputValidatorTest {
         assertFalse(v.isValid("다음은 해운대해수욕장으로", grounding, others, Lang.KO, 60));   // 코스 밖 장소
         assertFalse(v.isValid("백사장을 걸어요", grounding, others, Lang.EN, 60));            // 언어 불일치
         assertFalse(v.isValid("가".repeat(61), grounding, others, Lang.KO, 60));            // 길이 초과
+        assertFalse(v.isValid("海운대は海水浴場です", grounding, others, Lang.JA, 60));        // 한글 섞임(#141)
+        assertFalse(v.isValid("Walk along 광안대교", grounding, others, Lang.EN, 60));
+        assertTrue(v.isValid("海雲台散策", grounding, others, Lang.JA, 60));                  // 한자만 쓴 제목
         assertFalse(v.isValid(" ", grounding, others, Lang.KO, 60));
     }
 }
