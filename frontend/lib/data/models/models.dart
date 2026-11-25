@@ -129,7 +129,8 @@ class PlacePin {
 /// API-C05 근거 카드
 class Evidence {
   final String name, overview, hours, source;
-  const Evidence(this.name, this.overview, this.hours, this.source);
+  final String? imageUrl; // TourAPI 대표 이미지. 없으면 기본 이미지(FR-C011)
+  const Evidence(this.name, this.overview, this.hours, this.source, {this.imageUrl});
 }
 
 // ---------------- 사진 (API-P01~P03) ----------------

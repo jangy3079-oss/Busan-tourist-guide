@@ -39,7 +39,7 @@ class ApiCourseRepository implements CourseRepository {
   Future<Evidence> evidence(String contentId, Lang lang) async {
     final j = await api.get('/places/$contentId', {'lang': langCode(lang)});
     final collected = (j['collectedAt'] as String?)?.split('T').first;
-    return Evidence(j['name'] ?? '', j['overview'] ?? '', j['hoursText'] ?? '', [j['source'] ?? 'ⓒ한국관광공사', if (collected != null) '수집일 $collected'].join(' · '));
+    return Evidence(j['name'] ?? '', j['overview'] ?? '', j['hoursText'] ?? '', [j['source'] ?? 'ⓒ한국관광공사', if (collected != null) '수집일 $collected'].join(' · '), imageUrl: j['imageUrl'] as String?);
   }
 
   CourseResult _result(Map<String, dynamic> j) {
