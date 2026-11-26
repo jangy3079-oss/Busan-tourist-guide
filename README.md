@@ -2,8 +2,9 @@
 
 👉 **처음이면 [`docs/HOW_TO_WORK.md`](docs/HOW_TO_WORK.md)부터 읽으세요.** (지금 상태, 담당별 할 일, 작업 순서, 규칙)
 
-- `frontend/` Flutter Web (확정 프로토타입 "부산 안심여행" 기준, 현재 Mock 데이터로 동작)
-- `backend/` Spring Boot 골격 (담당별 빈 구현)
+- `frontend/` Flutter Web (서버 주소를 주지 않으면 Mock 데이터로 동작)
+- `backend/` Spring Boot
+- `docs/RUN_GUIDE.md` **실행·장소 데이터·시연 영상 가이드**
 - `docs/OWNERSHIP.md` 소유권(수정해야 할 / 건드리면 안 되는 / 공용)
 - `docs/API.md` API 계약(제안)
 - `docs/EXTRA_FUNCTIONS.md` 기능명세서 외 구현 필요 함수

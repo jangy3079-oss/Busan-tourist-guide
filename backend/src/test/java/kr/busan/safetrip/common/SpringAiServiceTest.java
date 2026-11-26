@@ -133,7 +133,8 @@ class SpringAiServiceTest {
     void jsonModeStripsFenceAndRetriesGarbage() {
         contents = new String[]{"모르겠어요", "```json {\"a\":1} ```"};
         assertEquals("{\"a\":1}", ai("ollama", "").complete(req(true, null)));
-        assertTrue(bodies.get(0).contains("json_object"));
+        assertFalse(bodies.get(0).contains("response_format"), bodies.get(0)); // Ollama MLX 는 501 (#171)
+        assertTrue(bodies.get(0).contains("JSON object only"), bodies.get(0));
         assertEquals(2, bodies.size());
     }
 

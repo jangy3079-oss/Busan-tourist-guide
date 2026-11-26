@@ -40,7 +40,7 @@ git checkout -b feat/emergency       # 코스: feat/course, 사진: feat/photo
 
 docker compose up -d                 # DB 켜기 (Docker Desktop 필요)
 cd backend && mvn spring-boot:run    # 서버 켜기
-curl localhost:8080/api/v1/health    # {"status":"ok"} 나오면 성공
+curl localhost:8080/api/v1/health    # {"status":"ok", ...} 나오면 성공
 ```
 
 화면 보기 (다른 터미널):
