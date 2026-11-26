@@ -132,8 +132,27 @@ class RequestLogRecorderTest {
         assertThat(recorder.joinFallback(Set.of())).isNull();
         assertThat(recorder.joinFallback(List.of("PLACES_NONE", "LLM_TIMEOUT", "NOT_A_CODE"))).isEqualTo("LLM_TIMEOUT,PLACES_NONE");
         String all = recorder.joinFallback(List.of("LLM_TIMEOUT", "USER_TYPE", "GUIDANCE_TOP1", "ER_DOWN", "GEOCODE_FAIL", "PLACES_NONE"));
-        assertThat(all.length()).isLessThanOrEqualTo(40);
-        assertThat(all).startsWith("LLM_TIMEOUT,USER_TYPE,GUIDANCE_TOP1");
+        assertThat(all.length()).isLessThanOrEqualTo(200); // V35 열 길이
+        assertThat(all).isEqualTo("LLM_TIMEOUT,USER_TYPE,GUIDANCE_TOP1,ER_DOWN,GEOCODE_FAIL,PLACES_NONE");
+    }
+
+    @Test
+    void fourFallbackCodesAreNotTruncated() {
+        // V35 전에는 40자에서 PLACES_NONE 이 잘렸다
+        when(geocoder.toAddress(org.mockito.ArgumentMatchers.anyDouble(), org.mockito.ArgumentMatchers.anyDouble())).thenReturn(null);
+        when(classifier.classifyOrFail(anyString())).thenThrow(new BusinessException(ErrorCode.AI_TIMEOUT, "5s"));
+        GuidanceRetriever kb = org.mockito.Mockito.mock(GuidanceRetriever.class);
+        when(kb.retrieve(any(), any(), any(), anyString(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean()))
+                .thenReturn(new GuidanceRetriever.Guidance(List.of("119에 전화하세요.", "곁을 지키세요."), false, List.of(), true));
+        HelpPlaceRepository noPlaces = mock(HelpPlaceRepository.class);
+        DecisionTable dt = new DecisionTable();
+        EmergencyService s = new EmergencyService(new KeywordRuleEngineImpl(), classifier, dt,
+                new HelpPlaceFinder(noPlaces, dt, new OpenNowEvaluator(), mock(ErRealtimeClient.class)), new KoreanCardBuilder(),
+                kb, new RegionResolver(), geocoder, new FallbackSteps(), new EmergencyMessages(), null, CLOCK, recorder, null);
+
+        s.guide(new GuideRequest("친구가 쓰러졌어요", "ko", 35.1532, 129.1186, null, null));
+
+        assertThat(saved.get(0).getFallback()).isEqualTo("LLM_TIMEOUT,GUIDANCE_TOP1,GEOCODE_FAIL,PLACES_NONE");
     }
 
     @Test
@@ -157,10 +176,10 @@ class RequestLogRecorderTest {
         List<String> sqlColumns = Arrays.stream(table.group(1).split(","))
                 .map(String::trim).filter(l -> !l.isEmpty()).map(l -> l.split("\\s+")[0]).toList();
         assertThat(sqlColumns).containsExactlyInAnyOrderElementsOf(allowed);
-        // 다른 마이그레이션이 열을 더하지 않았는지
+        // 다른 마이그레이션이 열을 더하지 않았는지(V35 는 fallback 길이만 바꿈)
         try (var files = Files.list(Path.of("src/main/resources/db/migration"))) {
             for (Path f : files.toList()) {
-                assertThat(Files.readString(f)).as(f.toString()).doesNotContainPattern("(?i)ALTER TABLE request_log");
+                assertThat(Files.readString(f)).as(f.toString()).doesNotContainPattern("(?is)ALTER TABLE request_log[^;]*ADD COLUMN");
             }
         }
         // 엔티티 열
