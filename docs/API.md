@@ -57,9 +57,11 @@
 | 긴급 `needTypeSelection=true` → 유형 선택(FR-E008) | `API-E02` 재호출(`type` 지정) | |
 | 긴급 `triage.type=NON`(FR-E018) → "관광 코스 찾기" | 코스 화면으로 이동(빈 입력창) | 입력 문장 넘기지 않음 |
 | 한국어 카드 전체화면, 전화, 길찾기, 카카오맵 열기(FR-P018) | 없음 | `tel:` / 지도 링크를 프론트가 만듦 |
+| 긴급 112·119·1330 버튼 누름 | `tel:` 연 뒤 `API-E08`(비동기, 실패 무시) | E02의 `eventId`가 있으면 함께 보냄 |
 | 관리자: 장소 수집·정규화 | `API-C06` | local-admin |
 | 관리자: 지구대·안내소 CSV, 지식베이스 반영 | `API-E04`, `API-E05` | local-admin |
 | 관리자: 약국·응급실 동기화 수동 실행·상태 | `API-E06`, `API-E07` | 평소에는 매일 04:00 자동 |
+| 관리자: 상황판 | `API-E09`~`API-E12` | local-admin. 페이지 `/admin/emergency/dashboard` |
 
 ---
 
@@ -233,12 +235,15 @@
   "stepsFallback": false,            // 근거가 없어 저장된 기본 문구면 true
   "sources": [{"id": "kb_cpr_01", "title": "심폐소생술 안내(질병관리청)"}],
   "extras": ["SILENT_REPORT"],       // 화면 확장 버튼: SILENT_REPORT(문자신고) | EMBASSY
-  "dataAsOf": { "places": "2026-11-11T04:00:00+09:00", "source": "국립중앙의료원" }   // NFR-E008
+  "dataAsOf": { "places": "2026-11-11T04:00:00+09:00", "source": "국립중앙의료원" },  // NFR-E008
+  "eventId": "7c1e0000-0000-4000-8000-000000000001"   // 상황판 이벤트 ID(선택). 저장 실패·비긴급·유형 선택 필요면 null
 }
 ```
 - 화면은 **E01과 E02를 동시에** 보내고, E01이 먼저 오면 버튼 강조, E02가 오면 도움처·카드·할 일을 채운다.
 - LLM이 실패해도 `needTypeSelection=true`로 정상 응답한다(FR-E008). 공공 API가 죽어도 저장 데이터로 `places`를 채운다(NFR-E003).
 - 입력 문장·좌표는 DB/로그에 저장하지 않는다(NFR-E004).
+- `eventId`: 상황판 이벤트 ID임. 프론트는 API-E08에만 쓰고 다른 곳에 저장하지 않음
+  - 이벤트에는 유형·긴급도·언어·구·동·약 300m 격자·연락처·대체 여부만 남김. 지역 선택(`area`)이면 격자·동 없음
 
 ### API-E03 — 미배정
 SDD 추적표에 연결된 FR이 없다. 필요해지면 이 번호를 쓴다.
@@ -257,6 +262,50 @@ SDD 추적표에 연결된 FR이 없다. 필요해지면 이 번호를 쓴다.
 
 ### API-E07 동기화 상태 (관리자) — `GET /api/v1/admin/emergency/sync/status`
 근거: FR-E019, NFR-E008. 응답 `{"logs": [{"source", "ok", "rows", "ranAt"}]}`(최근 10건)
+
+### API-E08 전화 버튼 기록 — `POST /api/v1/emergency/call-event`
+근거: 팀 결정(11/26 전화 버튼 기록), FR-E004
+```json
+{ "eventId": "7c1e0000-0000-4000-8000-000000000001", "number": "119", "lang": "en" }   // eventId 는 선택(E02 전에 누른 경우 null)
+```
+- 응답: 204(본문 없음)
+- `number`가 112·119·1330이 아니거나 `eventId`가 UUID 형식이 아니면 400 `INVALID_INPUT`
+- 프론트는 `tel:`을 연 **뒤에** 비동기로 보냄. 실패해도 무시함(전화가 우선)
+- 저장: 번호, 분 단위 시각, 언어, eventId만. 전화번호·좌표·문장은 저장하지 않음
+
+### API-E09 상황판 집계 (관리자) — `GET /api/v1/admin/emergency/dashboard/summary?from=…&to=…`
+근거: 팀 결정(11/25 기관 상황판), NFR-E004·E005
+- `from`·`to`는 ISO-8601(예: `2026-11-25T00:00:00+09:00`)이고 최대 31일. 빠지거나 형식이 틀리거나 31일을 넘으면 400 `INVALID_INPUT`
+- 응답
+  - `byType`, `byUrgency`, `byDistrict`, `byLang`: `{코드: 건수}`
+  - `byHour`: `[{"hour": "2026-11-26T14:00:00+09:00", "count": 8}]`
+  - `grids`: `[{"gridId", "lat", "lng", "count"}]`. 좌표는 격자 중심(약 300m)이며 사용자 좌표가 아님
+  - `calls`: `{"112": n, "119": n, "1330": n}`. 0건이어도 세 번호가 모두 있음
+  - `llmFailRate`, `fallbackRate`: 0~1
+- 견본: `docs/contract/E09_dashboard_summary.json`
+
+### API-E10 상황판 최근 이벤트 (관리자) — `GET /api/v1/admin/emergency/dashboard/recent?limit=50`
+- `limit`은 1~200(기본 50). 범위 밖이면 400
+- 응답: `[{"at", "type", "urgency", "district", "dong", "gridId", "topContact"}]`. `at`은 분 단위 ISO-8601(+09:00)
+- 견본: `docs/contract/E10_dashboard_recent.json`
+
+### API-E11 상황판 실시간 스트림 (관리자) — `GET /api/v1/admin/emergency/dashboard/stream` (`text/event-stream`)
+- `event: emergency` 데이터: API-E10 항목 하나
+- `event: alert` 데이터: `{"ruleId", "level", "scope", "scopeValue", "count", "windowSec", "at"}`
+  - 규칙(`ruleId`·기간·건수)은 `backend/src/main/resources/emergency/dashboard.json`
+- 견본: `docs/contract/E11_dashboard_alert.json`
+
+### API-E12 심야 의료 공백 (관리자) — `GET /api/v1/admin/emergency/dashboard/night-gap?date=YYYY-MM-DD`
+- `date`는 조회 기준일(현지 시각, 22시부터 다음 날 06시 전까지). 빠지거나 날짜 형식이 틀리면 400 `INVALID_INPUT`
+- 응답: `{ "date", "startHour", "endHour", "rows" }`
+  - `rows`: 시간·구별 `{ "hour", "district", "openPharmacies", "openConvenience", "mildRequests", "gap" }`
+  - `hour`는 한국 표준시 오프셋을 포함한 ISO-8601 시각. 06:00 정각은 조회에서 제외
+  - `gap`: `NO_PHARMACY`(열린 약국 0곳이며 경증 요청 있음), `PHARMACY_CLOSED`(열린 약국 0곳), 그 밖에는 `null`
+- 운영 판정은 해당 시각 정각 기준이며 공휴일·전날 공휴일·자정 넘김 운영시간을 반영
+- 견본: `docs/contract/E12_dashboard_night_gap.json`
+
+### 상황판 페이지 — `GET /admin/emergency/dashboard` (HTML, local-admin)
+- API-E09~E12를 부르는 정적 페이지. 긴급 패키지 안에서 제공함
 
 ---
 

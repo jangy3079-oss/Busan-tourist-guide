@@ -17,6 +17,13 @@ import 'emergency_controller.dart';
 import 'emergency_link.dart';
 import 'emergency_text.dart';
 
+/// 112·119·1330 전화: tel: 을 먼저 열고, 그 뒤에 기록(API-E08)을 비동기로 보낸다. 기록 실패는 무시(전화가 우선)
+void dial(WidgetRef ref, String number) {
+  ref.read(emLinkProvider)('tel:$number');
+  final eventId = ref.read(emergencyProvider).guide?.eventId;
+  ref.read(emergencyRepoProvider).callEvent(eventId, number, ref.read(langProvider)).catchError((Object _) {});
+}
+
 const _typeOrder = [EmType.urgent, EmType.mild, EmType.lost, EmType.threat, EmType.fire, EmType.way, EmType.non];
 
 /// 상단 119·112·1330 연락 바. topContact 를 맨 앞·강조 (E01 키워드로 먼저, E02 최종 긴급도로 다시 정해짐)
@@ -42,7 +49,7 @@ class ContactBar extends ConsumerWidget {
                   child: InkWell(
                     key: ValueKey('call-$n'),
                     borderRadius: BorderRadius.circular(rMd),
-                    onTap: () => ref.read(emLinkProvider)('tel:$n'),
+                    onTap: () => dial(ref, n),
                     child: Container(
                       constraints: const BoxConstraints(minHeight: 52, minWidth: 48), // NFR-E010 최소 48×48
                       padding: const EdgeInsets.symmetric(vertical: 7),
@@ -414,7 +421,6 @@ class EmergencyNonScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = ref.watch(langProvider);
-    final call = ref.read(emLinkProvider);
     return ScreenFrame(
       head: _head(ref), bar: const ContactBar(top: '1330'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -424,8 +430,8 @@ class EmergencyNonScreen extends ConsumerWidget {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(tr('nonT', l), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)), Text(tr('nonS', l), style: const TextStyle(fontSize: 12.5, color: C.text3, height: 1.45))])),
         ]),
         const SizedBox(height: 6),
-        XBtn(icon: 'phone', title: '1330 · ${tr('c1330', l)}', sub: '한국어 · English · 日本語 · 中文', iconBg: C.blue, iconFg: Colors.white, onTap: () => call('tel:1330')),
-        XBtn(icon: 'megaphone', title: tr('complain', l), sub: tr('complainSub', l), iconBg: C.amberT, iconFg: C.amber, onTap: () => call('tel:1330')),
+        XBtn(icon: 'phone', title: '1330 · ${tr('c1330', l)}', sub: '한국어 · English · 日本語 · 中文', iconBg: C.blue, iconFg: Colors.white, onTap: () => dial(ref, '1330')),
+        XBtn(icon: 'megaphone', title: tr('complain', l), sub: tr('complainSub', l), iconBg: C.amberT, iconFg: C.amber, onTap: () => dial(ref, '1330')),
         // FR-E018, AC-X03: 코스 요청 화면을 빈 입력창으로 연다(입력 문장을 넘기지 않음)
         XBtn(key: const ValueKey('find-course'), icon: 'route', title: tr('findCourse', l), sub: tr('findCourseSub', l), iconBg: C.blueT, iconFg: C.blue, onTap: () => emergencyToCourse(context, ref)),
       ]),
@@ -515,7 +521,7 @@ Future<void> showEmbassySheet(BuildContext context, WidgetRef ref) {
       const SizedBox(height: 6),
       Text(et('embassyHow', l), style: const TextStyle(fontSize: 14, color: C.text2, height: 1.5)),
       const SizedBox(height: 14),
-      Btn(et('embassyAsk1330', l), key: const ValueKey('embassy-1330'), icon: 'phone', kind: BtnKind.primary, onTap: () => open('tel:1330')),
+      Btn(et('embassyAsk1330', l), key: const ValueKey('embassy-1330'), icon: 'phone', kind: BtnKind.primary, onTap: () => dial(ref, '1330')),
       const SizedBox(height: 6),
       Align(
         alignment: Alignment.centerLeft,

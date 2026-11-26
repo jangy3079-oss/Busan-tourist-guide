@@ -17,6 +17,7 @@ public final class AlertRuleEngine {
             DashboardConfig.AlertScope scope,
             String scopeValue,
             long count,
+            int windowSec,
             List<String> emTypes,
             Instant firedAt) {
         public Alert {
@@ -81,7 +82,7 @@ public final class AlertRuleEngine {
                     .count();
             if (count >= rule.minCount()) {
                 alerts.add(new Alert(
-                        rule.id(), rule.level(), rule.scope(), scopeValue, count, rule.emTypes(), now));
+                        rule.id(), rule.level(), rule.scope(), scopeValue, count, rule.window(), rule.emTypes(), now));
             }
         }
         return List.copyOf(alerts);

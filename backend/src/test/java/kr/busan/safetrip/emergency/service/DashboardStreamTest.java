@@ -41,7 +41,7 @@ class DashboardStreamTest {
 
         stream.publishAlert(new AlertRuleEngine.Alert(
                 "fire-any", DashboardConfig.AlertLevel.CRITICAL, DashboardConfig.AlertScope.ALL,
-                "ALL", 1, List.of("FIRE"), Instant.parse("2026-11-26T04:05:00Z")));
+                "ALL", 1, 600, List.of("FIRE"), Instant.parse("2026-11-26T04:05:00Z")));
 
         assertThat(disconnected.sent).isZero();
         assertThat(stream.subscriberCount()).isZero();
@@ -52,7 +52,12 @@ class DashboardStreamTest {
         assertThat(recordFieldNames(DashboardStream.EventSummary.class))
                 .containsExactly("createdAt", "emType", "urgency", "district", "dong", "gridId", "topContact");
         assertThat(recordFieldNames(AlertRuleEngine.Alert.class))
-                .containsExactly("ruleId", "level", "scope", "scopeValue", "count", "emTypes", "firedAt");
+                .containsExactly("ruleId", "level", "scope", "scopeValue", "count", "windowSec", "emTypes", "firedAt");
+        // API-E11 로 나가는 모양(docs/API.md)
+        assertThat(recordFieldNames(kr.busan.safetrip.emergency.dto.EmergencyDtos.DashboardEvent.class))
+                .containsExactly("at", "type", "urgency", "district", "dong", "gridId", "topContact");
+        assertThat(recordFieldNames(kr.busan.safetrip.emergency.dto.EmergencyDtos.DashboardAlert.class))
+                .containsExactly("ruleId", "level", "scope", "scopeValue", "count", "windowSec", "at");
     }
 
     private static List<String> recordFieldNames(Class<?> type) {

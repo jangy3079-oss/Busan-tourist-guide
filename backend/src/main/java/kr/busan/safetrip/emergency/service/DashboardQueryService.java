@@ -126,6 +126,16 @@ public class DashboardQueryService {
                 .toList();
     }
 
+    /** API-E09 응답 모양 */
+    public kr.busan.safetrip.emergency.dto.EmergencyDtos.DashboardSummary summaryView(Instant from, Instant to) {
+        return DashboardViews.summary(summary(from, to));
+    }
+
+    /** API-E10 응답 모양 */
+    public List<kr.busan.safetrip.emergency.dto.EmergencyDtos.DashboardEvent> recentView(int limit) {
+        return recent(limit).stream().map(DashboardViews::event).toList();
+    }
+
     public List<DashboardEvent> eventsSince(Instant from, Instant to) {
         if (from == null || to == null || from.isAfter(to)) {
             throw invalidInput("상황판 이벤트 조회 범위가 올바르지 않습니다.");

@@ -11,7 +11,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
- * [긴급 담당] 상황판 격자·보존 설정.
+ * [긴급 담당] 상황판 격자·보존·심야 공백 설정.
  */
 @Component
 public class DashboardConfig {
@@ -31,6 +31,17 @@ public class DashboardConfig {
         }
     }
 
+    public record NightGapSettings(
+            int startHour,
+            int endHour,
+            List<String> kinds,
+            List<String> requestTypes) {
+        public NightGapSettings {
+            kinds = kinds == null ? List.of() : List.copyOf(kinds);
+            requestTypes = requestTypes == null ? List.of() : List.copyOf(requestTypes);
+        }
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Settings(
             double gridLatStep,
@@ -39,13 +50,30 @@ public class DashboardConfig {
             int timeBucketSec,
             int summaryMaxRangeDays,
             int alertCooldownSec,
-            List<AlertRule> alertRules) {
+            List<AlertRule> alertRules,
+            NightGapSettings nightGap) {
         public Settings(double gridLatStep, double gridLngStep, int retentionDays, int timeBucketSec) {
-            this(gridLatStep, gridLngStep, retentionDays, timeBucketSec, 31, 900, List.of());
+            this(gridLatStep, gridLngStep, retentionDays, timeBucketSec, 31, 900, List.of(),
+                    new NightGapSettings(22, 6, List.of("PHARMACY", "CONVENIENCE"), List.of("MILD")));
+        }
+
+        public Settings(
+                double gridLatStep,
+                double gridLngStep,
+                int retentionDays,
+                int timeBucketSec,
+                int summaryMaxRangeDays,
+                int alertCooldownSec,
+                List<AlertRule> alertRules) {
+            this(gridLatStep, gridLngStep, retentionDays, timeBucketSec, summaryMaxRangeDays, alertCooldownSec,
+                    alertRules, new NightGapSettings(22, 6, List.of("PHARMACY", "CONVENIENCE"), List.of("MILD")));
         }
 
         public Settings {
             alertRules = alertRules == null ? List.of() : List.copyOf(alertRules);
+            nightGap = nightGap == null
+                    ? new NightGapSettings(22, 6, List.of("PHARMACY", "CONVENIENCE"), List.of("MILD"))
+                    : nightGap;
         }
     }
 
@@ -83,7 +111,13 @@ public class DashboardConfig {
         if (settings == null || !Double.isFinite(settings.gridLatStep()) || settings.gridLatStep() <= 0
                 || !Double.isFinite(settings.gridLngStep()) || settings.gridLngStep() <= 0
                 || settings.retentionDays() <= 0 || settings.timeBucketSec() <= 0
-                || settings.summaryMaxRangeDays() <= 0 || settings.alertCooldownSec() < 0) {
+                || settings.summaryMaxRangeDays() <= 0 || settings.alertCooldownSec() < 0
+                || settings.nightGap().startHour() < 0 || settings.nightGap().startHour() > 23
+                || settings.nightGap().endHour() < 0 || settings.nightGap().endHour() > 23
+                || settings.nightGap().startHour() == settings.nightGap().endHour()
+                || settings.nightGap().kinds().isEmpty() || settings.nightGap().requestTypes().isEmpty()
+                || settings.nightGap().kinds().stream().anyMatch(kind -> !List.of("PHARMACY", "CONVENIENCE").contains(kind))
+                || settings.nightGap().requestTypes().stream().anyMatch(type -> !validEmType(type))) {
             throw new IllegalStateException("상황판 설정 값이 올바르지 않습니다.");
         }
         for (AlertRule rule : settings.alertRules()) {

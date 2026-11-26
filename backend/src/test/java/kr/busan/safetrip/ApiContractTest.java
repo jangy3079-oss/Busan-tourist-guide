@@ -8,6 +8,7 @@ import kr.busan.safetrip.course.controller.CourseController;
 import kr.busan.safetrip.course.service.CourseService;
 import kr.busan.safetrip.emergency.controller.EmergencyAdminController;
 import kr.busan.safetrip.emergency.controller.EmergencyController;
+import kr.busan.safetrip.emergency.controller.EmergencyDashboardController;
 import kr.busan.safetrip.emergency.service.DataSyncScheduler;
 import kr.busan.safetrip.emergency.service.EmergencyService;
 import kr.busan.safetrip.photo.controller.PhotoController;
@@ -42,7 +43,8 @@ class ApiContractTest {
                 new CourseAdminController(new KnowledgeIngestor(null, null, new AppProperties(null, null, null, null, null), null, null)),
                 new PhotoController(new PhotoMatchService(null, null, null, null, null), new PlaceSearchService(), new PlaceNarrationService()),
                 new EmergencyController(new EmergencyService(null, null, null, null, null, null)),
-                new EmergencyAdminController(new DataSyncScheduler()))
+                new EmergencyAdminController(new DataSyncScheduler()),
+                new EmergencyDashboardController(null, null, null))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -88,6 +90,12 @@ class ApiContractTest {
         notImplemented(post("/api/v1/admin/emergency/knowledge/reload"));  // E05
         notImplemented(post("/api/v1/admin/emergency/sync"));              // E06
         notImplemented(get("/api/v1/admin/emergency/sync/status"));        // E07
+        notImplemented(json(post("/api/v1/emergency/call-event"), "{\"eventId\":\"7c1e0000-0000-4000-8000-000000000001\",\"number\":\"119\",\"lang\":\"en\"}")); // E08
+        notImplemented(get("/api/v1/admin/emergency/dashboard/summary")
+                .param("from", "2026-11-25T00:00:00+09:00").param("to", "2026-11-26T00:00:00+09:00")); // E09
+        notImplemented(get("/api/v1/admin/emergency/dashboard/recent").param("limit", "50")); // E10
+        notImplemented(get("/api/v1/admin/emergency/dashboard/stream"));    // E11
+        notImplemented(get("/api/v1/admin/emergency/dashboard/night-gap").param("date", "2026-11-26")); // E12
     }
 
     @Test

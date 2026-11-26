@@ -1,0 +1,20 @@
+{
+  "date" : "2026-11-26",
+  "startHour" : 22,
+  "endHour" : 6,
+  "rows" : [ {
+    "hour" : "2026-11-26T23:00+09:00",
+    "district" : "수영구",
+    "openPharmacies" : 1,
+    "openConvenience" : 3,
+    "mildRequests" : 2,
+    "gap" : null
+  }, {
+    "hour" : "2026-11-27T00:00+09:00",
+    "district" : "해운대구",
+    "openPharmacies" : 0,
+    "openConvenience" : 4,
+    "mildRequests" : 1,
+    "gap" : "NO_PHARMACY"
+  } ]
+}

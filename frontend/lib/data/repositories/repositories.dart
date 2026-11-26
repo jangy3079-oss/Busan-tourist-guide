@@ -39,4 +39,6 @@ abstract class EmergencyRepository {
   Future<EmQuickResult> quick(String text, Lang lang);
   /// API-E02 POST /emergency/guide. 위치가 없으면 area, 유형을 직접 고르면 type
   Future<EmGuideResult> guide(String text, Lang lang, {double? lat, double? lng, Area? area, EmType? type});
+  /// API-E08 POST /emergency/call-event. 112·119·1330 버튼을 누른 기록(tel: 을 연 뒤, 실패는 무시)
+  Future<void> callEvent(String? eventId, String number, Lang lang);
 }

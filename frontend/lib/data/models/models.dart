@@ -59,10 +59,11 @@ class EmGuideResult {
   final String todoSource;
   final String cardKo, cardTranslated, address; // 한국어 카드(FR-E015)
   final String dataAsOf; // 도움처 데이터 기준 시각·출처 표시 문구(NFR-E008). 없으면 ''
+  final String? eventId; // 상황판 이벤트 ID. API-E08 전화 버튼 기록에만 쓴다(저장하지 않음)
   const EmGuideResult({
     this.type, this.needTypeSelection = false, this.outOfArea = false, this.topContact,
     this.places = const [], this.extra = EmExtra.none, this.todo = const [], this.todoSource = '',
-    this.cardKo = '', this.cardTranslated = '', this.address = '', this.dataAsOf = '',
+    this.cardKo = '', this.cardTranslated = '', this.address = '', this.dataAsOf = '', this.eventId,
   });
 }
 
