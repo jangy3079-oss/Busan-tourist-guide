@@ -267,7 +267,8 @@ class Dock extends ConsumerStatefulWidget {
   final String hint;
   final void Function(String) onSend;
   final VoidCallback onSos, onCamera;
-  const Dock({super.key, required this.hint, required this.onSend, required this.onSos, required this.onCamera});
+  final bool autofocus; // 입력을 기다리는 화면이면 바로 쓸 수 있게(사진→코스, #226)
+  const Dock({super.key, required this.hint, required this.onSend, required this.onSos, required this.onCamera, this.autofocus = false});
   @override
   ConsumerState<Dock> createState() => _DockState();
 }
@@ -308,7 +309,7 @@ class _DockState extends ConsumerState<Dock> {
                 IconButton(onPressed: widget.onCamera, icon: const Ic('camera', color: C.text2), tooltip: tr('photo', l)),
                 Expanded(
                   child: TextField(
-                    controller: _c, maxLength: 500, onSubmitted: (_) => _send(),
+                    controller: _c, maxLength: 500, onSubmitted: (_) => _send(), autofocus: widget.autofocus,
                     decoration: InputDecoration(hintText: widget.hint, border: InputBorder.none, counterText: '', hintStyle: const TextStyle(color: C.text4, fontSize: 14.5), isDense: true),
                     style: const TextStyle(fontSize: 14.5),
                   ),

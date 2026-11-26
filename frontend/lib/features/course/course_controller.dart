@@ -57,6 +57,9 @@ class CourseController extends Notifier<CourseState> {
 
   /// 코스 요청 화면에서 출발 장소를 고르거나(null이면 해제) 미리 정해 둔다. 다음 start()에 쓰인다
   void setStartPlace(PlacePin? p) => state = state.copy(startPlace: p);
+
+  /// 다른 기능이 넘긴 장소를 출발 장소로 두고 입력을 기다린다(사진→코스, #226). hint 는 안내 말풍선
+  void fromPlace(PlacePin p, String hint) { _token++; state = CourseState(startPlace: p, chat: [ChatMsg(hint)]); }
   void clearHint() => state = state.copy(emergencyHint: null, editNotice: null, editError: null);
 
   /// API-C01 → (OK면) API-C02. 결과 화면의 칩·출발 장소 변경은 API-C03(changeAssumption/changeStartPlace)

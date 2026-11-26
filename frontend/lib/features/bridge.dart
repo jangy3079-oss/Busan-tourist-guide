@@ -60,12 +60,10 @@ void openEmergency(BuildContext context, WidgetRef ref) {
   context.go('/emergency');
 }
 
-/// ① 사진 → 코스 (FR-P015, FR-C014): 식별된 가게를 1번 정차지로 고정해 코스 시작
+/// ① 사진 → 코스 (FR-P015, FR-C014): 식별된 가게를 출발 장소로 채우고, 하고 싶은 것을 입력하길 기다린다(#226)
 void photoToCourse(BuildContext context, WidgetRef ref, PhotoPlace place) {
   final l = ref.read(langProvider);
-  final text = tr('bFrom', l, [place.name]);
-  // 사용자가 말하지 않은 시간을 말한 것처럼 보이지 않게 실제 요청만 보여 준다. 소요 시간은 기본값 칩으로 바꿀 수 있다
-  ref.read(courseProvider.notifier).start(text, startPlaceId: place.contentId, seedChat: [ChatMsg(text, me: true), ChatMsg(tr('bFixed', l), typing: true)]);
+  ref.read(courseProvider.notifier).fromPlace(PlacePin(place.contentId, place.name, place.category, place.lat, place.lng), tr('bFixed', l, [place.name]));
   context.go('/course');
 }
 

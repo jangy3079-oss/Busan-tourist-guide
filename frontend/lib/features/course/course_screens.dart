@@ -40,6 +40,7 @@ class CourseRequestScreen extends ConsumerWidget {
     });
     _listenHints(context, ref);
     final ctrl = ref.read(courseProvider.notifier);
+    final asked = st.chat.any((m) => m.me); // 사용자가 보낸 문장이 있으면 예시 칩을 숨긴다
     Widget bubble(ChatMsg m) => Padding(
           padding: const EdgeInsets.only(top: 12),
           child: Row(mainAxisAlignment: m.me ? MainAxisAlignment.end : MainAxisAlignment.start, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -58,10 +59,12 @@ class CourseRequestScreen extends ConsumerWidget {
       head: AppHead(ct('title', l), ct('sub', l), backTo: '/'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         bubble(ChatMsg(ct('hello', l))),
-        if (st.chat.isEmpty)
+        for (final m in st.chat) bubble(m),
+        if (!asked)
           Padding(
             padding: const EdgeInsets.only(left: 36, top: 14),
-            child: Wrap(spacing: 8, runSpacing: 8, children: [for (final x in [ct('ex1', l), ct('ex2', l), ct('ex3', l)]) Material(
+            // 출발 장소를 받아 왔으면 첫 칩은 "이대로 코스 만들기"(○○에서 출발, #226)
+            child: Wrap(spacing: 8, runSpacing: 8, children: [for (final x in [if (st.startPlace != null && st.chat.isNotEmpty) tr('bFrom', l, [st.startPlace!.name]), ct('ex1', l), ct('ex2', l), ct('ex3', l)]) Material(
                 color: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: C.line2)),
                 clipBehavior: Clip.antiAlias,
@@ -69,7 +72,6 @@ class CourseRequestScreen extends ConsumerWidget {
                 child: InkWell(onTap: () => ctrl.start(x), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Text(x, style: const TextStyle(fontSize: 13)))),
               )]),
           ),
-        for (final m in st.chat) bubble(m),
         if (st.error != null) Padding(padding: const EdgeInsets.only(top: 12), child: ErrorCard(st.error!, onRetry: ctrl.retry)),
         const SizedBox(height: 16),
         _StartPlaceRow(
@@ -80,7 +82,7 @@ class CourseRequestScreen extends ConsumerWidget {
         const SizedBox(height: 10),
         PrivNote(ct('scope', l), icon: 'info'),
       ]),
-      dock: Dock(hint: ct('hint', l), onSend: ctrl.start, onSos: () => openEmergency(context, ref), onCamera: () => startPhoto(context, ref)),
+      dock: Dock(hint: ct('hint', l), onSend: ctrl.start, onSos: () => openEmergency(context, ref), onCamera: () => startPhoto(context, ref), autofocus: st.startPlace != null && !asked),
     );
   }
 }

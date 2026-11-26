@@ -15,10 +15,12 @@ const _course = Course('c_1', 1, [], [CourseStop('1', '14:00 – 15:00', '해변
 class _Repo implements CourseRepository {
   Object? createError, editError, narrateError;
   int narrated = 0;
+  final created = <(String, String?)>[];
   Lang? lang;
   EmType? emergency;
   @override
   Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides, bool notEmergency = false}) async {
+    created.add((query, startPlaceId));
     if (createError != null) throw createError!;
     if (emergency != null && !notEmergency) return CourseResult(emergency: emergency);
     return const CourseResult(course: _course);
@@ -56,6 +58,16 @@ void main() {
     box.listen(courseProvider, (_, _) {});
   });
   tearDown(() => box.dispose());
+
+  test('사진에서 넘어오면 출발 장소만 채우고 기다렸다가, 입력하면 그 가게에서 출발하도록 요청한다(#226)', () async {
+    ctrl().fromPlace(const PlacePin('2789475', '수영팔도시장', '쇼핑', 35.17, 129.11), '수영팔도시장에서 출발해요');
+    expect(repo.created, isEmpty); // 바로 보내지 않는다
+    expect(st().startPlace?.contentId, '2789475');
+    expect(st().chat.single.me, false);
+    await ctrl().start('저녁 먹고 바다 보기');
+    expect(repo.created.single, ('저녁 먹고 바다 보기', '2789475'));
+    expect(st().course, isNotNull);
+  });
 
   test('요청이 실패하면 로딩을 끝내고 다시 시도할 수 있다', () async {
     repo.createError = TimeoutException('늦음');
