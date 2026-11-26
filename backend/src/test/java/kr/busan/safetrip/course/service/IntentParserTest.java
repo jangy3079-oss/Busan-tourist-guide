@@ -122,6 +122,18 @@ class IntentParserTest {
         assertThrows(IllegalStateException.class, () -> broken.parseEdit("카페로 바꿔", STOPS));
     }
 
+    /** 확인 시트에서 "코스 계속"을 고르면 가벼운 유형은 코스로 보고, 위급은 그래도 막는다 */
+    @Test
+    void notEmergencySkipsOnlyNonUrgent() {
+        for (EmType t : EmType.values()) {
+            IntentParser p = new IntentParser(x -> Optional.of(t), req -> { throw new RuntimeException(); }, settings);
+            boolean urgent = t == EmType.URGENT || t == EmType.FIRE || t == EmType.THREAT;
+            assertEquals(urgent, p.parse("광안리 3시간", TODAY, true).emergency().isPresent(), t.name());
+            assertEquals(urgent, p.parseEdit("2번 빼줘", STOPS, true).emergency().isPresent(), t.name());
+            assertTrue(p.parse("광안리 3시간", TODAY).emergency().isPresent(), t.name());
+        }
+    }
+
     @Test
     void emergencyInEdit() {
         assertEquals(Optional.of(EmType.URGENT), parser(null).parseEdit("친구가 쓰러졌어요", STOPS).emergency());

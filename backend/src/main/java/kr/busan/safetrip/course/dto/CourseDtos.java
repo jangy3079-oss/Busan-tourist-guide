@@ -1,6 +1,7 @@
 package kr.busan.safetrip.course.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,10 +25,15 @@ public final class CourseDtos {
     /** FR-C003 사용자가 바꾼 가정 칩 값. null 이면 기본값 */
     public record Overrides(String visitDate, String startTime, Integer durationMin, Area area) {}
 
-    /** API-C01 */
+    /** API-C01. notEmergency = 확인 시트에서 "코스 계속"을 고른 경우 true (위급·화재·위협에는 적용 안 함) */
     public record CreateRequest(@NotBlank @Size(max = 500) String query,
                                 @Pattern(regexp = "ko|en|ja") String lang,
-                                String startPlaceId, Overrides overrides) {}
+                                String startPlaceId, Overrides overrides,
+                                @JsonInclude(JsonInclude.Include.NON_NULL) Boolean notEmergency) {
+        public CreateRequest(String query, String lang, String startPlaceId, Overrides overrides) {
+            this(query, lang, startPlaceId, overrides, null);
+        }
+    }
 
     /**
      * API-C03. 지금 버전에 대한 수정 → 새 버전. 셋 중 하나 이상:
@@ -35,7 +41,12 @@ public final class CourseDtos {
      * 이전 수정 내용은 지금 버전에 이미 들어 있으므로 그대로 유지된다.
      */
     public record EditRequest(@Size(max = 500) String text, @Pattern(regexp = "ko|en|ja") String lang,
-                              Overrides overrides, String startPlaceId) {
+                              Overrides overrides, String startPlaceId,
+                              @JsonInclude(JsonInclude.Include.NON_NULL) Boolean notEmergency) {
+        public EditRequest(String text, String lang, Overrides overrides, String startPlaceId) {
+            this(text, lang, overrides, startPlaceId, null);
+        }
+
         @JsonIgnore
         @AssertTrue(message = "text, overrides, startPlaceId 중 하나는 있어야 한다")
         public boolean isAnyChange() {

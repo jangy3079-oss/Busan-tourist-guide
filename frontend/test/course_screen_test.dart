@@ -16,15 +16,18 @@ class _Repo implements CourseRepository {
   Object? createError, editError, narrateError;
   int narrated = 0;
   Lang? lang;
+  EmType? emergency;
   @override
-  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides}) async {
+  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides, bool notEmergency = false}) async {
     if (createError != null) throw createError!;
+    if (emergency != null && !notEmergency) return CourseResult(emergency: emergency);
     return const CourseResult(course: _course);
   }
 
   @override
-  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId}) async {
+  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId, bool notEmergency = false}) async {
     if (editError != null) throw editError!;
+    if (emergency != null && !notEmergency) return CourseResult(emergency: emergency);
     return const CourseResult(course: _course);
   }
 
@@ -66,6 +69,23 @@ void main() {
     await Future<void>.delayed(Duration.zero);
     expect(st().error, null);
     expect(st().course, isNotNull);
+  });
+
+  test('긴급이 아니라고 하면 같은 문장으로 코스를 이어서 만든다', () async {
+    repo.emergency = EmType.way;
+    await ctrl().start("I don't speak Korean, 3 hours");
+    expect(st().emergencyHint, EmType.way);
+    expect(st().course, null);
+    ctrl().continueCourse();
+    await Future<void>.delayed(Duration.zero);
+    expect(st().emergencyHint, null);
+    expect(st().course, isNotNull);
+    await ctrl().edit('길 잃기 쉬운 곳 빼줘');
+    expect(st().emergencyHint, EmType.way);
+    ctrl().continueCourse();
+    await Future<void>.delayed(Duration.zero);
+    expect(st().emergencyHint, null);
+    expect(st().editing, false);
   });
 
   test('수정이 실패해도 지금 코스를 유지한다', () async {

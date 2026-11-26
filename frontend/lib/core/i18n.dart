@@ -100,6 +100,7 @@ const Map<String, List<String>> L = {
   'bAsk': ['긴급 안내로 이동할까요?', 'Go to emergency help?', '緊急案内に移動しますか?'],
   'bAskSub': ['"{0}" 문장에서 도움이 필요한 상황이 보였어요. 이 문장은 코스 대화에 남지 않고, 긴급 입력에 미리 채워져요.', '"{0}" sounds like you may need help. It will not stay in the course chat and will be filled in for emergency help.', '「{0}」から助けが必要な状況が見られました。この文はコースの会話には残らず、緊急の入力欄に入ります。'],
   'bGo': ['긴급 안내 보기', 'Open emergency help', '緊急案内を見る'],
+  'collected': ['수집일 {0}', 'Collected {0}', '収集日 {0}'],
   'bStay': ['코스 계속 만들기', 'Keep planning', 'コース作成を続ける'],
   'bFrom': ['{0}에서 출발', 'Start from {0}', '{0}から出発'],
   'bFixed': ['이 가게를 1번으로 고정하고 코스를 짜는 중', 'Planning a course starting from this place', 'このお店を1番に固定してコースを作成中'],
@@ -114,6 +115,12 @@ const Map<String, List<List<String>>> kChips = {
 };
 
 String tr(String k, Lang l, [List<Object> args = const []]) => trIn(L, k, l, args);
+
+/// 공공데이터 출처 한 줄: 출처 · 수집일 (FR-C011, FR-P010, NFR-C008). 출처 표기는 번역하지 않는다
+String sourceLine(String? source, String? collectedAt, Lang l) => [
+      source ?? 'ⓒ한국관광공사',
+      if (collectedAt != null && collectedAt.isNotEmpty) tr('collected', l, [collectedAt.split('T').first]),
+    ].join(' · ');
 
 /// 기능별 문구 맵에서 읽는다. {0}, {1} 자리에 args 를 넣는다. 없는 키는 키 이름을 그대로 보여 빠진 것이 눈에 띄게 한다
 String trIn(Map<String, List<String>> m, String k, Lang l, [List<Object> args = const []]) {
