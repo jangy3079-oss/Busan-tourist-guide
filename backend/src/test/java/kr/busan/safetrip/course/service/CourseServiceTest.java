@@ -82,6 +82,24 @@ class CourseServiceTest {
     }
 
     /** FR-C007 1단계: 짧은 코스는 장소 수를 줄이고, 줄였다고 알린다 */
+    /** 식사 시각 지정·가격 요청은 코스를 바꾸지 않고 안내만 한다(EDIT_UNCLEAR). 그 밖의 식사 요청은 그대로 처리 */
+    @Test
+    void unsupportedEditKeepsCourse() {
+        for (String s : List.of("아니 6시에 저녁을 먹고싶다고 카페가아니라", "저녁은 좀 더 저렴하게 먹고싶어", "소는 너무비싸", "dinner at 6pm please",
+                "a cheaper place", "18:00に夕食を食べたい", "もっと安い店で")) {
+            assertTrue(service.unsupported(s), s);
+        }
+        for (String s : List.of("2번 빼고 카페 넣어줘", "3시간으로 줄여줘", "점심 먹을 곳 추가해줘", "5시간 코스에 저녁 포함", "3時間にして", "add a lunch place")) {
+            assertFalse(service.unsupported(s), s);
+        }
+        CourseDtos.CourseResponse v1 = create();
+        int before = saved.size();
+        CourseDtos.CourseResponse r = service.edit(v1.courseId(), new CourseDtos.EditRequest("6시에 저녁 먹고 싶어", "ko", null, null));
+        assertEquals(CourseDtos.Status.EDIT_UNCLEAR, r.status());
+        assertTrue(r.notice().message().contains("지원하지"), r.notice().message());
+        assertEquals(before, saved.size());
+    }
+
     @Test
     void shortCourseHasFewerStops() {
         CourseDtos.CourseResponse c = service.create(new CourseDtos.CreateRequest("광안리 2시간 10분 산책", "ko", null,

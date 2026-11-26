@@ -132,6 +132,10 @@ public class CourseService {
 
         List<IntentParser.EditOp> ops = List.of();
         if (req.text() != null && !req.text().isBlank()) {
+            if (unsupported(req.text())) { // 엉뚱한 장소를 바꾸지 않고 안내만 한다. 긴급 문장은 아래 parseEdit 보다 먼저 보지 않지만 식사·가격 단어와 겹치지 않는다
+                return notice(Status.EDIT_UNCLEAR, new CourseDtos.Notice(null, settings.msg(lang, "editUnsupported"),
+                        List.of(settings.msg(lang, "editExample1"), settings.msg(lang, "editExample2")), List.of()));
+            }
             IntentParser.Edit e = intentParser.parseEdit(req.text(), prev.stops(), Boolean.TRUE.equals(req.notEmergency()));
             if (e.emergency().isPresent()) return emergency(lang, e.emergency().get());
             ops = e.ops();
@@ -340,6 +344,14 @@ public class CourseService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /** 식사 단어 + 시각("6시에 저녁"), 또는 가격 단어("저렴하게"). 식사 시각 고정·가격 데이터가 없어 처리할 수 없다 */
+    boolean unsupported(String text) {
+        CourseSettings.Unsupported u = settings.intent().unsupported();
+        String t = text.toLowerCase(java.util.Locale.ROOT);
+        if (u.priceWords().stream().anyMatch(t::contains)) return true;
+        return u.mealWords().stream().anyMatch(t::contains) && java.util.regex.Pattern.compile(u.timePattern()).matcher(t).find();
     }
 
     private static LocalDate parseDate(String s) {

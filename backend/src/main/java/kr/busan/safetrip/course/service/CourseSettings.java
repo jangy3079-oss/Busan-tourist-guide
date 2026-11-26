@@ -29,7 +29,10 @@ public class CourseSettings {
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
                          int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise,
-                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted) {}
+                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted, Unsupported unsupported) {}
+
+    /** 수정 문장 중 지원하지 않는 요청(식사 시각 지정·가격). 코스를 바꾸지 않고 안내한다 */
+    public record Unsupported(List<String> mealWords, String timePattern, List<String> priceWords) {}
 
     /** 요청하지 않으면 빼고, 요청해도 뒤로 보내는 분류(#151) */
     public record Demoted(String category, List<String> codes, List<String> keywords) {}
