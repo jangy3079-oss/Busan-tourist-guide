@@ -71,5 +71,13 @@ class PaddleOcrEngineTest {
         assertThat(new MatchConfig().ocr().paddleUrl()).isEqualTo("http://127.0.0.1:8866");
     }
 
+    @Test
+    void 환경변수_주소가_있으면_그쪽으로_보낸다() throws Exception {
+        AtomicReference<byte[]> got = new AtomicReference<>();
+        String url = serve(200, "{\"blocks\":[]}", got);
+        new PaddleOcrEngine(new MatchConfig(), url).recognize(new byte[] {7}); // yml 기본값(8866) 대신 override
+        assertThat(got.get()).containsExactly(7);
+    }
+
     private static PaddleOcrEngine engine(String url) { return new PaddleOcrEngine(url, 2); }
 }
