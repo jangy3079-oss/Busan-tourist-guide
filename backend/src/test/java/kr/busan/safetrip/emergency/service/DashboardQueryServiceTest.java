@@ -106,4 +106,21 @@ class DashboardQueryServiceTest {
                 mock(NamedParameterJdbcTemplate.class), new DashboardConfig());
         assertThatThrownBy(() -> service.recent(0)).isInstanceOf(BusinessException.class);
     }
+
+    @Test
+    void bindsTimesAsOffsetDateTimeForPostgres() {
+        // PostgreSQL JDBC 는 java.time.Instant 를 묶지 못한다(실서버 E09 500·알림 판정 실패, #189에서 발견)
+        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
+        when(jdbc.queryForList(org.mockito.ArgumentMatchers.anyString(), anyMap())).thenReturn(List.of());
+        when(jdbc.queryForMap(org.mockito.ArgumentMatchers.anyString(), anyMap())).thenReturn(Map.of("llm_failure_rate", 0.0, "fallback_rate", 0.0));
+        DashboardQueryService service = new DashboardQueryService(jdbc, new DashboardConfig());
+
+        service.summary(Instant.parse("2026-11-25T00:00:00Z"), Instant.parse("2026-11-26T00:00:00Z"));
+        service.eventsSince(Instant.parse("2026-11-25T23:00:00Z"), Instant.parse("2026-11-26T00:00:00Z"));
+
+        org.mockito.Mockito.verify(jdbc, org.mockito.Mockito.atLeastOnce()).queryForMap(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.<Map<String, ?>>argThat(m -> m.get("from") instanceof java.time.OffsetDateTime));
+        org.mockito.Mockito.verify(jdbc, org.mockito.Mockito.never()).queryForList(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.<Map<String, ?>>argThat(m -> m.get("from") instanceof Instant));
+    }
 }
