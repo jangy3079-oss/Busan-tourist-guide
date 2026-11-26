@@ -1,4 +1,5 @@
 // [사진 담당] UI-P01 사진 선택 · P02 식별 결과 · P03 후보 선택 · P04 실패 안내. 이 파일은 사진 담당만 수정한다.
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +30,11 @@ Widget _signBox(String text, {double h = 190, bool blur = false}) => Container(
         child: Text(text, style: TextStyle(color: Colors.white, fontSize: h < 150 ? 20 : 24, fontWeight: FontWeight.w800, shadows: blur ? [const Shadow(blurRadius: 8, color: Colors.white54)] : null)),
       ),
     );
+
+/// 올린 사진이 있으면 그 사진, 없으면(샘플·이름 검색) 예시 간판 그림(#224)
+Widget _photoOrSign(Uint8List? img, String text, {double h = 190, bool blur = false}) => img == null
+    ? _signBox(text, h: h, blur: blur)
+    : ClipRRect(borderRadius: BorderRadius.circular(rLg), child: Container(height: h, width: double.infinity, color: const Color(0xFF1B1E22), child: Image.memory(img, fit: BoxFit.contain, gaplessPlayback: true)));
 
 class PhotoPickScreen extends ConsumerWidget {
   const PhotoPickScreen({super.key});
@@ -134,7 +140,7 @@ class PhotoScanScreen extends ConsumerWidget {
     return ScreenFrame(
       head: AppHead(pt('title', l), pt('sub', l), backTo: '/photo'),
       body: Column(children: [
-        _signBox(st.sample == 'cand' ? '…소갈비' : '해운대암소갈비집', blur: st.sample == 'fail'),
+        _photoOrSign(ref.read(photoProvider.notifier).image, st.sample == 'cand' ? '…소갈비' : '해운대암소갈비집', blur: st.sample == 'fail'),
         const SizedBox(height: 14),
         if (st.error != null) ...[
           ErrorCard(st.error!, onRetry: () => ref.read(photoProvider.notifier).retry()),
@@ -153,6 +159,8 @@ class PhotoResultScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final st = ref.watch(photoProvider);
     final l = ref.watch(langProvider);
+    // 언어를 바꾸면 설명을 그 언어로 다시 받는다(FR-P011, #225)
+    ref.listen<Lang>(langProvider, (prev, next) { if (prev != next) ref.read(photoProvider.notifier).renarrate(); });
     final p = st.selected;
     if (p == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) { if (context.mounted) context.go('/photo'); });
@@ -161,7 +169,7 @@ class PhotoResultScreen extends ConsumerWidget {
     return ScreenFrame(
       head: AppHead(pt('found', l), pt('sub', l), backTo: '/photo'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _signBox(p.name, h: 110),
+        _photoOrSign(ref.read(photoProvider.notifier).image, p.name, h: 160),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(14), decoration: cardDeco(),
@@ -172,7 +180,7 @@ class PhotoResultScreen extends ConsumerWidget {
             if (l != Lang.ko) Text(pt('origName', l), style: const TextStyle(fontSize: 12.5, color: C.text3)), // FR-P010: 상호는 원문 그대로
             const SizedBox(height: 8),
             KV([
-              (pt('kCategory', l), Text(p.category)),
+              (pt('kCategory', l), Text(photoCategory(p.category, l))),
               (pt('kWhere', l), Text([p.address, if (p.distM != null) pt('fromYou', l, [p.distM!]), if (st.result?.lowAccuracy ?? false) pt('lowAcc', l)].join(' · '))), // FR-P003
               (pt('kHours', l), Row(children: [p.openNow ? TagC.green(pt('open', l)) : TagC.amber(pt('check', l)), const SizedBox(width: 6), Flexible(child: Text(p.hours))])),
               if (p.overview?.isNotEmpty ?? false) (pt('overview', l), Text(p.overview!, maxLines: 4, overflow: TextOverflow.ellipsis)),
@@ -225,7 +233,7 @@ class PhotoCandidatesScreen extends ConsumerWidget {
                   child: Row(children: [
                     Container(width: 28, height: 28, alignment: Alignment.center, decoration: const BoxDecoration(color: C.text, shape: BoxShape.circle), child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))),
                     const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(cands[i].place.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), Text([cands[i].place.category, if (cands[i].place.distM != null) '${cands[i].place.distM}m'].join(' · '), style: const TextStyle(fontSize: 12.5, color: C.text3))])),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(cands[i].place.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), Text([photoCategory(cands[i].place.category, l), if (cands[i].place.distM != null) '${cands[i].place.distM}m'].join(' · '), style: const TextStyle(fontSize: 12.5, color: C.text3))])),
                     Text.rich(TextSpan(children: [TextSpan(text: '${cands[i].score}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: C.blue)), TextSpan(text: pt('pts', l), style: const TextStyle(fontSize: 12, color: C.text3))])),
                   ]),
                 ),

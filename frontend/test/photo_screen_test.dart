@@ -131,4 +131,32 @@ void main() {
     }
     expect(pt('fromYou', Lang.en, [420]), '420 m from you');
   });
+
+  test('올린 사진은 화면 표시용으로만 들고 있다가, 이름 검색·화면 이탈 때 버린다(#224, NFR-P002)', () async {
+    await ctrl().identify(bytes: [1, 2, 3]);
+    expect(ctrl().image, [1, 2, 3]);
+    await ctrl().searchByName('갈비');
+    expect(ctrl().image, isNull);
+    await ctrl().identify(bytes: [4]);
+    ctrl().reset();
+    expect(ctrl().image, isNull);
+    await ctrl().identify(sample: 'ok');
+    expect(ctrl().image, isNull);
+  });
+
+  test('언어를 바꾸면 선택된 가게 설명을 다시 받는다(#225)', () async {
+    await ctrl().identify(bytes: [1]);
+    await settle();
+    box.read(langProvider.notifier).set(Lang.en);
+    ctrl().renarrate();
+    expect(st().narration, isNull); // 새 언어 설명을 받는 동안 이전 언어 설명은 지운다
+    await settle();
+    expect(st().narration, '설명');
+  });
+
+  test('업종은 요청 언어로, 모르는 업종은 원문 그대로(#225)', () {
+    expect(photoCategory('쇼핑', Lang.en), 'Shopping');
+    expect(photoCategory('음식점', Lang.ja), '飲食店');
+    expect(photoCategory('숙박', Lang.en), '숙박');
+  });
 }

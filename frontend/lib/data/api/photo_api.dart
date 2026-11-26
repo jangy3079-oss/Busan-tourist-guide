@@ -16,7 +16,7 @@ class ApiPhotoRepository implements PhotoRepository {
       if (lat != null) 'lat': '$lat',
       if (lng != null) 'lng': '$lng',
     });
-    return _result(j);
+    return _result(j, lang);
   }
 
   @override
@@ -26,28 +26,27 @@ class ApiPhotoRepository implements PhotoRepository {
   }
 
   @override
-  Future<MatchResult> search(String q, Lang lang) async => _result(await api.get('/places/search', {'q': q, 'lang': langCode(lang)}));
+  Future<MatchResult> search(String q, Lang lang) async => _result(await api.get('/places/search', {'q': q, 'lang': langCode(lang)}), lang);
 
-  MatchResult _result(Map<String, dynamic> j) {
+  MatchResult _result(Map<String, dynamic> j, Lang lang) {
     const dec = {'CONFIRMED': MatchDecision.confirmed, 'CANDIDATES': MatchDecision.candidates, 'NOT_FOUND': MatchDecision.notFound, 'OCR_FAIL': MatchDecision.ocrFail};
     return MatchResult(
       dec[j['decision']] ?? MatchDecision.notFound,
       [
         for (final c in (j['candidates'] as List? ?? const []).cast<Map<String, dynamic>>())
-          PhotoCandidate(_place(c['place'] as Map<String, dynamic>, c['distanceM'] as int?), (dbl(c['score']) * 100).round()),
+          PhotoCandidate(_place(c['place'] as Map<String, dynamic>, c['distanceM'] as int?, lang), (dbl(c['score']) * 100).round()),
       ],
       matchId: j['matchId'] as String?,
       lowAccuracy: j['lowAccuracy'] as bool? ?? false,
     );
   }
 
-  PhotoPlace _place(Map<String, dynamic> p, int? dist) {
-    final collected = (p['collectedAt'] as String?)?.split('T').first;
+  PhotoPlace _place(Map<String, dynamic> p, int? dist, Lang lang) {
     return PhotoPlace(
       p['contentId'], p['name'], p['category'] ?? '', p['address'] ?? '', null, p['hoursText'] ?? '',
       dbl(p['lat']), dbl(p['lng']), dist, p['openStatus'] == 'OPEN',
       overview: p['overview'] as String?,
-      source: [p['source'] ?? 'ⓒ한국관광공사', if (collected != null) '수집일 $collected'].join(' · '),
+      source: sourceLine(p['source'] as String?, p['collectedAt'] as String?, lang), // 출처 표기는 원문, 수집일은 요청 언어(#225, #169)
     );
   }
 }
