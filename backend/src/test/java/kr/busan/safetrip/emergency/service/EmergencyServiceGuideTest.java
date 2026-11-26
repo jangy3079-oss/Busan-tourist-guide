@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
 import kr.busan.safetrip.common.api.Area;
 import kr.busan.safetrip.common.api.EmType;
+import kr.busan.safetrip.common.api.Lang;
 import kr.busan.safetrip.common.exception.BusinessException;
 import kr.busan.safetrip.common.exception.ErrorCode;
 import kr.busan.safetrip.common.exception.NotImplementedYetException;
@@ -35,6 +36,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.GuideRequest;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.GuideResponse;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.HelpPlace;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.PlaceKind;
+import kr.busan.safetrip.emergency.dto.EmergencyDtos.Source;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 import kr.busan.safetrip.emergency.entity.HelpPlaceEntity;
@@ -42,11 +44,16 @@ import kr.busan.safetrip.emergency.repository.HelpPlaceRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -83,7 +90,7 @@ class EmergencyServiceGuideTest {
                 decisionTable,
                 finder,
                 new KoreanCardBuilder(),
-                new GuidanceRetriever(), // 아직 NotImplementedYetException → fallback-steps.json 검증
+                new GuidanceRetriever(), // 지식베이스 저장소 없음 → fallback-steps.json 검증
                 new RegionResolver(),
                 new ReverseGeocoder(), // 아직 NotImplementedYetException → 대체 주소 검증
                 new FallbackSteps(),
@@ -488,5 +495,30 @@ class EmergencyServiceGuideTest {
                 null, updatedAt, "CSV", extId, "수영구", hoursJson, alwaysOpen);
         ReflectionTestUtils.setField(entity, "id", id);
         return entity;
+    }
+
+    @Test
+    void passesGroupSlotsTopContactAndPlaceKindsToGuidanceAndKeepsKnowledgeBaseSteps() {
+        GuidanceRetriever kb = mock(GuidanceRetriever.class);
+        when(kb.retrieve(any(), any(), any(), anyString(), any(), any(), any())).thenReturn(new GuidanceRetriever.Guidance(
+                List.of("가까운 약국에 증상을 보여 주세요.", "1330에 전화하세요."), false, List.of(new Source("mild-pharmacy", "약국에서"))));
+        DecisionTable dt = new DecisionTable();
+        EmergencyService kbService = new EmergencyService(
+                new KeywordRuleEngineImpl(), classifier, dt,
+                new HelpPlaceFinder(placeRepo, dt, new OpenNowEvaluator(), erClient), new KoreanCardBuilder(),
+                kb, new RegionResolver(), new ReverseGeocoder(), new FallbackSteps(), new EmergencyMessages(), FIXED_CLOCK);
+        HelpPlaceEntity pharmacy = entity(
+                40L, "PHARMACY", "세종약국", 35.1552, 129.1186, "{\"1\":\"0900-2400\"}", false, Instant.parse("2026-10-12T00:00:00Z"), "C40");
+        when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
+                anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(pharmacy));
+
+        GuideResponse res = kbService.guide(new GuideRequest("열이 나요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        verify(kb).retrieve(eq(EmType.MILD), any(), any(), eq("열이 나요"), eq(Lang.KO), eq("1330"),
+                argThat(places -> places.stream().anyMatch(p -> p.kind() == PlaceKind.PHARMACY)));
+        assertThat(res.stepsFallback()).isFalse();
+        assertThat(res.sources()).extracting(Source::id).containsExactly("mild-pharmacy");
+        assertThat(res.steps()).hasSize(2);
     }
 }

@@ -187,7 +187,9 @@ public class EmergencyService {
         Card card = buildCard(type, group, triage.slots(), loc, places, lang);
 
         // 6. 지금 할 일 (FR-E016, NFR-E003)
-        GuidanceRetriever.Guidance stepGuidance = retrieveGuidanceSafely(type, req.text(), lang);
+        //    위치·주소·장소 이름은 넘기지 않고, 도움처는 종류만 문서 조건에 쓴다(AI-REQ-E06)
+        GuidanceRetriever.Guidance stepGuidance = retrieveGuidanceSafely(
+                type, group, triage.slots(), req.text(), lang, topContact, places);
 
         // 7. 데이터 기준 시각·출처 (NFR-E008)
         DataAsOf dataAsOf = buildDataAsOf(places, foundPlaces.oldestUpdatedAt());
@@ -377,10 +379,11 @@ public class EmergencyService {
         return messages.districtFallbackAddress(loc.district());
     }
 
-    private GuidanceRetriever.Guidance retrieveGuidanceSafely(EmType type, String text, Lang lang) {
+    private GuidanceRetriever.Guidance retrieveGuidanceSafely(EmType type, String group, Map<String, String> slots,
+            String text, Lang lang, String topContact, List<HelpPlace> places) {
         if (guidance != null) {
             try {
-                GuidanceRetriever.Guidance fetched = guidance.retrieve(type, text, lang);
+                GuidanceRetriever.Guidance fetched = guidance.retrieve(type, group, slots, text, lang, topContact, places);
                 if (fetched != null && fetched.steps() != null && !fetched.steps().isEmpty()) {
                     return fetched;
                 }

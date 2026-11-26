@@ -14,7 +14,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.ReloadResult;
  * 상태: 완료
  * 수정 규칙: 긴급 담당만 수정. 코스·사진 담당은 수정 금지(필요하면 긴급 담당에게 요청).
  *
- * 키워드·결정표·슬롯·카드 템플릿·분류 설정·대체 단계·메시지·지식베이스 문서를 모두 읽고 검증한 뒤에만 바꾼다.
+ * 키워드·결정표·슬롯·카드 템플릿·분류 설정·대체 단계·메시지·안내 설정·지식베이스 문서를 모두 읽고 검증한 뒤에만 바꾼다.
  * 하나라도 실패하면 이전 상태를 그대로 두고 INVALID_INPUT(400)으로 이유를 돌려준다.
  * 지식베이스 DB 반영(트랜잭션)을 먼저 하고, 성공했을 때만 메모리를 바꾼다.
  */
@@ -28,6 +28,7 @@ public class KnowledgeReloadService {
     private final SituationClassifier classifier;
     private final FallbackSteps fallbackSteps;
     private final EmergencyMessages messages;
+    private final GuidanceRetriever guidance;
     private final KnowledgeBaseLoader kbLoader;
 
     public KnowledgeReloadService(
@@ -37,6 +38,7 @@ public class KnowledgeReloadService {
             SituationClassifier classifier,
             FallbackSteps fallbackSteps,
             EmergencyMessages messages,
+            GuidanceRetriever guidance,
             KnowledgeBaseLoader kbLoader) {
         this.keywords = keywords;
         this.decisionTable = decisionTable;
@@ -44,6 +46,7 @@ public class KnowledgeReloadService {
         this.classifier = classifier;
         this.fallbackSteps = fallbackSteps;
         this.messages = messages;
+        this.guidance = guidance;
         this.kbLoader = kbLoader;
     }
 
@@ -61,7 +64,8 @@ public class KnowledgeReloadService {
                     templates.commit(),
                     classifier.prepareReload(),
                     fallbackSteps.prepareReload().commit(),
-                    messages.prepareReload());
+                    messages.prepareReload(),
+                    guidance.prepareReload());
             kb = kbLoader.parseStrict();
         } catch (RuntimeException e) {
             log.warn("emergency.reload rejected: {}", e.getClass().getSimpleName());

@@ -33,7 +33,7 @@ class KnowledgeReloadServiceTest {
         KnowledgeBaseLoader loader = new KnowledgeBaseLoader(repo, null, () -> kbFiles, Clock.systemUTC());
         KoreanCardBuilder card = new KoreanCardBuilder();
         return new KnowledgeReloadService(keywords, decision, card,
-                new SituationClassifier(null, card), new FallbackSteps(), new EmergencyMessages(), loader);
+                new SituationClassifier(null, card), new FallbackSteps(), new EmergencyMessages(), new GuidanceRetriever(), loader);
     }
 
     @Test
