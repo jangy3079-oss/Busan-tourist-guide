@@ -5,6 +5,9 @@
 #   2026-11-25 초기값 작성 (사진 담당)
 #   2026-11-25 ocr 제한시간·재시도, narration(설명 길이·템플릿·업종 이름) 추가
 #   2026-11-26 ocr.paddleUrl 추가(#41, 로컬 PaddleOCR 서버 주소)
+#   2026-11-26 narration.promptLengthRatio·reminders 추가(#153, Claude 기준 프롬프트)
+#   2026-11-26 narration.promptLengthRatio 언어별로(en 0.55, #153 측정에서 영어 길이 초과)
+#   2026-11-26 narration.districts 추가, 영·일 템플릿은 주소 원문 대신 구 이름(#153)
 
 image:
   allowedFormats: [jpg, jpeg, png]   # FR-P002
@@ -15,7 +18,7 @@ ocr:
   minBlockConfidence: 0.5            # FR-P004: 이 값 미만 블록은 매칭에서 제외
   timeoutSec: 8                      # NFR-P004: 넘으면 1회 재시도, 그래도 실패면 OCR_FAIL
   maxRetry: 1
-  paddleUrl: http://127.0.0.1:8866   # 로컬 PaddleOCR 서버(resources/photo/ocr-server). 엔진 교체는 safetrip.ocr.engine
+  paddleUrl: http://127.0.0.1:8866   # 로컬 PaddleOCR 서버(resources/photo/ocr-server/README.md). 환경변수 PHOTO_OCR_URL 이 있으면 그 값을 씀. 엔진 교체는 safetrip.ocr.engine
 
 score:
   levenshteinWeight: 0.5             # 자모 편집거리 유사도 비중
@@ -46,11 +49,25 @@ normalize:
 
 narration:
   maxChars: 60                       # FR-P011: 설명 길이 상한(언어 공통)
+  # LLM 에는 maxChars × 비율 글자로 알려 준다(검증은 maxChars 그대로, #144와 같은 방식)
+  # en: 45자로 알려도 63~69자로 써서 길이 초과가 났다(#153 측정) → 0.55(33자)
+  promptLengthRatio: { ko: 0.75, en: 0.55, ja: 0.75 }
+  # 장소 원문 뒤에 붙이는 언어별 다시 지시. {maxChars}=LLM 에 알려 주는 글자 수. 상호는 한글 그대로 둔다(FR-P010)
+  reminders:
+    ko: "안내 문장 하나를 한국어로 {maxChars}자 이내로 쓰세요. 상호는 원문 그대로 씁니다."
+    en: "Write one guide sentence in English only, at most {maxChars} characters. Keep the Korean shop name as written; no other Korean words. Shorter is better; a sentence over the limit is thrown away."
+    ja: "案内文を一文、日本語だけで{maxChars}文字以内で書いてください。ハングルは店名だけ(原文のまま)。地名は「水営区」「海雲台」のように日本語表記。"
   # FR-P012 템플릿 설명. {name}=한글 원문 상호, {category}=업종(언어별 이름), {address}=주소 원문
+  # 영·일은 한글 주소 원문 대신 {district}(구 이름을 그 언어로)를 쓴다. 주소 원문은 가게 정보 카드에 그대로 있다(FR-P010, #153)
   templates:
     ko: "{name}은(는) {address}에 있는 {category}입니다."
-    en: "{name} is a {category} at {address}."
-    ja: "{name}は{address}にある{category}です。"
+    en: "{name} is a {category} in {district}."
+    ja: "{name}は{district}にある{category}です。"
+  # {district}: 주소에 들어 있는 구 이름 → 언어별 표기. 어느 구도 아니면 default
+  districts:
+    수영구: { ko: 부산 수영구, en: "Suyeong-gu, Busan", ja: 釜山・水営区 }
+    해운대구: { ko: 부산 해운대구, en: "Haeundae-gu, Busan", ja: 釜山・海雲台区 }
+    default: { ko: 부산, en: Busan, ja: 釜山 }
   # 업종(place.category) 언어별 이름. 없으면 원문 그대로
   categoryNames:
     관광지: { ko: 관광지, en: tourist spot, ja: 観光地 }

@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import kr.busan.safetrip.photo.service.MatchConfig;
@@ -21,7 +22,7 @@ import kr.busan.safetrip.photo.service.MatchConfig;
  * 상태: 완료
  * 수정 규칙: 사진 담당만 수정. 코스·긴급 담당은 수정 금지(필요하면 사진 담당에게 요청).
  *
- * 로컬 PaddleOCR 서버(resources/photo/ocr-server/paddle_ocr_server.py)에 이미지를 보내 블록을 받는다.
+ * 로컬 PaddleOCR 서버(resources/photo/ocr-server/paddle_ocr_server.py)에 이미지를 보내 블록을 받는다. 실행 방법: 같은 폴더 README.md
  * 블록은 모두 돌려주고, 신뢰도 하한(FR-P004) 거르기는 MatchScoring.usableBlocks 가 한다.
  * 제한시간·재시도는 PhotoMatchService 가 맡는다(NFR-P004). 서버가 꺼져 있거나 오류면 예외 → OCR_FAIL.
  */
@@ -33,9 +34,14 @@ public class PaddleOcrEngine implements OcrEngine {
     private final URI endpoint;
     private final Duration timeout;
 
+    /** 서버 주소는 환경변수 PHOTO_OCR_URL 이 있으면 그 값, 없으면 matching.yml 의 ocr.paddleUrl (#192) */
     @Autowired
+    public PaddleOcrEngine(MatchConfig config, @Value("${PHOTO_OCR_URL:}") String urlOverride) {
+        this(urlOverride == null || urlOverride.isBlank() ? config.ocr().paddleUrl() : urlOverride, config.ocr().timeoutSec());
+    }
+
     public PaddleOcrEngine(MatchConfig config) {
-        this(config.ocr().paddleUrl(), config.ocr().timeoutSec());
+        this(config, null);
     }
 
     public PaddleOcrEngine(String baseUrl, int timeoutSec) {
