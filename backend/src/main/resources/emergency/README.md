@@ -109,6 +109,7 @@ SPRING_FLYWAY_ENABLED=false mvn spring-boot:run \
 ## 6. 키·CSV 없이 로컬 DB로 복사하는 방법
 
 ### 방법 A: 공용 DB에서 로컬 Docker DB로 복사
+- 2026-11-26 기준 공용 DB에는 긴급 데이터를 올리지 않았음(로컬 위주 개발). 공용 DB에 적재한 뒤에만 쓸 수 있음. 지금은 방법 B를 씀
 ```bash
 pg_dump --data-only --column-inserts -t help_place -t holiday "$공용URL" > em_seed.sql
 docker exec -i busan-tourist-guide-db-1 psql -v ON_ERROR_STOP=1 -U safetrip -d safetrip < em_seed.sql
