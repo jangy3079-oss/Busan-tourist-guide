@@ -219,11 +219,16 @@ public class HolidayClient {
         return s.length() <= max ? s : s.substring(0, max);
     }
 
-    private static String extractKey(AppProperties props) {
-        if (props == null || props.emergency() == null || props.emergency().serviceKey() == null) {
+    static String extractKey(AppProperties props) {
+        if (props == null || props.emergency() == null) {
             return "";
         }
-        return props.emergency().serviceKey().trim();
+        String holidayKey = props.emergency().holidayKey();
+        if (holidayKey != null && !holidayKey.isBlank()) {
+            return holidayKey.trim();
+        }
+        String serviceKey = props.emergency().serviceKey();
+        return serviceKey == null ? "" : serviceKey.trim();
     }
 
     private static String directChildText(Element parent, String tag) {

@@ -185,7 +185,7 @@ class DataSyncSchedulerTest {
 
     private DataSyncScheduler schedulerWithKey(String key) {
         AppProperties props = new AppProperties(
-                null, null, null, null, null, new AppProperties.Emergency(key, ""));
+                null, null, null, null, null, new AppProperties.Emergency(key, "", ""));
         return new DataSyncScheduler(
                 syncConfig, props, nmcClient, holidayClient, holidayCalendar,
                 helpPlaceRepo, holidayRepo, syncLogRepo, null, FIXED_CLOCK);

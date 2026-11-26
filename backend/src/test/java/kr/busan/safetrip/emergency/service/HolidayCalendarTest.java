@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import kr.busan.safetrip.common.config.AppProperties;
 import kr.busan.safetrip.emergency.entity.HolidayEntity;
 import kr.busan.safetrip.emergency.repository.HolidayRepository;
 
@@ -56,5 +57,27 @@ class HolidayCalendarTest {
         assertThat(items).containsExactly(
                 new HolidayClient.HolidayItem(LocalDate.of(2026, 10, 3), "개천절"),
                 new HolidayClient.HolidayItem(LocalDate.of(2026, 10, 9), "한글날"));
+    }
+
+    @Test
+    void usesHolidayKeyWhenPresent() {
+        AppProperties props = new AppProperties(
+                null, null, null, null, null,
+                new AppProperties.Emergency("NMC_KEY", "", "  KASI_KEY  "));
+
+        assertThat(HolidayClient.extractKey(props)).isEqualTo("KASI_KEY");
+    }
+
+    @Test
+    void fallsBackToServiceKeyWhenHolidayKeyBlank() {
+        AppProperties blankProps = new AppProperties(
+                null, null, null, null, null,
+                new AppProperties.Emergency("NMC_KEY", "", "   "));
+        AppProperties nullProps = new AppProperties(
+                null, null, null, null, null,
+                new AppProperties.Emergency("NMC_KEY", "", null));
+
+        assertThat(HolidayClient.extractKey(blankProps)).isEqualTo("NMC_KEY");
+        assertThat(HolidayClient.extractKey(nullProps)).isEqualTo("NMC_KEY");
     }
 }
