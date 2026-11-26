@@ -1,11 +1,17 @@
 package kr.busan.safetrip.emergency.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
@@ -17,7 +23,7 @@ import kr.busan.safetrip.common.api.EmType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * [긴급 담당] COMP-E04 KeywordRuleEngineImpl 단위 테스트 (FR-E005, FR-C013, NFR-E009, AC-E01, AC-X02)
+ * [긴급 담당] COMP-E04 KeywordRuleEngineImpl 단위 테스트 (FR-E005, FR-C013, NFR-E009, AC-E01, AC-X02, #165)
  */
 class KeywordRuleEngineImplTest {
 
@@ -97,28 +103,100 @@ class KeywordRuleEngineImplTest {
     }
 
     @Test
-    void matchesAndRuleRegardlessOfPartOrderAndRejectsSinglePart() {
+    void matchesAndRuleWithinDistanceAndRejectsFarOrSingleParts() {
         KeywordRuleEngineImpl custom = new KeywordRuleEngineImpl(new KeywordRuleEngineImpl.RawConfig(
                 List.of(EmType.URGENT),
                 List.of(EmType.URGENT),
+                new KeywordRuleEngineImpl.AndMaxGap(4, 3),
+                null,
                 List.of(new KeywordRuleEngineImpl.RawGroup(
                         EmType.URGENT,
                         "CHEST_PAIN",
                         List.of("가슴++아파+"),
-                        List.of("chest + hurt"),
+                        List.of("chest + hurts"),
                         List.of()))));
 
-        // 순서대로 / 역순 / 사이에 다른 말 포함 모두 매칭
+        // 순서대로 / 역순 / 거리 제한 이내 모두 매칭
         assertThat(custom.match("가슴이 너무 아파요")).isPresent();
         assertThat(custom.match("아파요, 가슴이 너무")).isPresent();
+        assertThat(custom.match("My chest really hurts badly")).isPresent();
         assertThat(custom.match("It hurts in my chest")).isPresent();
-        assertThat(custom.match("My CHEST really hurts")).isPresent();
+
+        // 거리 제한 초과(한글 5글자 이상, 영어 4단어 이상) → 불일치
+        assertThat(custom.match("가슴이 뻥 뚫리는 바다 보고 다리가 아파요")).isEmpty();
+        assertThat(custom.match("My chest feels fine after one two three four hurts")).isEmpty();
 
         // 한 조각만 있으면 미매칭
         assertThat(custom.match("가슴이 뻥 뚫리는 바다")).isEmpty();
         assertThat(custom.match("다리가 너무 아파요")).isEmpty();
         assertThat(custom.match("My leg hurts")).isEmpty();
         assertThat(custom.match("Treasure chest museum")).isEmpty();
+    }
+
+    @Test
+    void enforcesWordBoundariesHangulWordStartAndAndGapInProductionDictionary() {
+        // AND 거리 내 표현은 계속 매칭
+        assertThat(engine.match("숨이 안 쉬어져요")).isPresent().get()
+                .extracting(KeywordRuleEngineImpl.Match::type).isEqualTo(EmType.URGENT);
+        assertThat(engine.match("My chest really hurts badly")).isPresent().get()
+                .extracting(KeywordRuleEngineImpl.Match::type).isEqualTo(EmType.URGENT);
+
+        // AND 거리 초과 → 미매칭
+        assertThat(engine.match("숨은 맛집에서 안 쉬고 먹방")).isEmpty();
+
+        // 영어 단어 경계 및 제외 표현
+        assertThat(engine.match("hotel fireworks view in Gwangalli")).isEmpty();
+        assertThat(engine.match("Plan the following menu: coffee, bbq, walk")).isEmpty();
+        assertThat(engine.match("City archives and museums")).isEmpty();
+        assertThat(engine.match("I want to have a cold beer by the beach")).isEmpty();
+
+        // 한글 2글자 어절 시작 및 제외 표현
+        assertThat(engine.match("해운대 근처 문화재 보러 가고 싶어요")).isEmpty();
+        assertThat(engine.match("과자 살 수 있는 시장 들르고 싶어요")).isEmpty();
+        assertThat(engine.match("동해 일출 보고 해장국")).isEmpty();
+        assertThat(engine.match("순간 질리지 않는 코스")).isEmpty();
+        assertThat(engine.match("화분 실내 식물 카페")).isEmpty();
+        assertThat(engine.match("폭발적인 인기 맛집")).isEmpty();
+    }
+
+    @Test
+    void hasZeroFalsePositivesOnCourseTestAndEvalQueries() throws Exception {
+        List<String> queries = new ArrayList<>();
+
+        // 1) PR #160 평가셋 파일이 있으면 읽기(없으면 건너뜀)
+        Path evalFile = Path.of("..", "eval", "course", "queries.json");
+        if (Files.isRegularFile(evalFile)) {
+            JsonNode root = new ObjectMapper().readTree(evalFile.toFile());
+            JsonNode list = root.isArray() ? root : root.path("queries");
+            for (JsonNode item : list) {
+                String text = item.isTextual() ? item.asText() : item.path("text").asText(item.path("query").asText(""));
+                if (!text.isBlank()) queries.add(text);
+            }
+        }
+
+        // 2) 코스 테스트 파일(IntentParserTest, CourseServiceTest)의 비긴급 질의 문자열 읽기(코스 패키지 import 금지)
+        Pattern parseCall = Pattern.compile("\\.(?:parse|parseEdit)\\(\"([^\"]+)\"");
+        Pattern createCall = Pattern.compile("new CourseDtos\\.(?:CreateRequest|EditRequest)\\(\"([^\"]+)\"");
+        for (Path testFile : List.of(
+                Path.of("src/test/java/kr/busan/safetrip/course/service/IntentParserTest.java"),
+                Path.of("src/test/java/kr/busan/safetrip/course/service/CourseServiceTest.java"))) {
+            if (!Files.isRegularFile(testFile)) continue;
+            String content = Files.readString(testFile);
+            for (Pattern p : List.of(parseCall, createCall)) {
+                Matcher m = p.matcher(content);
+                while (m.find()) {
+                    String q = m.group(1);
+                    if (!q.contains("쓰러") && !q.matches("\\d{4}-\\d{2}-\\d{2}.*")) { // 긴급 테스트 문장·ISO 시각 제외
+                        queries.add(q);
+                    }
+                }
+            }
+        }
+
+        assertThat(queries).isNotEmpty();
+        for (String q : queries) {
+            assertThat(engine.match(q)).as("course query false positive: %s", q).isEmpty();
+        }
     }
 
     @Test

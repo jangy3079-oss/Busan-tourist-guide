@@ -1,0 +1,54 @@
+{
+  "_comment": "한국어 카드 템플릿(FR-E015, AI-REQ-E04, AI-REQ-E07, ADR-E03). 카드 문장은 LLM이 아니라 템플릿과 슬롯 코드로만 조립한다. 약 이름·진단·보장 표현 금지. 수정 후 API-E05로 다시 적재(FR-E022).",
+  "templates": [
+    {
+      "type": "URGENT",
+      "group": null,
+      "ko": "외국인 관광객입니다. {who}{symptom} 119에 신고해 주세요.",
+      "en": "I am a foreign tourist. {who}: {symptom}. Please call 119.",
+      "ja": "外国人観光客です。{who}：{symptom}。119番に通報してください。"
+    },
+    {
+      "type": "MILD",
+      "group": null,
+      "ko": "외국인 관광객입니다. {who}{symptom} 약을 사고 싶습니다. 도와주세요.",
+      "en": "I am a foreign tourist. {who}: {symptom}. I would like to buy medicine. Please help.",
+      "ja": "外国人観光客です。{who}：{symptom}。薬を買いたいです。助けてください。"
+    },
+    {
+      "type": "LOST",
+      "group": "STOLEN",
+      "ko": "외국인 관광객입니다. {item}도난당했습니다. 신고를 도와주세요.",
+      "en": "I am a foreign tourist. Stolen item: {item}. Please help me report the theft.",
+      "ja": "外国人観光客です。盗難品：{item}。届出を手伝ってください。"
+    },
+    {
+      "type": "LOST",
+      "group": null,
+      "ko": "외국인 관광객입니다. {item}잃어버렸습니다. 분실 신고를 도와주세요.",
+      "en": "I am a foreign tourist. Lost item: {item}. Please help me file a lost-item report.",
+      "ja": "外国人観光客です。紛失物：{item}。紛失届を手伝ってください。"
+    },
+    {
+      "type": "THREAT",
+      "group": null,
+      "ko": "외국인 관광객입니다. {situation} 경찰(112)에 신고해 주세요.",
+      "en": "I am a foreign tourist. {situation}. Please call the police (112).",
+      "ja": "外国人観光客です。{situation}。警察（112番）に通報してください。"
+    },
+    {
+      "type": "FIRE",
+      "group": null,
+      "ko": "외국인 관광객입니다. {situation} 119에 신고해 주세요.",
+      "en": "I am a foreign tourist. {situation}. Please call 119.",
+      "ja": "外国人観光客です。{situation}。119番に通報してください。"
+    },
+    {
+      "type": "WAY",
+      "group": null,
+      "ko": "외국인 관광객입니다. {situation} 도와주세요.",
+      "en": "I am a foreign tourist. {situation}. Please help.",
+      "ja": "外国人観光客です。{situation}。助けてください。"
+    }
+  ]
+}
