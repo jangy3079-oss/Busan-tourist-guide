@@ -21,7 +21,6 @@ import kr.busan.safetrip.common.ai.AIService;
 import kr.busan.safetrip.common.ai.AiRequest;
 import kr.busan.safetrip.common.api.Area;
 import kr.busan.safetrip.common.api.EmType;
-import kr.busan.safetrip.common.exception.NotImplementedYetException;
 import kr.busan.safetrip.common.keyword.KeywordRuleEngine;
 import kr.busan.safetrip.course.dto.CourseDtos;
 
@@ -93,7 +92,7 @@ public class IntentParser {
     }
 
     public Intent parse(String text, LocalDate today) {
-        Optional<EmType> em = detectEmergency(text);
+        Optional<EmType> em = keywords.detect(text);
         if (em.isPresent()) return new Intent(null, null, null, null, List.of(), null, false, em);
         try {
             String prompt = settings.intentPrompt().replace("{today}", today.toString()).replace("{calendar}", calendar(today))
@@ -110,19 +109,9 @@ public class IntentParser {
         return IntStream.range(0, 14).mapToObj(today::plusDays).map(d -> d + "=" + d.getDayOfWeek()).collect(Collectors.joining(", "));
     }
 
-    /** 긴급 키워드 판정. ponytail: 긴급 담당 KeywordRuleEngine 미구현이면 긴급 아님으로 진행(로컬 시험용), 구현되면 이 catch 는 안 탄다 */
-    private Optional<EmType> detectEmergency(String text) {
-        try {
-            return keywords.detect(text);
-        } catch (NotImplementedYetException e) {
-            log.warn("KeywordRuleEngine 미구현 → 긴급 판정 건너뜀");
-            return Optional.empty();
-        }
-    }
-
     /** FR-C015 수정 문장 → 명령. 긴급 먼저, LLM, 실패하면 규칙. 명령이 없으면 ops = [] (EDIT_UNCLEAR) */
     public Edit parseEdit(String text, List<CourseDtos.Stop> current) {
-        Optional<EmType> em = detectEmergency(text);
+        Optional<EmType> em = keywords.detect(text);
         if (em.isPresent()) return new Edit(List.of(), em);
         try {
             StringBuilder list = new StringBuilder();
