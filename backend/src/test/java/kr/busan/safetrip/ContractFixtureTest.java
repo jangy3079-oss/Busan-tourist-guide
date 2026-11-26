@@ -51,7 +51,7 @@ class ContractFixtureTest {
         m.put("C04_place_pins", new CourseDtos.PlacePinsResponse(List.of(new CourseDtos.PlacePin("126081", "광안리해수욕장", "관광지", 35.1532, 129.1186))));
         m.put("C05_place_detail", beach);
         m.put("P01_match_confirmed", new PhotoDtos.MatchResponse("m_51c0", PhotoDtos.Decision.CONFIRMED, false,
-                List.of(new PhotoDtos.Candidate(galbi, 0.96, 420, "해운대암소갈비"))));
+                List.of(new PhotoDtos.Candidate(galbi, 0.96, 420, "해운대암소갈비", "Haeundae Amso Galbi", "ヘウンデ・アムソカルビ"))));
         m.put("P03_search_not_found", new PhotoDtos.MatchResponse(null, PhotoDtos.Decision.NOT_FOUND, false, List.of()));
         m.put("P02_narration", new PhotoDtos.NarrationResponse("2789475", "숯불에 구워 먹는 소갈비 전문점이에요", false));
         m.put("E01_quick", new EmergencyDtos.QuickResponse(true, "119", EmType.URGENT));

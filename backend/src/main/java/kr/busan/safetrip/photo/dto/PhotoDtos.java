@@ -18,7 +18,12 @@ public final class PhotoDtos {
     public enum Decision { CONFIRMED, CANDIDATES, NOT_FOUND, OCR_FAIL }
 
     /** score 0~1, distanceM 은 위치 없으면 null, matchedText 는 매칭된 간판 블록(FR-P017) */
-    public record Candidate(PlaceDetail place, double score, Integer distanceM, String matchedText) {}
+    /** nameEn·nameJa: 상호 읽는 법(#216, #232). 원문 place.name 은 그대로이고 영·일 화면에서 괄호로 덧붙인다. 없으면 null */
+    public record Candidate(PlaceDetail place, double score, Integer distanceM, String matchedText, String nameEn, String nameJa) {
+        public Candidate(PlaceDetail place, double score, Integer distanceM, String matchedText) {
+            this(place, score, distanceM, matchedText, null, null);
+        }
+    }
 
     /** API-P01 / P03 응답 */
     public record MatchResponse(String matchId, Decision decision, boolean lowAccuracy, List<Candidate> candidates) {}

@@ -177,6 +177,7 @@ class PhotoResultScreen extends ConsumerWidget {
             if (st.result?.decision == MatchDecision.confirmed) TagC.green(pt('confirmed', l), icon: 'check'),
             const SizedBox(height: 8),
             Text(p.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+            if (p.readingIn(l) case final r?) Text(r, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: C.text2)), // 읽는 법(#232)
             if (l != Lang.ko) Text(pt('origName', l), style: const TextStyle(fontSize: 12.5, color: C.text3)), // FR-P010: 상호는 원문 그대로
             const SizedBox(height: 8),
             KV([
@@ -233,7 +234,7 @@ class PhotoCandidatesScreen extends ConsumerWidget {
                   child: Row(children: [
                     Container(width: 28, height: 28, alignment: Alignment.center, decoration: const BoxDecoration(color: C.text, shape: BoxShape.circle), child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))),
                     const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(cands[i].place.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), Text([photoCategory(cands[i].place.category, l), if (cands[i].place.distM != null) '${cands[i].place.distM}m'].join(' · '), style: const TextStyle(fontSize: 12.5, color: C.text3))])),
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(cands[i].place.nameIn(l), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), Text([photoCategory(cands[i].place.category, l), if (cands[i].place.distM != null) '${cands[i].place.distM}m'].join(' · '), style: const TextStyle(fontSize: 12.5, color: C.text3))])),
                     Text.rich(TextSpan(children: [TextSpan(text: '${cands[i].score}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: C.blue)), TextSpan(text: pt('pts', l), style: const TextStyle(fontSize: 12, color: C.text3))])),
                   ]),
                 ),

@@ -45,7 +45,7 @@ public class PlaceSearchService {
         List<PhotoDtos.Candidate> out = new ArrayList<>();
         for (ScoredCandidate c : scored) {
             if (out.size() >= cfg.maxCandidates() || c.score() < cfg.listMin()) break;
-            details.detail(c.contentId()).ifPresent(d -> out.add(new PhotoDtos.Candidate(d, c.score(), null, c.matchedText())));
+            details.candidate(c.contentId(), c.score(), null, c.matchedText()).ifPresent(out::add);
         }
         return new PhotoDtos.MatchResponse(null, out.isEmpty() ? PhotoDtos.Decision.NOT_FOUND : PhotoDtos.Decision.CANDIDATES, false, out);
     }

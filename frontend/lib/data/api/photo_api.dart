@@ -34,19 +34,20 @@ class ApiPhotoRepository implements PhotoRepository {
       dec[j['decision']] ?? MatchDecision.notFound,
       [
         for (final c in (j['candidates'] as List? ?? const []).cast<Map<String, dynamic>>())
-          PhotoCandidate(_place(c['place'] as Map<String, dynamic>, c['distanceM'] as int?, lang), (dbl(c['score']) * 100).round()),
+          PhotoCandidate(_place(c['place'] as Map<String, dynamic>, c['distanceM'] as int?, lang, c['nameEn'] as String?, c['nameJa'] as String?), (dbl(c['score']) * 100).round()),
       ],
       matchId: j['matchId'] as String?,
       lowAccuracy: j['lowAccuracy'] as bool? ?? false,
     );
   }
 
-  PhotoPlace _place(Map<String, dynamic> p, int? dist, Lang lang) {
+  PhotoPlace _place(Map<String, dynamic> p, int? dist, Lang lang, String? nameEn, String? nameJa) {
     return PhotoPlace(
       p['contentId'], p['name'], p['category'] ?? '', p['address'] ?? '', null, p['hoursText'] ?? '',
       dbl(p['lat']), dbl(p['lng']), dist, p['openStatus'] == 'OPEN',
       overview: p['overview'] as String?,
       source: sourceLine(p['source'] as String?, p['collectedAt'] as String?, lang), // 출처 표기는 원문, 수집일은 요청 언어(#225, #169)
+      nameEn: nameEn, nameJa: nameJa, // 읽는 법(#232). 후보 쪽 필드
     );
   }
 }
