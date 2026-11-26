@@ -46,6 +46,15 @@ class NarrationServiceTest {
         assertTrue(sent.user().contains("30文字") && sent.user().contains("45文字"), sent.user());
     }
 
+    /** 일본어 지명 오표기(光安里·送亭)는 설정(termFix)대로 바로잡는다 */
+    @Test
+    void fixesJapanesePlaceNameTypos() {
+        CourseDtos.NarrationResponse r = narrate("{\"title\":\"光安里の海辺\",\"items\":[{\"contentId\":\"1\",\"text\":\"光安里海水浴場と送亭を歩く\"}]}");
+        assertFalse(r.template());
+        assertEquals("広安里の海辺", r.title());
+        assertEquals("広安里海水浴場と松亭を歩く", r.items().get(0).text());
+    }
+
     @Test
     void koreanAnswerFallsBackToTemplate() {
         assertTrue(narrate("{\"title\":\"해변 산책\",\"items\":[{\"contentId\":\"1\",\"text\":\"백사장을 걸어요\"}]}").template());
