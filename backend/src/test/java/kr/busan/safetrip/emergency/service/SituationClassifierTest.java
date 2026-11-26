@@ -21,9 +21,11 @@ import kr.busan.safetrip.common.ai.AiBudget;
 import kr.busan.safetrip.common.ai.AiRequest;
 import kr.busan.safetrip.common.ai.SpringAiService;
 import kr.busan.safetrip.common.api.EmType;
+import kr.busan.safetrip.common.api.Lang;
 import kr.busan.safetrip.common.config.AppProperties;
 import kr.busan.safetrip.common.exception.BusinessException;
 import kr.busan.safetrip.common.exception.ErrorCode;
+import kr.busan.safetrip.emergency.service.SituationClassifier.ClassificationResult;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 
@@ -52,17 +54,75 @@ class SituationClassifierTest {
     }
 
     @Test
-    void rejectsUnknownTypeUnknownCodeDisallowedSlotKeyAndBadConfidence() {
+    void rejectsInvalidTypeUrgencySlotsShapeAndConfidence() {
         assertEmpty("{\"type\":\"UNKNOWN\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{}}");
         assertEmpty("{\"type\":\"MILD\",\"urgency\":\"EXTREME\",\"confidence\":0.9,\"slots\":{}}");
-        assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"symptom\":\"UNCONSCIOUS\"}}");
-        assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"symptom\":\"NOT_A_CODE\"}}");
-        assertEmpty("{\"type\":\"THREAT\",\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":{\"symptom\":\"FEVER\"}}");
-        assertEmpty("{\"type\":\"NON\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"who\":\"SELF\"}}");
+        assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":[]}");
+        assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"symptom\":42}}");
         assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":1.5,\"slots\":{}}");
         assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":-0.1,\"slots\":{}}");
         assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":\"high\",\"slots\":{}}");
         assertEmpty("not a json object at all");
+    }
+
+    @Test
+    void dropsOnlyInvalidSlotsAndKeepsValidTriage() {
+        SituationClassifier classifier = new SituationClassifier(
+                req -> "{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,"
+                        + "\"slots\":{\"symptom\":\"FEVER\",\"unknown\":\"VALUE\",\"cause\":\"NOT_A_CODE\"}}",
+                cardBuilder);
+
+        Optional<ClassificationResult> result = classifier.classifyOrFail("열이 나요");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().triage().type()).isEqualTo(EmType.MILD);
+        assertThat(result.get().triage().urgency()).isEqualTo(Urgency.NORMAL);
+        assertThat(result.get().triage().slots()).containsExactlyEntriesOf(Map.of("symptom", "FEVER"));
+        assertThat(result.get().slotsDropped()).isTrue();
+    }
+
+    @Test
+    void keepsTriageAndUsesDefaultCardSlotsWhenEverySlotIsInvalid() {
+        SituationClassifier classifier = new SituationClassifier(
+                req -> "{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,"
+                        + "\"slots\":{\"symptom\":\"SPRAIN\",\"unknown\":\"VALUE\"}}",
+                cardBuilder);
+
+        Optional<ClassificationResult> result = classifier.classifyOrFail("열이 나요");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().triage().type()).isEqualTo(EmType.MILD);
+        assertThat(result.get().triage().slots()).isEmpty();
+        assertThat(result.get().slotsDropped()).isTrue();
+        assertThat(cardBuilder.build(EmType.MILD, null, result.get().triage().slots(), "부산 해운대구", Lang.KO).ko())
+                .isNotBlank();
+    }
+
+    @Test
+    void keepsE39MildClassificationWhenLlmReturnsUnsupportedSlot() {
+        SituationClassifier classifier = new SituationClassifier(
+                req -> "{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.93,"
+                        + "\"slots\":{\"symptom\":\"SPRAIN\"}}",
+                cardBuilder);
+
+        Optional<ClassificationResult> result = classifier.classifyOrFail("i spraind my ankle walking on the beach");
+
+        assertThat(result).isPresent();
+        assertThat(result.get().triage().type()).isEqualTo(EmType.MILD);
+        assertThat(result.get().triage().slots()).isEmpty();
+        assertThat(result.get().slotsDropped()).isTrue();
+    }
+
+    @Test
+    void reportsNoDroppedSlotsWhenLlmReturnsAnEmptySlotsObject() {
+        SituationClassifier classifier = new SituationClassifier(
+                req -> "{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{}}",
+                cardBuilder);
+
+        assertThat(classifier.classifyOrFail("열이 나요"))
+                .get()
+                .extracting(ClassificationResult::slotsDropped)
+                .isEqualTo(false);
     }
 
     @Test
@@ -130,6 +190,33 @@ class SituationClassifierTest {
         // 6) 중괄호 짝 안 맞음 → empty
         assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"symptom\":\"FEVER\"");
         assertEmpty("   ");
+    }
+
+    @Test
+    void rejectsAllMalformedJsonAndSchemaValidationEdgeCases() {
+        assertEmpty("{not-valid-json}");
+        assertEmpty("{\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":{}}"); // type 누락
+        assertEmpty("{\"type\":123,\"urgency\":\"URGENT\",\"confidence\":0.9}"); // type 비문자
+        assertEmpty("{\"type\":\"URGENT\",\"confidence\":0.9}"); // urgency 누락
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":true,\"confidence\":0.9}"); // urgency 비문자
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":\"high\"}"); // confidence 비숫자
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":[\"UNCONSCIOUS\"]}"); // slots 배열
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":{\"symptom\":123}}"); // slot 비문자
+
+        // null 슬롯 값은 무시하고 정상 통과
+        SituationClassifier withNullSlot = new SituationClassifier(
+                req -> "{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.85,\"slots\":{\"who\":null,\"symptom\":\"FEVER\"}}",
+                cardBuilder);
+        Optional<Triage> parsed = withNullSlot.classify("열이 나요");
+        assertThat(parsed).isPresent();
+        assertThat(parsed.get().slots()).containsExactlyEntriesOf(Map.of("symptom", "FEVER"));
+
+        // 빈 입력·비정상 런타임 예외 처리
+        SituationClassifier failing = new SituationClassifier(req -> {
+            throw new IllegalStateException("unexpected");
+        }, cardBuilder);
+        assertThat(failing.classify("   ")).isEmpty();
+        assertThat(failing.classify("열이 나요")).isEmpty();
     }
 
     private void assertType(String rawResponse, EmType expectedType) {

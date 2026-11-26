@@ -1,0 +1,22 @@
+{
+  "_comment": "API-E04 정적 도움처 CSV 적재 설정(FR-E021, DATA-E07, NFR-E009). 열 이름·허용 상태·상한을 코드에 하드코딩하지 않는다.",
+  "maxBytes": 20971520,
+  "maxRejected": 50,
+  "allowedKinds": ["POLICE", "TOURIST_INFO", "CONVENIENCE"],
+  "defaultAlwaysOpenKinds": ["CONVENIENCE"],
+  "activeStatuses": ["영업/정상"],
+  "alwaysOpenKeywords": ["24시간", "24h", "24/7", "상시개방", "상시 개방", "상시영업", "상시 영업"],
+  "columns": {
+    "name": ["이름", "사업장명", "name"],
+    "address": ["도로명전체주소", "주소", "소재지전체주소", "도로명주소", "지번주소", "address"],
+    "phone": ["전화", "소재지전화", "전화번호", "phone"],
+    "hours": ["운영", "hours"],
+    "lat": ["위도", "lat"],
+    "lng": ["경도", "lng"],
+    "projX": ["좌표정보(x)", "좌표정보x(epsg5174)", "x"],
+    "projY": ["좌표정보(y)", "좌표정보y(epsg5174)", "y"],
+    "extId": ["관리번호", "id"],
+    "category": ["구분"],
+    "status": ["영업상태명"]
+  }
+}

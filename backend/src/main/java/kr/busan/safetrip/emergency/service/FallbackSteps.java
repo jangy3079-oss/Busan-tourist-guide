@@ -66,6 +66,13 @@ public class FallbackSteps {
     }
 
     public int reload() {
+        StagedReload staged = prepareReload();
+        staged.commit().run();
+        return staged.count();
+    }
+
+    /** 대체 단계 파일을 읽고 검증만 한다. commit 전에는 메모리를 바꾸지 않는다(API-E05). */
+    StagedReload prepareReload() {
         RawConfig raw = readResource(resourcePath);
         if (raw == null || raw.entries() == null) {
             throw new IllegalStateException("fallback-steps.json entries가 비어 있습니다: " + resourcePath);
@@ -86,9 +93,10 @@ public class FallbackSteps {
                     validateSteps(item.en(), type + ".en"),
                     validateSteps(item.ja(), type + ".ja")));
         }
-        this.entries = compiled;
-        log.info("emergency fallback-steps loaded: {} types", compiled.size());
-        return compiled.size();
+        return new StagedReload(compiled.size(), () -> {
+            this.entries = compiled;
+            log.info("emergency fallback-steps loaded: {} types", compiled.size());
+        });
     }
 
     private static List<String> validateSteps(List<String> steps, String label) {
