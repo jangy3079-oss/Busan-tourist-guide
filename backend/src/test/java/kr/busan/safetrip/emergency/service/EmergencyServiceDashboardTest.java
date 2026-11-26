@@ -56,7 +56,7 @@ class EmergencyServiceDashboardTest {
         DashboardEventWriter writer = new DashboardEventWriter(new EmergencyEventRecorder(repo, config, CLOCK, () -> ID), config);
         classifier = mock(SituationClassifier.class);
         when(classifier.confidenceThreshold()).thenReturn(0.6);
-        when(classifier.classifyOrFail(anyString())).thenReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.9, Map.of("symptom", "FEVER"))));
+        when(classifier.classifyOrFail(anyString())).thenReturn(Optional.of(new SituationClassifier.ClassificationResult(new Triage(EmType.MILD, Urgency.NORMAL, 0.9, Map.of("symptom", "FEVER")), false)));
         geocoder = mock(ReverseGeocoder.class);
         when(geocoder.toAddress(anyDouble(), anyDouble())).thenReturn("부산광역시 수영구 광안동 1306-2");
         HelpPlaceRepository placeRepo = mock(HelpPlaceRepository.class);
@@ -138,7 +138,7 @@ class EmergencyServiceDashboardTest {
 
     @Test
     void nonEmergencyAndNeedTypeSelectionAreNotRecorded() {
-        when(classifier.classifyOrFail(anyString())).thenReturn(Optional.of(new Triage(EmType.NON, Urgency.NORMAL, 0.9, Map.of())));
+        when(classifier.classifyOrFail(anyString())).thenReturn(Optional.of(new SituationClassifier.ClassificationResult(new Triage(EmType.NON, Urgency.NORMAL, 0.9, Map.of()), false)));
         assertThat(service.guide(new GuideRequest("해운대 맛집", "ko", LAT, LNG, null, null)).eventId()).isNull();
         when(classifier.classifyOrFail(anyString())).thenReturn(Optional.empty());
         assertThat(service.guide(new GuideRequest("??", "ko", LAT, LNG, null, null)).eventId()).isNull();
