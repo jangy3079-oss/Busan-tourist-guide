@@ -97,9 +97,9 @@ class IntentParserTest {
     }
 
     private static final List<CourseDtos.Stop> STOPS = List.of(
-            new CourseDtos.Stop(1, "1", "광안리해수욕장", "관광지", 0, 0, "14:00", "15:00", null, false, false, false),
-            new CourseDtos.Stop(2, "2", "민락수변공원", "관광지", 0, 0, "15:10", "16:10", null, false, false, false),
-            new CourseDtos.Stop(3, "3", "회센터", "음식점", 0, 0, "16:20", "17:20", null, false, false, false));
+            new CourseDtos.Stop(1, "1", "광안리해수욕장", "관광지", 0, 0, "14:00", "15:00", null, false, false, false, null, null),
+            new CourseDtos.Stop(2, "2", "민락수변공원", "관광지", 0, 0, "15:10", "16:10", null, false, false, false, null, null),
+            new CourseDtos.Stop(3, "3", "회센터", "음식점", 0, 0, "16:20", "17:20", null, false, false, false, null, null));
 
     @Test
     void editByRulesWhenLlmDown() {

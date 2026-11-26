@@ -198,7 +198,7 @@ public class CourseService {
         for (CourseDtos.Stop st : prev.stops()) before.add(st.contentId());
         List<CourseDtos.Stop> marked = stops.stream().map(st -> before.contains(st.contentId()) ? st
                 : new CourseDtos.Stop(st.order(), st.contentId(), st.name(), st.category(), st.lat(), st.lng(),
-                        st.arriveAt(), st.departAt(), st.moveFromPrev(), st.hoursUncertain(), st.fixed(), true)).toList();
+                        st.arriveAt(), st.departAt(), st.moveFromPrev(), st.hoursUncertain(), st.fixed(), true, st.nameEn(), st.nameJa())).toList();
         return save(PiiMasker.mask(req.text()), prevPlan.getId(), prevPlan.getVersion() + 1, assumptions, relaxed, marked);
     }
 

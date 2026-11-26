@@ -38,6 +38,9 @@ void main() {
     expect(c.stops[1].hoursUncertain, true);
     expect(c.stops[1].desc, contains('도보 12분'));
     expect(c.stops[0].time, '14:00 – 15:10');
+    expect(c.stops[0].nameIn(Lang.en), '광안리해수욕장 (Gwangalli Beach)'); // #216 원문 + 읽는 법
+    expect(c.stops[0].nameIn(Lang.ja), '광안리해수욕장 (広安里海水浴場)');
+    expect(c.stops[0].nameIn(Lang.ko), '광안리해수욕장');
     expect(c.path.length, 2);
     final sent = jsonDecode(calls.single.body);
     final want = jsonDecode(fx('REQ_C01_create'));

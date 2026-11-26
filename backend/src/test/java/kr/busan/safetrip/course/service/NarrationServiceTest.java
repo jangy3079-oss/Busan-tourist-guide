@@ -21,7 +21,7 @@ import kr.busan.safetrip.course.repository.CoursePlaceRepository;
 /** [코스 담당] 설명 생성: 언어 지시를 원문 뒤에 두고, 다른 언어로 답하면 템플릿으로 대체한다(#141) */
 class NarrationServiceTest {
     private static final List<CourseDtos.Stop> STOPS = List.of(
-            new CourseDtos.Stop(1, "1", "광안리해수욕장", "관광지", 0, 0, "14:00", "15:00", null, false, false, false));
+            new CourseDtos.Stop(1, "1", "광안리해수욕장", "관광지", 0, 0, "14:00", "15:00", null, false, false, false, null, null));
     private AiRequest sent;
 
     private CourseDtos.NarrationResponse narrate(String reply) {

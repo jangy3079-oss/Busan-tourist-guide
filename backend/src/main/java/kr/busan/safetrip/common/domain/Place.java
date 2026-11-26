@@ -27,6 +27,13 @@ public class Place {
     private String name;
 
     /** COMP-P06 이 만든 정규화 이름(사진 매칭용) */
+    /** #216 읽는 법(영·일). 원문 name 은 그대로 */
+    @Column(name = "name_en")
+    private String nameEn;
+
+    @Column(name = "name_ja")
+    private String nameJa;
+
     @Column(name = "name_norm")
     private String nameNorm;
 
@@ -73,6 +80,8 @@ public class Place {
     public String getContentId() { return contentId; }
     public String getName() { return name; }
     public String getNameNorm() { return nameNorm; }
+    public String getNameEn() { return nameEn; }
+    public String getNameJa() { return nameJa; }
     public String getCategory() { return category; }
     public String getAddress() { return address; }
     public double getLat() { return lat; }

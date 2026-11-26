@@ -202,6 +202,6 @@ public class CoursePlanner {
     private static CourseDtos.Stop stop(int order, Place p, LocalTime arrive, LocalTime depart, CourseDtos.Move mv, boolean fixed) {
         boolean hoursUncertain = !"PARSED".equals(p.getHoursStatus());
         return new CourseDtos.Stop(order, p.getContentId(), p.getName(), p.getCategory(), p.getLat(), p.getLng(),
-                arrive.format(HM), depart.format(HM), mv, hoursUncertain, fixed, false);
+                arrive.format(HM), depart.format(HM), mv, hoursUncertain, fixed, false, p.getNameEn(), p.getNameJa());
     }
 }

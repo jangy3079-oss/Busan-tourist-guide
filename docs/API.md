@@ -100,7 +100,9 @@
     "moveFromPrev": null,              // 1번은 null. 이후 {"mode": "WALK|TRANSIT|TAXI", "minutes": 12}
     "hoursUncertain": false,           // true면 '방문 전 확인' 배지(FR-C009)
     "fixed": false,                    // startPlaceId로 고정된 장소(FR-C014)
-    "changed": false                   // 수정으로 바뀐 장소(API-C03)
+    "changed": false,                  // 수정으로 바뀐 장소(API-C03)
+    "nameEn": "Gwangalli Beach",       // 읽는 법(#216). 없으면 null. 영·일 화면은 "원문 (읽는 법)"으로 표시, name 은 원문 그대로
+    "nameJa": "広安里海水浴場"
   }],
   "path": [{"lat": 35.1532, "lng": 129.1186}],   // 지도 순서선(도로 경로 아님)
   "notice": null

@@ -74,7 +74,12 @@ class CourseStop {
   final bool changed, fixed, hoursUncertain; // hoursUncertain → '방문 전 확인'(FR-C009)
   final String? category, moveMode; // 화면 언어로 다시 쓰기 위한 서버 값(유형, WALK|TRANSIT|TAXI). 목업은 null
   final int? moveMin;
-  const CourseStop(this.id, this.time, this.name, this.desc, this.lat, this.lng, {this.changed = false, this.fixed = false, this.hoursUncertain = false, this.category, this.moveMode, this.moveMin});
+  final String? nameEn, nameJa; // #216 읽는 법. 원문 name 은 그대로 두고 영·일 화면에서 괄호로 덧붙인다
+  const CourseStop(this.id, this.time, this.name, this.desc, this.lat, this.lng, {this.changed = false, this.fixed = false, this.hoursUncertain = false, this.category, this.moveMode, this.moveMin, this.nameEn, this.nameJa});
+  String nameIn(Lang l) {
+    final r = switch (l) { Lang.en => nameEn, Lang.ja => nameJa, Lang.ko => null };
+    return r == null || r.isEmpty || r == name ? name : '$name ($r)';
+  }
   MapPoint get point => MapPoint(lat, lng, name: name, isFixed: fixed);
 }
 

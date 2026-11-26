@@ -27,7 +27,9 @@
     "moveFromPrev" : null,
     "hoursUncertain" : false,
     "fixed" : false,
-    "changed" : false
+    "changed" : false,
+    "nameEn" : "Gwangalli Beach",
+    "nameJa" : "広安里海水浴場"
   }, {
     "order" : 2,
     "contentId" : "264570",
@@ -43,7 +45,9 @@
     },
     "hoursUncertain" : true,
     "fixed" : false,
-    "changed" : false
+    "changed" : false,
+    "nameEn" : "Millak Waterside Park",
+    "nameJa" : "民楽水辺公園"
   } ],
   "path" : [ {
     "lat" : 35.1532,
