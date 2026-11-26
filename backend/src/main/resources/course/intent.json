@@ -28,6 +28,12 @@
   },
   "relaxOrder": ["stops", "categories", "area", "indoor"],
   "narrationMaxChars": 60,
+  "_unsupported": "수정 문장 중 지원하지 않는 요청. 식사 단어 + 시각(timePattern), 또는 가격 단어가 있으면 코스를 바꾸지 않고 안내만 한다. 식사 시각 고정·가격 데이터는 없다",
+  "unsupported": {
+    "mealWords": ["저녁", "점심", "아침", "식사", "밥", "브런치", "dinner", "lunch", "breakfast", "brunch", "meal", "夕食", "昼食", "朝食", "ご飯", "ごはん", "ランチ", "ディナー"],
+    "timePattern": "\\d{1,2}\\s*시(?!간)|\\d{1,2}\\s*時(?!間)|\\d{1,2}:\\d{2}|\\d{1,2}\\s*(?:am|pm|o'clock)\\b",
+    "priceWords": ["저렴", "싸게", "싼 ", "싼곳", "싼데", "비싸", "가격", "가성비", "예산", "cheap", "expensive", "price", "budget", "affordable", "安い", "安く", "高い", "値段", "予算"]
+  },
   "titleMaxChars": 40,
   "promptLengthRatio": 0.75,
   "wantedPerCategory": 3,
