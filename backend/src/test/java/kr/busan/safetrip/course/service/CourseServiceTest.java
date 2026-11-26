@@ -172,6 +172,32 @@ class CourseServiceTest {
         return p;
     }
 
+    /** #230 날짜를 말하지 않았는데 시각이 지났으면 내일 코스, 그렇다고 알린다. 날짜를 말했으면 그대로 */
+    @Test
+    void passedTimeMovesToTomorrowWithNotice() {
+        String notice = new CourseSettings().msg(kr.busan.safetrip.common.api.Lang.KO, "relax.nextDay");
+        // 14:00에 "9시 시작"(날짜 없음) → 내일 09:00
+        CourseDtos.CourseResponse r = service.create(new CourseDtos.CreateRequest("광안리 4시간", "ko", null, new CourseDtos.Overrides(null, "09:00", null, null)));
+        assertEquals("2026-11-14", r.assumptions().get(0).value());
+        assertEquals("내일", r.assumptions().get(0).label());
+        assertTrue(r.relaxed().contains(notice), String.valueOf(r.relaxed()));
+        // 날짜를 말했으면 넘기지 않는다
+        r = service.create(new CourseDtos.CreateRequest("광안리 4시간", "ko", null, new CourseDtos.Overrides("2026-11-13", "09:00", null, null)));
+        assertEquals("2026-11-13", r.assumptions().get(0).value());
+        assertFalse(r.relaxed().contains(notice));
+        // 아직 안 지난 시각·기본 시각(14시)은 오늘
+        r = create();
+        assertEquals("오늘", r.assumptions().get(0).label());
+        assertFalse(r.relaxed().contains(notice));
+        // 21:30에 시각을 말하지 않음 → 내일 10:00, "지금"이라 하지 않음
+        ReflectionTestUtils.setField(service, "clock", Clock.fixed(Instant.parse("2026-11-13T12:30:00Z"), ZoneId.of("Asia/Seoul")));
+        r = create();
+        assertEquals("2026-11-14", r.assumptions().get(0).value());
+        assertEquals("10:00", r.assumptions().get(1).value());
+        assertEquals("10:00", r.assumptions().get(1).label());
+        assertTrue(r.relaxed().contains(notice));
+    }
+
     private CourseDtos.CourseResponse create() {
         return service.create(new CourseDtos.CreateRequest("광안리 4시간", "ko", null, null));
     }

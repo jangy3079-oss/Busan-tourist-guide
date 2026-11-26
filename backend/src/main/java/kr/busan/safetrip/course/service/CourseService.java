@@ -107,14 +107,23 @@ public class CourseService {
         Integer dur = o != null && o.durationMin() != null ? checkDuration(o.durationMin()) : parsed.durationMin();
         Area area = o != null && o.area() != null ? o.area() : parsed.area();
 
-        IntentParser.Intent intent = parsed.with(
-                date != null ? date : today,
-                time != null ? time : LocalTime.now(clock).truncatedTo(ChronoUnit.MINUTES),
+        LocalTime now = LocalTime.now(clock).truncatedTo(ChronoUnit.MINUTES);
+        LocalDate day = date != null ? date : today;
+        LocalTime start = time != null ? time : now;
+        // #230 날짜를 말하지 않았는데 말한 시각이 이미 지났거나, 시각도 말하지 않았고 늦은 시간이면 내일 코스로 안내한다(알림 문구를 붙임)
+        CourseSettings.NextDay nd = settings.intent().nextDay();
+        boolean nextDay = date == null && (time != null ? time.isBefore(now) : now.getHour() >= nd.lateHour());
+        if (nextDay) {
+            day = today.plusDays(1);
+            if (time == null) start = LocalTime.parse(nd.startTime());
+        }
+        IntentParser.Intent intent = parsed.with(day, start,
                 dur != null ? dur : settings.intent().defaultDurationMin(),
                 area, parsed.categories(), req.startPlaceId()).withPreference(PiiMasker.mask(parsed.preference() != null ? parsed.preference() : req.query()));
         List<CourseDtos.Assumption> assumptions = assumptions(lang, intent, date == null, time == null, dur == null, area == null);
 
         List<String> relaxed = new ArrayList<>();
+        if (nextDay) relaxed.add(settings.msg(lang, "relax.nextDay"));
         List<CourseDtos.Stop> stops = search(intent, lang, relaxed, retriever::retrieve);
         if (stops.isEmpty()) return noCourse(lang);
         return save(PiiMasker.mask(req.query()), null, 1, assumptions, relaxed, stops);
@@ -310,9 +319,11 @@ public class CourseService {
                                                     boolean dDef, boolean tDef, boolean mDef, boolean aDef) {
         String hm = String.format("%02d:%02d", i.startTime().getHour(), i.startTime().getMinute());
         int m = i.durationMin();
+        boolean isToday = i.visitDate().equals(LocalDate.now(clock)); // 기본값이 내일로 넘어갔으면(#230) "오늘"·"지금"이라 하지 않는다
+        String dayLabel = isToday ? settings.msg(lang, "today") : i.visitDate().equals(LocalDate.now(clock).plusDays(1)) ? settings.msg(lang, "tomorrow") : i.visitDate().toString();
         List<CourseDtos.Assumption> r = new ArrayList<>(List.of(
-                new CourseDtos.Assumption("visitDate", i.visitDate().toString(), dDef ? settings.msg(lang, "today") : i.visitDate().toString(), dDef),
-                new CourseDtos.Assumption("startTime", hm, tDef ? settings.msg(lang, "now", hm) : hm, tDef),
+                new CourseDtos.Assumption("visitDate", i.visitDate().toString(), dDef ? dayLabel : i.visitDate().toString(), dDef),
+                new CourseDtos.Assumption("startTime", hm, tDef && isToday ? settings.msg(lang, "now", hm) : hm, tDef),
                 new CourseDtos.Assumption("durationMin", String.valueOf(m),
                         m % 60 == 0 ? settings.msg(lang, "hours", m / 60) : settings.msg(lang, "minutes", m), mDef),
                 new CourseDtos.Assumption("area", i.area() == null ? null : i.area().name(),
