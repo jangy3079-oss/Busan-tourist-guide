@@ -170,6 +170,32 @@ public class HelpPlaceFinder {
         return new FindResult(List.copyOf(combined), radiusUsedM, usedFallback, oldestUpdatedAt);
     }
 
+    public Optional<HelpPlaceEntity> nearestPlace(double lat, double lng, int radiusM) {
+        if (!Double.isFinite(lat) || !Double.isFinite(lng) || lat < -90 || lat > 90
+                || lng < -180 || lng > 180 || radiusM <= 0) {
+            return Optional.empty();
+        }
+        double latMargin = (radiusM / METERS_PER_DEG_LAT) * BBOX_SAFETY_FACTOR;
+        double cosLat = Math.max(0.01, Math.cos(Math.toRadians(lat)));
+        double lngMargin = (radiusM / (METERS_PER_DEG_LNG_EQ * cosLat)) * BBOX_SAFETY_FACTOR;
+        Set<String> allKindNames = new LinkedHashSet<>();
+        for (PlaceKind kind : PlaceKind.values()) {
+            allKindNames.add(kind.name());
+        }
+        List<HelpPlaceEntity> candidates = repo.findByKindInAndLatBetweenAndLngBetween(
+                allKindNames, lat - latMargin, lat + latMargin, lng - lngMargin, lng + lngMargin);
+        if (candidates == null) {
+            return Optional.empty();
+        }
+        return candidates.stream()
+                .filter(place -> place != null && place.getName() != null && !place.getName().isBlank())
+                .map(place -> Map.entry(place, GeoUtil.distanceM(lat, lng, place.getLat(), place.getLng())))
+                .filter(candidate -> candidate.getValue() <= radiusM)
+                .min(Comparator.<Map.Entry<HelpPlaceEntity, Integer>>comparingInt(Map.Entry::getValue)
+                        .thenComparingLong(candidate -> safeId(candidate.getKey())))
+                .map(Map.Entry::getKey);
+    }
+
     private record TierPick(List<HelpPlace> places, int radiusUsedM, Instant oldestUpdatedAt) {
         static final TierPick EMPTY = new TierPick(List.of(), 0, null);
     }

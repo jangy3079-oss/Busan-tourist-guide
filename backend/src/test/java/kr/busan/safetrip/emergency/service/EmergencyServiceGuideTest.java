@@ -155,7 +155,7 @@ class EmergencyServiceGuideTest {
         assertThat(res.topContact()).isEqualTo("119");
         assertThat(res.card()).isNotNull();
         assertThat(res.card().ko()).contains("쓰러져서 의식이 없습니다.");
-        assertThat(res.card().address()).isEqualTo("부산 수영구");
+        assertThat(res.card().address()).isEqualTo("부산 수영구 광안리해수욕장 부근");
         assertThat(res.stepsFallback()).isTrue();
         assertThat(res.sources()).extracting(s -> s.id()).containsExactly("fb_urgent");
     }
@@ -194,9 +194,55 @@ class EmergencyServiceGuideTest {
         assertThat(res.places()).hasSize(1);
         assertThat(res.places().get(0).name()).isEqualTo("해운대우동지구대");
         assertThat(res.card()).isNotNull();
-        assertThat(res.card().address()).isEqualTo("부산 해운대구 해운대해수욕장 부근");
+        assertThat(res.card().address()).isEqualTo("부산 해운대구 해운대우동지구대 근처");
         assertThat(res.card().translated()).isNull();
         assertThat(res.extras()).containsExactly(Extra.EMBASSY);
+    }
+
+    @Test
+    void addressFallbackFindsNearestDatabasePlaceOutsideResponseList() {
+        HelpPlaceEntity touristInfo = entity(
+                40L, "TOURIST_INFO", "해운대 관광안내소",
+                35.1587 + 47 / 111_195.0, 129.1604,
+                null, true, Instant.parse("2026-10-12T00:00:00Z"), null);
+        when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
+                anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(touristInfo));
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "My friend fainted and is not breathing", "en", 35.1587, 129.1604, null, null));
+
+        assertThat(res.places()).isEmpty();
+        assertThat(res.card().address()).isEqualTo("부산 해운대구 해운대 관광안내소 근처");
+    }
+
+    @Test
+    void addressFallbackUsesAnchorWhenNearestPlaceIsOutsideRadius() {
+        HelpPlaceEntity distantPlace = entity(
+                41L, "TOURIST_INFO", "먼 관광안내소",
+                35.1587 + 700 / 111_195.0, 129.1604,
+                null, true, Instant.parse("2026-10-12T00:00:00Z"), null);
+        when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
+                anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(distantPlace));
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "My friend fainted and is not breathing", "en", 35.1587, 129.1604, null, null));
+
+        assertThat(res.card().address()).isEqualTo("부산 해운대구 해운대해수욕장 부근");
+    }
+
+    @Test
+    void addressFallbackUsesDistrictWhenPlaceAndAnchorAreOutsideRadius() {
+        when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
+                anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "My friend fainted and is not breathing", "en", 35.1700, 129.1604, null, null));
+
+        assertThat(res.outOfArea()).isFalse();
+        assertThat(res.card().address()).isEqualTo("부산 해운대구");
     }
 
     @Test
@@ -260,7 +306,7 @@ class EmergencyServiceGuideTest {
         assertThat(res.topContact()).isEqualTo("1330");
         assertThat(res.places()).isEmpty();
         assertThat(res.card()).isNotNull();
-        assertThat(res.card().address()).isEqualTo("부산 수영구");
+        assertThat(res.card().address()).isEqualTo("부산 수영구 광안리해수욕장 부근");
         assertThat(res.stepsFallback()).isTrue();
         assertThat(res.dataAsOf()).isNull();
     }

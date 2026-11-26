@@ -1,5 +1,9 @@
 {
   "_comment": "긴급 모듈 다국어 UI·라벨·대체 주소·데이터 출처 문구(FR-E010, FR-E015, NFR-E006, NFR-E008, NFR-E009). 코드 하드코딩 금지.",
+  "_addressFallback": {
+    "placeRadiusM": 500,
+    "anchorRadiusM": 1000
+  },
   "ko": {
     "hours.alwaysOpen": "24시간",
     "hours.closed": "휴무",

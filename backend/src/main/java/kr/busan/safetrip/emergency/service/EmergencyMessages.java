@@ -25,23 +25,35 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos;
  */
 @Component
 public class EmergencyMessages {
+    private record LoadedMessages(
+            Map<String, Map<String, String>> languages,
+            int fallbackPlaceRadiusM,
+            int fallbackAnchorRadiusM) {}
+
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String DEFAULT_RESOURCE = "/emergency/messages.json";
 
     private final Map<String, String> ko;
+    private final int fallbackPlaceRadiusM;
+    private final int fallbackAnchorRadiusM;
 
     public EmergencyMessages() {
         this(DEFAULT_RESOURCE);
     }
 
     EmergencyMessages(String resourcePath) {
-        Map<String, Map<String, String>> all = load(resourcePath);
-        Map<String, String> koMap = all.get("ko");
+        LoadedMessages loaded = load(resourcePath);
+        Map<String, String> koMap = loaded.languages().get("ko");
         if (koMap == null || koMap.isEmpty()) {
             throw new IllegalStateException("messages.json에 ko 항목이 없습니다: " + resourcePath);
         }
         this.ko = Map.copyOf(koMap);
+        this.fallbackPlaceRadiusM = loaded.fallbackPlaceRadiusM();
+        this.fallbackAnchorRadiusM = loaded.fallbackAnchorRadiusM();
     }
+
+    public int fallbackPlaceRadiusM() { return fallbackPlaceRadiusM; }
+    public int fallbackAnchorRadiusM() { return fallbackAnchorRadiusM; }
 
     public String areaFallbackAddress(String district, String label) {
         return require("address.fallback.area")
@@ -88,7 +100,7 @@ public class EmergencyMessages {
         return value;
     }
 
-    private static Map<String, Map<String, String>> load(String path) {
+    private static LoadedMessages load(String path) {
         URL url = EmergencyMessages.class.getResource(path);
         if (url == null) {
             throw new IllegalStateException("메시지 리소스를 찾을 수 없음: " + path);
@@ -99,6 +111,10 @@ public class EmergencyMessages {
             try (InputStream in = conn.getInputStream()) {
                 Map<String, Object> raw = JSON.readValue(in, new TypeReference<>() {});
                 Map<String, Map<String, String>> result = new LinkedHashMap<>();
+                Object fallbackConfig = raw.get("_addressFallback");
+                if (!(fallbackConfig instanceof Map<?, ?> fallbackMap)) {
+                    throw new IllegalStateException("messages.json에 주소 대체 반경 설정이 없습니다: " + path);
+                }
                 for (Map.Entry<String, Object> entry : raw.entrySet()) {
                     if (entry.getKey().startsWith("_") || !(entry.getValue() instanceof Map<?, ?> sub)) {
                         continue;
@@ -111,10 +127,21 @@ public class EmergencyMessages {
                     });
                     result.put(entry.getKey(), Map.copyOf(langMap));
                 }
-                return result;
+                return new LoadedMessages(
+                        Map.copyOf(result),
+                        positiveSetting(fallbackMap.get("placeRadiusM"), "placeRadiusM", path),
+                        positiveSetting(fallbackMap.get("anchorRadiusM"), "anchorRadiusM", path));
             }
         } catch (IOException e) {
             throw new UncheckedIOException("메시지 리소스 읽기 실패: " + path, e);
         }
+    }
+
+    private static int positiveSetting(Object value, String key, String path) {
+        if (!(value instanceof Number number) || number.intValue() <= 0
+                || number.doubleValue() != number.intValue()) {
+            throw new IllegalStateException("messages.json 주소 대체 반경 설정이 올바르지 않습니다: " + key + " (" + path + ")");
+        }
+        return number.intValue();
     }
 }
