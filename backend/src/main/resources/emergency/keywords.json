@@ -1,7 +1,13 @@
 {
-  "_comment": "위급 키워드 사전(DATA-E10). 근거: 응급의료에 관한 법률 시행규칙 별표 1 응급증상 + 팀 추가. 수정 후 API-E05로 다시 읽음(FR-E022). AND 규칙: 키워드에 '+'가 있으면 '+'로 나눈 모든 조각이 정규화된 문장에 들어 있을 때(순서 무관) 매칭하며, 각 조각 중 최소 하나는 상황을 직접 가리키는 표현을 쓴다.",
+  "_comment": "위급 키워드 사전(DATA-E10). 근거: 응급의료에 관한 법률 시행규칙 별표 1 응급증상 + 팀 추가. 수정 후 API-E05로 다시 읽음(FR-E022). 판정 규칙(#165): excludes를 먼저 지운 뒤 영어는 단어 경계(\\b), 한글 2글자 이하는 띄어쓰기 유지본의 어절 시작만 인정, 한글 3글자 이상·일본어는 공백 제거본 포함 검사, '+' AND 규칙은 순서 무관하며 조각 사이 간격이 andMaxGap(cjk 글자수/latinWords 단어수) 이하일 때만 매칭.",
   "priority": ["URGENT", "FIRE", "THREAT", "WAY", "LOST", "MILD"],
   "urgentTypes": ["URGENT", "FIRE", "THREAT"],
+  "andMaxGap": { "cjk": 4, "latinWords": 3 },
+  "excludes": {
+    "ko": ["문화재", "폭발적", "불꽃놀이", "지진 체험", "지진 기념관", "지진 박물관"],
+    "en": ["fireworks", "earthquake museum", "earthquake memorial", "cold beer", "cold beers", "cold drink", "cold drinks", "cold noodle", "cold noodles"],
+    "ja": ["地震体験", "地震の資料", "津波の心配がない", "刃物の専門店", "刃物店"]
+  },
   "groups": [
     {
       "type": "URGENT",
@@ -28,7 +34,7 @@
       "type": "URGENT",
       "group": "CHEST_PAIN",
       "ko": ["가슴+아파", "가슴+아프", "가슴+통증", "흉통", "가슴+쥐어짜", "심장마비", "뇌졸중", "말이 어눌"],
-      "en": ["chest+pain", "chest+hurt", "heart attack", "having a stroke", "stroke symptoms", "slurred speech"],
+      "en": ["chest+pain", "chest+hurt", "chest+hurts", "heart attack", "having a stroke", "stroke symptoms", "slurred speech"],
       "ja": ["胸が痛", "胸の痛み", "胸痛", "心臓発作", "脳卒中"]
     },
     {
@@ -70,7 +76,7 @@
       "type": "URGENT",
       "group": "ANAPHYLAXIS",
       "ko": ["아나필락시스", "얼굴이+부어", "얼굴이+부었", "얼굴이+붓", "목이+부어", "목이+부었", "목이+붓", "입술이+부어", "입술이+부었", "심한 알레르기"],
-      "en": ["anaphylaxis", "face+swell", "throat+swell", "swollen throat", "severe allergic", "epipen"],
+      "en": ["anaphylaxis", "face+swell", "face+swelling", "face+swollen", "throat+swell", "throat+swelling", "swollen throat", "severe allergic", "epipen"],
       "ja": ["アナフィラキシー", "顔が腫れ", "喉が腫れ", "唇が腫れ", "重度のアレルギー"]
     },
     {
