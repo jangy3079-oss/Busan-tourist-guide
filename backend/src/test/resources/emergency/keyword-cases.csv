@@ -92,3 +92,45 @@ text,expectedType,expectedGroup
 "I have a headache",MILD,GENERAL
 "頭が痛いです",MILD,GENERAL
 "熱があります",MILD,GENERAL
+"심장이 멎은 것 같아요",URGENT,CARDIAC_ARREST
+"Call an ambulance",URGENT,AMBULANCE
+"Help! My friend fell and hit his head",URGENT,TRAUMA
+"救急車を呼んでください",URGENT,AMBULANCE
+"치한이 있어요",THREAT,THREAT
+"bleeding edge tech museum",,
+"사람이 많이 빠졌으면 좋겠어요 한적한 곳",,
+"해운대 근처 문화재 보러 가고 싶어요",,
+"과자 살 수 있는 시장 들르고 싶어요",,
+"동해 일출 보고 해장국",,
+"순간 질리지 않는 코스",,
+"폭발적인 인기 맛집",,
+"숨은 맛집에서 안 쉬고 먹방",,
+"hotel fireworks view in Gwangalli",,
+"Plan the following menu: coffee, bbq, walk",,
+"earthquake memorial museum",,
+"지진체험관에 가고 싶어요",,
+"地震体験館に行きたい",,
+"津波の心配がない海辺",,
+"刃物の専門店",,
+"I want to have a cold beer by the beach",,
+"City archives and museums",,
+"화분 실내 식물 카페",,
+"I don't speak Korean, plan a 3 hour walk",WAY,WAY
+"韓国語がわからないのですが海雲台で3時間のコース",WAY,WAY
+"건물에 화재가 났어요",FIRE,FIRE
+"친구가 자살하려고 해요",URGENT,SELF_HARM
+"지갑 분실했어요",LOST,LOST
+"해일 경보가 울려요",FIRE,FIRE
+"My friend is having a seizure",URGENT,SEIZURE
+"There was an earthquake",FIRE,FIRE
+"刃物を持った人がいます",THREAT,THREAT
+"津波が来ています",FIRE,FIRE
+"I have a cold and fever",MILD,GENERAL
+"친구가자살하려고해요",URGENT,SELF_HARM
+"호텔에불났어요",FIRE,FIRE
+"건물화재발생",FIRE,FIRE
+"다리가골절된것같아요",URGENT,TRAUMA
+"지갑분실했어요",LOST,LOST
+"여권도난당했어요",LOST,STOLEN
+"남자가날때렸어요",THREAT,THREAT
+"아이가경련해요",URGENT,SEIZURE

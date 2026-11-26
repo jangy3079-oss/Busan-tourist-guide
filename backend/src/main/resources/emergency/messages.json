@@ -1,0 +1,29 @@
+{
+  "_comment": "긴급 모듈 다국어 UI·라벨·대체 주소·데이터 출처 문구(FR-E010, FR-E015, NFR-E006, NFR-E008, NFR-E009). 코드 하드코딩 금지.",
+  "ko": {
+    "hours.alwaysOpen": "24시간",
+    "hours.closed": "휴무",
+    "hours.unknown": "운영시간 미확인",
+    "address.fallback.area": "부산 {district} {label} 부근",
+    "address.fallback.nearPlace": "부산 {district} {place} 근처",
+    "address.fallback.district": "부산 {district}",
+    "source.ER": "국립중앙의료원",
+    "source.PHARMACY": "국립중앙의료원",
+    "source.HOSPITAL": "국립중앙의료원",
+    "source.POLICE": "경찰청",
+    "source.TOURIST_INFO": "부산광역시",
+    "source.CONVENIENCE": "행정안전부",
+    "source.FIRE_STATION": "소방청",
+    "source.separator": "·"
+  },
+  "en": {
+    "hours.alwaysOpen": "24 hours",
+    "hours.closed": "Closed today",
+    "hours.unknown": "Hours unknown"
+  },
+  "ja": {
+    "hours.alwaysOpen": "24時間",
+    "hours.closed": "休業",
+    "hours.unknown": "営業時間不明"
+  }
+}
