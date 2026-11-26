@@ -35,7 +35,7 @@
         "INJURY": { "ko": "크게 다쳤습니다.", "en": "serious injury", "ja": "大けがをしました" },
         "POISONING": { "ko": "약물이나 독성 물질을 삼켰습니다.", "en": "swallowed medicine or toxic substance", "ja": "薬や有害な物質を飲み込みました" },
         "ALLERGY": { "ko": "얼굴과 목이 붓고 숨쉬기 힘듭니다.", "en": "swollen face and throat, hard to breathe", "ja": "顔と喉が腫れて息苦しいです" },
-        "DROWNING": { "ko": "물에 빠졌습니다.", "en": "drowning in water", "ja": "水におぼれました" }
+        "DROWNING": { "ko": "물에 빠졌습니다.", "en": "fell into the water", "ja": "水におぼれました" }
       },
       "MILD": {
         "FEVER": { "ko": "열이 납니다.", "en": "fever", "ja": "熱があります" },
@@ -52,7 +52,7 @@
       "THREAT": {
         "FOLLOWED": { "ko": "누군가 저를 따라오고 있습니다.", "en": "Someone is following me", "ja": "誰かにつけられています" },
         "ASSAULT": { "ko": "폭행을 당했습니다.", "en": "I was assaulted", "ja": "暴行を受けました" },
-        "HARASS": { "ko": "추행을 당했습니다.", "en": "I was harassed", "ja": "痴漢被害に遭いました" },
+        "HARASS": { "ko": "추행을 당했습니다.", "en": "I was sexually harassed", "ja": "痴漢被害に遭いました" },
         "THREATENED": { "ko": "위협을 받고 있습니다.", "en": "I am being threatened", "ja": "脅されています" }
       },
       "FIRE": {
@@ -106,9 +106,6 @@
     },
     "FIRE": {
       "FIRE": { "situation": "FIRE" }
-    },
-    "MILD": {
-      "NEEDS_MEDS": { "symptom": "STOMACH" }
     }
   }
 }

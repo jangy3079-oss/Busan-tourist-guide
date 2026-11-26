@@ -70,6 +70,17 @@ class KoreanCardBuilderTest {
         assertThat(threat.ko()).isEqualTo("외국인 관광객입니다. 누군가 저를 따라오고 있습니다. 경찰(112)에 신고해 주세요.");
         assertThat(threat.translated()).isEqualTo("I am a foreign tourist. Someone is following me. Please call the police (112).");
 
+        EmergencyDtos.Card harass = builder.build(EmType.THREAT, "THREAT", Map.of("situation", "HARASS"), null, Lang.EN);
+        assertThat(harass).isNotNull();
+        assertThat(harass.ko()).isEqualTo("외국인 관광객입니다. 추행을 당했습니다. 경찰(112)에 신고해 주세요.");
+        assertThat(harass.translated()).isEqualTo("I am a foreign tourist. I was sexually harassed. Please call the police (112).");
+
+        EmergencyDtos.Card drowning = builder.build(
+                EmType.URGENT, "DROWNING", Map.of("who", "COMPANION", "symptom", "DROWNING"), null, Lang.EN);
+        assertThat(drowning).isNotNull();
+        assertThat(drowning.ko()).isEqualTo("외국인 관광객입니다. 일행이 물에 빠졌습니다. 119에 신고해 주세요.");
+        assertThat(drowning.translated()).isEqualTo("I am a foreign tourist. My companion: fell into the water. Please call 119.");
+
         EmergencyDtos.Card fire = builder.build(EmType.FIRE, "FIRE", Map.of("situation", "SMOKE"), null, Lang.JA);
         assertThat(fire).isNotNull();
         assertThat(fire.ko()).isEqualTo("외국인 관광객입니다. 연기가 나고 있습니다. 119에 신고해 주세요.");
@@ -112,7 +123,7 @@ class KoreanCardBuilderTest {
         assertThat(builder.slotsFromGroup(EmType.URGENT, "UNCONSCIOUS")).containsExactlyEntriesOf(Map.of("symptom", "UNCONSCIOUS"));
         assertThat(builder.slotsFromGroup(EmType.URGENT, "BREATHING")).containsExactlyEntriesOf(Map.of("symptom", "NOT_BREATHING"));
         assertThat(builder.slotsFromGroup(EmType.URGENT, "DROWNING")).containsExactlyEntriesOf(Map.of("symptom", "DROWNING"));
-        assertThat(builder.slotsFromGroup(EmType.MILD, "NEEDS_MEDS")).containsExactlyEntriesOf(Map.of("symptom", "STOMACH"));
+        assertThat(builder.slotsFromGroup(EmType.MILD, "NEEDS_MEDS")).isEmpty();
         assertThat(builder.slotsFromGroup(EmType.MILD, "GENERAL")).isEmpty();
         assertThat(builder.slotsFromGroup(EmType.LOST, "STOLEN")).isEmpty();
         assertThat(builder.slotsFromGroup(EmType.LOST, "LOST")).isEmpty();
