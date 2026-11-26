@@ -49,8 +49,11 @@ curl localhost:8080/api/v1/admin/knowledge/status              # state=DONE, pro
 ## 4. LLM
 | | 설정 |
 |---|---|
-| 시연·평가 | `AI_PROVIDER=claude`, `AI_BASE_URL=https://api.anthropic.com`, `AI_MODEL=claude-haiku-5-5`, 키와 단가 |
-| 키 없이 | 설정하지 않으면 로컬 Ollama `qwen3.5:4b` |
+| 기본(시연·평가) | Claude API `claude-haiku-5-5`. `.env`에 `AI_API_KEY`만 넣는다 |
+| 키 없이 | LLM 없이 규칙·템플릿으로 응답 |
+| 로컬 LLM 시험 | `AI_PROVIDER=ollama`, `AI_BASE_URL=http://localhost:11434`, `AI_MODEL=qwen3.5:4b` |
+
+Ollama는 임베딩(`bge-m3`, 장소 벡터 검색)에 계속 씁니다. LLM을 Claude로 써도 Ollama는 켜 둡니다.
 
 키가 없거나 실패해도 코스는 규칙과 템플릿으로 나옵니다(AC-C05). 호출은 재시도를 포함해 총 10초 안에 끝납니다.
 
