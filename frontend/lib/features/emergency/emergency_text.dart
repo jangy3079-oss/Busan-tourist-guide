@@ -49,9 +49,9 @@ const Map<String, List<String>> kEmText = {
   'msgCopied': ['문구를 복사했어요', 'Text copied', '文をコピーしました'],
   'sendSms': ['문자 보내기', 'Open messages', 'メッセージを開く'],
   'silentSrc': ['112 문자 신고를 여는 기능이에요. 접수 시스템과 직접 연결되지는 않아요.', 'This opens a text to 112. It is not connected to the police system directly.', '112へのメッセージを開く機能です。受付システムとは直接つながっていません。'],
-  'embassyHow': ['여권을 잃어버렸다면 자국 대사관·영사관에서 재발급이나 여행증명서를 받아야 해요. 외교부의 주한 외국공관 목록에서 연락처를 확인하세요.', 'If you lost your passport, your embassy or consulate can reissue it or give you a travel document. Find their contacts in the list of foreign missions in Korea.', 'パスポートをなくした場合は、自国の大使館・領事館で再発行や渡航書の手続きをします。駐韓外国公館の一覧で連絡先を確認してください。'],
-  'embassyOpen': ['주한 외국공관 연락처 보기', 'See embassy contacts', '駐韓公館の連絡先を見る'],
-  'embassySrc': ['외교부(대한민국) 공개 목록 · 새 창에서 열려요', 'Ministry of Foreign Affairs of Korea · opens in a new tab', '韓国外交部の公開一覧・新しいタブで開きます'],
+  'embassyHow': ['여권을 잃어버렸다면 자국 대사관·영사관에서 재발급이나 여행증명서를 받아야 해요.', 'If you lost your passport, your embassy or consulate can reissue it or give you a travel document.', 'パスポートをなくした場合は、自国の大使館・領事館で再発行や渡航書の手続きをします。'],
+  'embassyAsk1330': ['자국 대사관 연락처를 1330에 물어보세요', 'Ask 1330 for your embassy\'s contact details', '自国の大使館の連絡先を1330に聞いてください'],
+  'embassyList': ['외교부 주한공관 목록(한국어)', 'MOFA list of embassies in Korea (Korean)', '韓国外交部の駐韓公館一覧(韓国語)'],
 };
 
 String et(String k, Lang l, [List<Object> args = const []]) => trIn(kEmText, k, l, args);

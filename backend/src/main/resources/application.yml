@@ -31,16 +31,16 @@ server:
 
 safetrip:
   ai:
-    provider: ${AI_PROVIDER:ollama}      # ollama | openai | claude
-    base-url: ${AI_BASE_URL:http://localhost:11434}
-    model: ${AI_MODEL:qwen3.5:4b}
+    provider: ${AI_PROVIDER:claude}      # claude | openai | ollama. 기본은 Claude API, 키만 넣으면 된다
+    base-url: ${AI_BASE_URL:https://api.anthropic.com}
+    model: ${AI_MODEL:claude-haiku-5-5}
     api-key: ${AI_API_KEY:}
     timeout-sec: 8
     total-timeout-sec: 10     # 재시도를 포함한 총 시간(#150)
     max-retry: 1
     monthly-budget-krw: ${AI_MONTHLY_BUDGET_KRW:3000}      # 유료 provider 만 센다(NFR-C009)
-    input-krw-per-m-tok: ${AI_INPUT_KRW_PER_MTOK:0}        # 100만 토큰당 원. 유료인데 0 이면 호출을 막는다
-    output-krw-per-m-tok: ${AI_OUTPUT_KRW_PER_MTOK:0}
+    input-krw-per-m-tok: ${AI_INPUT_KRW_PER_MTOK:140}      # 100만 토큰당 원(claude-haiku-5-5). 유료인데 0 이면 호출을 막는다
+    output-krw-per-m-tok: ${AI_OUTPUT_KRW_PER_MTOK:700}
   embedding:
     base-url: ${EMBED_BASE_URL:http://localhost:11434}
     model: ${EMBED_MODEL:bge-m3}
