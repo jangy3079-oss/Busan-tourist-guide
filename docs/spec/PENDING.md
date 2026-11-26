@@ -13,7 +13,7 @@
 | CHG-004 | SRS·SDD 표지·개요 | 서비스 이름 "부산 안심여행" | 팀 결정(11/13~25) | 팀 | 합의 |
 | CHG-005 | SDD 배포·개발 환경 | DB는 공용 Supabase(PostgreSQL) + 로컬 개발 Docker(pgvector). 형상 관리는 이슈·마일스톤 기반, 공용은 PR, 담당 영역은 브랜치 직접 병합 + CI(#163) | 팀 결정 | 팀 | 합의 |
 | CHG-006 | SDD 5~11장 | 중간고사 때 비워 둔 장 작성. 6장 API는 `docs/API.md`를 옮김 | — | 김희찬 | 합의 |
-| CHG-007 | SDD 8장 예외 처리 | 오류 ID는 `ERR-NNN` 번호를 따로 두지 않고 구현된 `ErrorCode` 이름(`INVALID_INPUT`, `UNSUPPORTED_MEDIA`, `PAYLOAD_TOO_LARGE`, `NOT_FOUND`, `AI_UNAVAILABLE`, `AI_TIMEOUT`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`, `INTERNAL`)을 그대로 씀 | `ErrorCode.java`, #19, #190 | 김희찬(문서) | 합의 |
+| CHG-007 | SDD 8장 예외 처리 | 오류 ID는 `ERR-NNN` 번호를 씀. 구현된 `ErrorCode`와 1:1 대응표를 둠: ERR-001 `INVALID_INPUT`(400), ERR-002 `UNSUPPORTED_MEDIA`(415), ERR-003 `PAYLOAD_TOO_LARGE`(413), ERR-004 `NOT_FOUND`(404), ERR-005 `AI_UNAVAILABLE`(503), ERR-006 `AI_TIMEOUT`(504), ERR-007 `UPSTREAM_UNAVAILABLE`(503), ERR-008 `NOT_IMPLEMENTED`(501), ERR-009 `INTERNAL`(500). 새 코드는 다음 번호를 씀 | `ErrorCode.java`, #19, #190 | 김희찬(문서) | 합의 |
 | CHG-008 | SDD 2.1·3.4·5장 | 표 이름을 실제 마이그레이션의 단수형(`place`, `help_place`, `kb_document`, `request_log`, `sync_log` 등)으로 통일 | V1~V35, #190 | 김희찬(문서) | 합의 |
 | CHG-009 | SDD 7.2·7.3 | `SpringAiService`는 제공사별 `response_format` 대신 시스템 지시문으로 JSON을 요구하고 응답에서 JSON을 꺼내 검증함 | #142, #171, #172 | 김희찬(문서) | 합의 |
 | CHG-010 | SRS FR-C013, API-C01·C03 | 코스 요청에 선택 필드 `notEmergency`: 긴급 확인 시트에서 '코스 계속'을 고르면 비위급 오탐만 우회(URGENT·FIRE·THREAT는 미적용) | #166 | 김동현 | 합의 |
