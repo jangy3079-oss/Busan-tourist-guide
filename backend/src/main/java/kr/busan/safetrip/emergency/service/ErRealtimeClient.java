@@ -1,5 +1,6 @@
 package kr.busan.safetrip.emergency.service;
 
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 import kr.busan.safetrip.common.exception.NotImplementedYetException;
@@ -14,10 +15,9 @@ import kr.busan.safetrip.common.exception.NotImplementedYetException;
  */
 @Component
 public class ErRealtimeClient {
-    public record ErStatus(int availableBeds, String message, java.time.Instant fetchedAt) {}
+    public record ErStatus(Integer availableBeds, String message, boolean noTreatment, Instant fetchedAt) {}
 
     public Optional<ErStatus> fetch(String erId) {
         throw new NotImplementedYetException("긴급 담당", "ErRealtimeClient.fetch");
-
     }
 }

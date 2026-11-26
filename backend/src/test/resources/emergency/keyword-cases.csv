@@ -1,0 +1,136 @@
+text,expectedType,expectedGroup
+"오후에 광안리에서 바다 보고 회 먹기, 3시간",,
+"해운대 맛집 추천해 주세요",,
+"광안리 불꽃축제 보러 가고 싶어요",,
+"숨은 맛집 알려줘",,
+"열시에 출발해요",,
+"부모님이랑 해운대 반나절 코스",,
+"비 오는 날 실내 코스 추천",,
+"야경 보면서 맥주 한잔",,
+"해변에서 산책하고 카페 가기",,
+"아이와 함께 가기 좋은 곳",,
+"광안대교 불빛 쇼 보고 싶어",,
+"밀면이랑 돼지국밥 먹고 싶어요",,
+"더운 날 시원한 곳",,
+"피곤해서 쉴 수 있는 카페",,
+"약국 근처 카페",,
+"해수욕장 수영하고 회 먹기",,
+"바다에 빠져버린 듯한 노을 맛집",,
+"배우 연기가 좋은 영화관",,
+"Is there a fire show at Haeundae?",,
+"I want to see fireworks at Gwangalli",,
+"Recommend a spicy food restaurant",,
+"Where can I get cold noodles?",,
+"Best place to watch the sunset",,
+"I'm looking for a hot spring",,
+"Take me to a cafe with an ocean view",,
+"I lost track of time, plan a short course",,
+"We want to swim at the beach and eat seafood",,
+"Something with breathtaking views",,
+"Show me a killer view of the bridge",,
+"I'm dying to try milmyeon",,
+"This heat is killing me, indoor places please",,
+"A museum about the Korean war",,
+"広安里で花火を見たい",,
+"海雲台でおいしい刺身",,
+"雨の日の室内コース",,
+"夜景がきれいなカフェ",,
+"熱いスープの店",,
+"子供と行ける場所",,
+"火曜日に行きたい",,
+"海で泳いでから食事",,
+"息をのむような景色",,
+"道に沿って散歩したい",,
+"엄마가 갑자기 쓰러지셨어요",URGENT,UNCONSCIOUS
+"아빠가 숨을 쉬지 않아요",URGENT,BREATHING
+"친구가 의식이 없어요",URGENT,UNCONSCIOUS
+"피가 계속 나요",URGENT,BLEEDING
+"가슴이 너무 아파요",URGENT,CHEST_PAIN
+"아이가 경련을 해요",URGENT,SEIZURE
+"바다에 사람이 빠졌어요",URGENT,DROWNING
+"땅콩 먹고 얼굴이 부었어요",URGENT,ANAPHYLAXIS
+"My husband collapsed",URGENT,UNCONSCIOUS
+"She is not breathing",URGENT,BREATHING
+"He's bleeding a lot",URGENT,BLEEDING
+"My chest hurts badly",URGENT,CHEST_PAIN
+"My child is having a seizure",URGENT,SEIZURE
+"Someone is drowning",URGENT,DROWNING
+"My face is swelling after eating peanuts",URGENT,ANAPHYLAXIS
+"父が倒れました",URGENT,UNCONSCIOUS
+"息をしていません",URGENT,BREATHING
+"血が止まりません",URGENT,BLEEDING
+"胸が痛いです",URGENT,CHEST_PAIN
+"子供がけいれんしています",URGENT,SEIZURE
+"人が溺れています",URGENT,DROWNING
+"호텔에 불이 났어요",FIRE,FIRE
+"연기가 많이 나요",FIRE,FIRE
+"There's a fire in the building",FIRE,FIRE
+"火事です",FIRE,FIRE
+"누가 계속 따라와요",THREAT,THREAT
+"모르는 남자가 때렸어요",THREAT,THREAT
+"A man is following me",THREAT,THREAT
+"I was attacked",THREAT,THREAT
+"誰かにつけられています",THREAT,THREAT
+"가방을 도둑맞았어요",LOST,STOLEN
+"Someone stole my wallet",LOST,STOLEN
+"財布を盗まれました",LOST,STOLEN
+"핸드폰을 잃어버렸어요",LOST,LOST
+"여권 분실했어요",LOST,LOST
+"I lost my passport",LOST,LOST
+"パスポートをなくしました",LOST,LOST
+"숙소를 못 찾겠어요",WAY,WAY
+"I can't find my hotel",WAY,WAY
+"ホテルが見つかりません",WAY,WAY
+"배가 아파요",MILD,NEEDS_MEDS
+"벌레에 물렸어요",MILD,NEEDS_MEDS
+"넘어져서 무릎이 까졌어요",MILD,NEEDS_MEDS
+"I have diarrhea",MILD,NEEDS_MEDS
+"I cut my finger",MILD,NEEDS_MEDS
+"お腹が痛いです",MILD,NEEDS_MEDS
+"머리가 아파요",MILD,GENERAL
+"열이 나요",MILD,GENERAL
+"I have a headache",MILD,GENERAL
+"頭が痛いです",MILD,GENERAL
+"熱があります",MILD,GENERAL
+"심장이 멎은 것 같아요",URGENT,CARDIAC_ARREST
+"Call an ambulance",URGENT,AMBULANCE
+"Help! My friend fell and hit his head",URGENT,TRAUMA
+"救急車を呼んでください",URGENT,AMBULANCE
+"치한이 있어요",THREAT,THREAT
+"bleeding edge tech museum",,
+"사람이 많이 빠졌으면 좋겠어요 한적한 곳",,
+"해운대 근처 문화재 보러 가고 싶어요",,
+"과자 살 수 있는 시장 들르고 싶어요",,
+"동해 일출 보고 해장국",,
+"순간 질리지 않는 코스",,
+"폭발적인 인기 맛집",,
+"숨은 맛집에서 안 쉬고 먹방",,
+"hotel fireworks view in Gwangalli",,
+"Plan the following menu: coffee, bbq, walk",,
+"earthquake memorial museum",,
+"지진체험관에 가고 싶어요",,
+"地震体験館に行きたい",,
+"津波の心配がない海辺",,
+"刃物の専門店",,
+"I want to have a cold beer by the beach",,
+"City archives and museums",,
+"화분 실내 식물 카페",,
+"I don't speak Korean, plan a 3 hour walk",WAY,WAY
+"韓国語がわからないのですが海雲台で3時間のコース",WAY,WAY
+"건물에 화재가 났어요",FIRE,FIRE
+"친구가 자살하려고 해요",URGENT,SELF_HARM
+"지갑 분실했어요",LOST,LOST
+"해일 경보가 울려요",FIRE,FIRE
+"My friend is having a seizure",URGENT,SEIZURE
+"There was an earthquake",FIRE,FIRE
+"刃物を持った人がいます",THREAT,THREAT
+"津波が来ています",FIRE,FIRE
+"I have a cold and fever",MILD,GENERAL
+"친구가자살하려고해요",URGENT,SELF_HARM
+"호텔에불났어요",FIRE,FIRE
+"건물화재발생",FIRE,FIRE
+"다리가골절된것같아요",URGENT,TRAUMA
+"지갑분실했어요",LOST,LOST
+"여권도난당했어요",LOST,STOLEN
+"남자가날때렸어요",THREAT,THREAT
+"아이가경련해요",URGENT,SEIZURE

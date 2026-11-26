@@ -1,0 +1,6 @@
+{
+  "_comment": "긴급 LLM 상황 분류 설정(FR-E006, FR-E008, AI-REQ-E05, NFR-E003, NFR-E009). 5초 타임아웃, 재시도 0회, 신뢰도 기준 0.6.",
+  "timeoutSec": 5,
+  "maxRetry": 0,
+  "confidenceThreshold": 0.6
+}

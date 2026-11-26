@@ -1,0 +1,12 @@
+{
+  "rows": [
+    { "type": "URGENT", "topContact": "119", "primary": ["ER"], "fallback": [], "alsoShow": [], "noPlaces": false, "extras": [] },
+    { "type": "MILD", "topContact": "1330", "primary": ["PHARMACY"], "fallback": ["CONVENIENCE"], "alsoShow": ["ER"], "noPlaces": false, "extras": [] },
+    { "type": "LOST", "topContact": "1330", "primary": ["POLICE"], "fallback": [], "alsoShow": ["TOURIST_INFO"], "noPlaces": false, "extras": ["EMBASSY"] },
+    { "type": "THREAT", "topContact": "112", "primary": ["POLICE"], "fallback": [], "alsoShow": ["CONVENIENCE"], "noPlaces": false, "extras": ["SILENT_REPORT"] },
+    { "type": "FIRE", "topContact": "119", "primary": [], "fallback": [], "alsoShow": [], "noPlaces": true, "extras": [] },
+    { "type": "WAY", "topContact": "1330", "primary": ["TOURIST_INFO"], "fallback": ["POLICE"], "alsoShow": [], "noPlaces": false, "extras": [] }
+  ],
+  "maxPlaces": 3,
+  "radiusStepsM": [1000, 3000]
+}

@@ -1,0 +1,28 @@
+{
+  "_comment": "districts.geojson 출처 및 단순화 정보 (FR-E017, EXTRA D5)",
+  "source": "southkorea/southkorea-maps (통계청 KOSTAT 시군구 행정구역 경계)",
+  "url": "https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-municipalities-2018-geo.json",
+  "baseYear": "2018",
+  "districts": [
+    {
+      "name": "해운대구",
+      "code": "21090",
+      "rawVertices": 512,
+      "vertices": 130,
+      "simplified": true
+    },
+    {
+      "name": "수영구",
+      "code": "21140",
+      "rawVertices": 185,
+      "vertices": 185,
+      "simplified": false
+    }
+  ],
+  "simplification": {
+    "algorithm": "Douglas-Peucker",
+    "toleranceDeg": 0.00025,
+    "approxToleranceM": 28,
+    "maxVerticesPerDistrict": 200
+  }
+}
