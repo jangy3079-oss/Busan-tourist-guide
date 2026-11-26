@@ -206,8 +206,9 @@ public class IntentParser {
         LocalTime time = null;
         try { if (n.path("visitDate").isTextual()) date = LocalDate.parse(n.get("visitDate").asText()); } catch (Exception ignored) { }
         try { if (n.path("startTime").isTextual()) time = LocalTime.parse(n.get("startTime").asText()); } catch (Exception ignored) { }
+        String search = n.path("searchKo").asText("").strip(); // #77 검색은 장소 데이터 언어(한국어)로. 비면 CourseService 가 원문을 쓴다
         return new Intent(date, time, dur, area, cats, null, n.path("outOfScope").asBoolean(false), Optional.empty())
-                .withIndoor(n.path("indoorOnly").asBoolean(false));
+                .withIndoor(n.path("indoorOnly").asBoolean(false)).withPreference(search.isEmpty() ? null : search);
     }
 
     /** NFR-C002 규칙 대체: 시간·지역·장소 유형·범위 밖 키워드만 본다 */

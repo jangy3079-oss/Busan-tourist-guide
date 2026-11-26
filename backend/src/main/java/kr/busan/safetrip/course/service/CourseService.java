@@ -111,7 +111,7 @@ public class CourseService {
                 date != null ? date : today,
                 time != null ? time : LocalTime.now(clock).truncatedTo(ChronoUnit.MINUTES),
                 dur != null ? dur : settings.intent().defaultDurationMin(),
-                area, parsed.categories(), req.startPlaceId()).withPreference(PiiMasker.mask(req.query()));
+                area, parsed.categories(), req.startPlaceId()).withPreference(PiiMasker.mask(parsed.preference() != null ? parsed.preference() : req.query()));
         List<CourseDtos.Assumption> assumptions = assumptions(lang, intent, date == null, time == null, dur == null, area == null);
 
         List<String> relaxed = new ArrayList<>();
