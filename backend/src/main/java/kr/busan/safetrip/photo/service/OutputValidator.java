@@ -14,7 +14,8 @@ import kr.busan.safetrip.common.api.Lang;
  *
  * 설명이 장소 원문과 어긋나는지 검사. 사진 전용. 순수 함수.
  * 버리는 경우: 비었음 / 길이 초과 / 요청 언어가 아님 / 원문에 없는 숫자 / 다른 장소 이름이 들어 있음.
- * 언어 판정: ko=한글 있음, ja=가나 있음, en=한글·가나 없음. (상호는 한글 원문 그대로 쓰므로 en·ja 에서도 상호의 한글은 허용)
+ * 언어 판정: ko=한글 있음, ja=가나 있고 한글 없음, en=한글·가나 없음. (상호는 한글 원문 그대로 쓰므로 en·ja 에서도 상호의 한글은 허용)
+ * 버린 이유(reason)는 로그용 코드로만 돌려준다. 생성 문장은 로그에 남기지 않는다.
  */
 @Component("photoOutputValidator") // 코스·사진에 같은 이름 클래스가 있어 빈 이름을 구분
 public class OutputValidator {
@@ -27,23 +28,29 @@ public class OutputValidator {
      * @param otherNames 다른 장소 이름들(들어 있으면 실패). 이 장소 이름에 포함되는 이름은 건너뛴다
      */
     public boolean isValid(String generated, String sourceText, Lang lang, int maxChars, String placeName, Collection<String> otherNames) {
-        if (generated == null || generated.isBlank() || generated.length() > maxChars) return false;
+        return reason(generated, sourceText, lang, maxChars, placeName, otherNames) == null;
+    }
+
+    /** @return 통과면 null, 아니면 버린 이유 코드(EMPTY·LENGTH·LANGUAGE·NUMBER·OTHER_PLACE) */
+    public String reason(String generated, String sourceText, Lang lang, int maxChars, String placeName, Collection<String> otherNames) {
+        if (generated == null || generated.isBlank()) return "EMPTY";
+        if (generated.length() > maxChars) return "LENGTH";
         String withoutName = placeName == null ? generated : generated.replace(placeName, "");
         boolean ok = switch (lang) {
             case KO -> HANGUL.matcher(withoutName).find();
-            case JA -> KANA.matcher(withoutName).find();
+            case JA -> KANA.matcher(withoutName).find() && !HANGUL.matcher(withoutName).find();
             case EN -> !HANGUL.matcher(withoutName).find() && !KANA.matcher(withoutName).find();
         };
-        if (!ok) return false;
+        if (!ok) return "LANGUAGE";
         String src = sourceText == null ? "" : sourceText;
         Matcher m = NUMBER.matcher(generated);
-        while (m.find()) if (!src.contains(m.group())) return false;
+        while (m.find()) if (!src.contains(m.group())) return "NUMBER";
         for (String other : otherNames) {
             if (other == null || other.length() < 2) continue;
             if (placeName != null && placeName.contains(other)) continue;
             if (src.contains(other)) continue; // 원문(주소·개요)에 있는 말이면 근거가 있다
-            if (generated.contains(other)) return false;
+            if (generated.contains(other)) return "OTHER_PLACE";
         }
-        return true;
+        return null;
     }
 }

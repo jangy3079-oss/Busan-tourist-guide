@@ -68,6 +68,6 @@ flutter test                  # 계약 견본(docs/contract)을 Api*Repository�
 - 긴급: 모든 긴급 화면·오류 응답에 112/119/1330 연락 정보가 항상 있어야 한다(FR-E004). LLM/공공API가 죽어도 저장 데이터로 안내를 계속한다(NFR-E003).
 - 코스: 설명(API-C02)은 코스(API-C01)와 분리해 늦게 와도 코스를 먼저 보여준다. 긴급 문장·범위 밖·코스 없음은 200 + `status`로 응답(오류 아님).
 - 긴급: 프론트는 API-E01(키워드, 1초)과 API-E02(상세)를 동시에 보낸다. 도움처·카드·할 일은 E02에서만 온다.
-- 사진: 허용 형식 jpg/jpeg/png, 10MB(SRS FR-P002). HEIC는 미결정(질문할 것).
+- 사진: 허용 형식 jpg/jpeg/png, 10MB(SRS FR-P002). HEIC는 미지원(CHG-202).
 - DB: PostgreSQL + pgvector, 스키마는 Flyway로만 변경(`ddl-auto: none`).
 - 관리자 API는 `@Profile("local-admin")`에서만 활성화.
