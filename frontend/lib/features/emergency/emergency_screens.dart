@@ -455,9 +455,10 @@ Future<void> showSilentSheet(BuildContext context, WidgetRef ref) {
   );
 }
 
-/// 확장: 대사관·영사관 (EMBASSY) — 외교부 주한 외국공관 연락처 목록 링크
+/// 확장: 대사관·영사관 (EMBASSY) — 1330 에 자국 공관 연락처를 묻는 전화가 먼저, 외교부 주한공관 목록(한국어)은 보조
 Future<void> showEmbassySheet(BuildContext context, WidgetRef ref) {
   final l = ref.read(langProvider);
+  final open = ref.read(emLinkProvider);
   return showAppSheet(
     context,
     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -465,8 +466,17 @@ Future<void> showEmbassySheet(BuildContext context, WidgetRef ref) {
       const SizedBox(height: 6),
       Text(et('embassyHow', l), style: const TextStyle(fontSize: 14, color: C.text2, height: 1.5)),
       const SizedBox(height: 14),
-      Btn(et('embassyOpen', l), icon: 'bank', kind: BtnKind.primary, onTap: () => ref.read(emLinkProvider)(kEmbassyListUrl)),
-      Src(et('embassySrc', l)),
+      Btn(et('embassyAsk1330', l), key: const ValueKey('embassy-1330'), icon: 'phone', kind: BtnKind.primary, onTap: () => open('tel:1330')),
+      const SizedBox(height: 6),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          key: const ValueKey('embassy-list'),
+          onPressed: () => open(kEmbassyListUrl),
+          icon: const Ic('bank', size: 16, color: C.sea),
+          label: Text(et('embassyList', l), style: const TextStyle(fontSize: 13.5, color: C.sea, decoration: TextDecoration.underline)),
+        ),
+      ),
     ]),
   );
 }
