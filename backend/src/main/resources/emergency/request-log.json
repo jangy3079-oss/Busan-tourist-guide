@@ -1,0 +1,17 @@
+{
+  "_comment": "요청 기록 request_log(T13, #118, NFR-E004). 문장·좌표·주소·장소 이름은 기록하지 않는다. fallback 은 이 목록의 코드만 순서대로 ','로 잇고, maxFallbackChars 를 넘으면 뒤쪽 코드를 뺀다.",
+  "maxFallbackChars": 40,
+  "queueCapacity": 200,
+  "fallbackCodes": [
+    "LLM_TIMEOUT",
+    "LLM_UNAVAILABLE",
+    "LLM_SCHEMA",
+    "LLM_LOW_CONF",
+    "USER_TYPE",
+    "GUIDANCE_TOP1",
+    "GUIDANCE_STORED",
+    "ER_DOWN",
+    "GEOCODE_FAIL",
+    "PLACES_NONE"
+  ]
+}

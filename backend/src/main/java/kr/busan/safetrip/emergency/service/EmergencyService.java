@@ -33,7 +33,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 /**
  * [긴급 담당] COMP-E03 EmergencyService
  * 요구사항: FR-E001~E005, E007~E018, NFR-E001~E005, NFR-E008
- * 상태: 완료(T13 요청 기록은 후속 작업)
+ * 상태: 완료
  * 수정 규칙: 긴급 담당만 수정. 코스·사진 담당은 수정 금지(필요하면 긴급 담당에게 요청).
  *
  * 흐름 조율(Facade).
@@ -59,6 +59,8 @@ public class EmergencyService {
     private final EmergencyMessages messages;
     private final HolidayCalendar holidayCalendar;
     private final Clock clock;
+    private final RequestLogRecorder recorder;
+    private final ElapsedTimer timer;
 
     /** 기존 계약 테스트(ApiContractTest 등) 호환용 6인자 생성자(공휴일 없음 기본값). */
     public EmergencyService(
@@ -72,7 +74,6 @@ public class EmergencyService {
                 null, null, null, null, null, Clock.system(SEOUL));
     }
 
-    @Autowired
     public EmergencyService(
             KeywordRuleEngineImpl keywords,
             SituationClassifier classifier,
@@ -87,6 +88,25 @@ public class EmergencyService {
             HolidayCalendar holidayCalendar) {
         this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
                 regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, Clock.system(SEOUL));
+    }
+
+    @Autowired
+    public EmergencyService(
+            KeywordRuleEngineImpl keywords,
+            SituationClassifier classifier,
+            DecisionTable decisionTable,
+            HelpPlaceFinder finder,
+            KoreanCardBuilder cardBuilder,
+            GuidanceRetriever guidance,
+            RegionResolver regionResolver,
+            ReverseGeocoder reverseGeocoder,
+            FallbackSteps fallbackSteps,
+            EmergencyMessages messages,
+            HolidayCalendar holidayCalendar,
+            RequestLogRecorder recorder,
+            ElapsedTimer timer) {
+        this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
+                regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, Clock.system(SEOUL), recorder, timer);
     }
 
     /** 테스트용 생성자(공휴일 달력 미지정 → 공휴일 아님). */
@@ -120,6 +140,26 @@ public class EmergencyService {
             EmergencyMessages messages,
             HolidayCalendar holidayCalendar,
             Clock clock) {
+        this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
+                regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, clock, null, new ElapsedTimer());
+    }
+
+    /** 테스트용 생성자: 요청 기록기와 측정기까지 주입한다(T13). recorder 가 null 이면 기록하지 않는다. */
+    EmergencyService(
+            KeywordRuleEngineImpl keywords,
+            SituationClassifier classifier,
+            DecisionTable decisionTable,
+            HelpPlaceFinder finder,
+            KoreanCardBuilder cardBuilder,
+            GuidanceRetriever guidance,
+            RegionResolver regionResolver,
+            ReverseGeocoder reverseGeocoder,
+            FallbackSteps fallbackSteps,
+            EmergencyMessages messages,
+            HolidayCalendar holidayCalendar,
+            Clock clock,
+            RequestLogRecorder recorder,
+            ElapsedTimer timer) {
         this.keywords = keywords;
         this.classifier = classifier;
         this.decisionTable = decisionTable;
@@ -132,10 +172,20 @@ public class EmergencyService {
         this.messages = messages;
         this.holidayCalendar = holidayCalendar;
         this.clock = clock;
+        this.recorder = recorder;
+        this.timer = timer == null ? new ElapsedTimer() : timer;
     }
 
     /** API-E01 즉시 응답(FR-E003, E005, NFR-E001): 키워드 사전·결정표만 사용해 1초 이내 응답. LLM·DB·외부 API 호출 금지. */
     public EmergencyDtos.QuickResponse quick(EmergencyDtos.QuickRequest req) {
+        long started = timer.start();
+        EmergencyDtos.QuickResponse res = quickResponse(req);
+        record("E01", res.keywordType(), res.keywordType() == null ? null : (res.urgent() ? Urgency.URGENT : Urgency.NORMAL),
+                started, Set.of());
+        return res;
+    }
+
+    private EmergencyDtos.QuickResponse quickResponse(EmergencyDtos.QuickRequest req) {
         Optional<KeywordRuleEngineImpl.Match> found = keywords.match(req.text());
         if (found.isEmpty()) {
             return new EmergencyDtos.QuickResponse(false, null, null);
@@ -150,10 +200,26 @@ public class EmergencyService {
 
     /** API-E02 상세 안내(FR-E001~E018, NFR-E003, NFR-E004, NFR-E008). */
     public GuideResponse guide(GuideRequest req) {
-        return guide(req, new LinkedHashSet<>());
+        long started = timer.start();
+        Set<String> fallback = new LinkedHashSet<>();
+        GuideResponse res = guide(req, fallback);
+        Triage t = res.triage();
+        record("E02", t == null ? null : t.type(), t == null ? null : t.urgency(), started, fallback);
+        return res;
     }
 
-    /** fallback: 이 요청에서 일어난 대체 경로(LLM 장애·유형 직접 선택 등)를 모은다 */
+    /** 요청 기록(T13): 유형·긴급도·처리시간·대체 경로만. 기록 실패는 응답에 영향 없음(NFR-E003) */
+    private void record(String api, EmType type, Urgency urgency, long started, Set<String> fallback) {
+        if (recorder == null) {
+            return;
+        }
+        try {
+            recorder.record(api, type, urgency, timer.elapsedMs(started), fallback);
+        } catch (RuntimeException e) {
+            log.warn("emergency.requestLog failed: {}", e.getClass().getSimpleName());
+        }
+    }
+
     private GuideResponse guide(GuideRequest req, Set<String> fallback) {
         // 1. 위치·지역 확인 (FR-E002, FR-E017)
         LocationContext loc = resolveLocation(req);
