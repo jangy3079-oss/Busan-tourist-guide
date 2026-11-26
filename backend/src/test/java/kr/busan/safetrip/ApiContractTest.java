@@ -44,7 +44,7 @@ class ApiContractTest {
                 new PhotoController(new PhotoMatchService(null, null, null, null, null), new PlaceSearchService(), new PlaceNarrationService()),
                 new EmergencyController(new EmergencyService(null, null, null, null, null, null)),
                 new EmergencyAdminController(new DataSyncScheduler()),
-                new EmergencyDashboardController(null, null))
+                new EmergencyDashboardController(null, null, null))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -95,6 +95,7 @@ class ApiContractTest {
                 .param("from", "2026-11-25T00:00:00+09:00").param("to", "2026-11-26T00:00:00+09:00")); // E09
         notImplemented(get("/api/v1/admin/emergency/dashboard/recent").param("limit", "50")); // E10
         notImplemented(get("/api/v1/admin/emergency/dashboard/stream"));    // E11
+        notImplemented(get("/api/v1/admin/emergency/dashboard/night-gap").param("date", "2026-11-26")); // E12
     }
 
     @Test

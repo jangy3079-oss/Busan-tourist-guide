@@ -79,6 +79,10 @@ class ContractFixtureTest {
                 "2026-11-26T14:07:00+09:00", "URGENT", "URGENT", "수영구", "광안동", "r13018c39129", "119")));
         m.put("E11_dashboard_alert", new EmergencyDtos.DashboardAlert("urgent-cluster", "CRITICAL", "GRID", "r13018c39129", 3, 1800,
                 "2026-11-26T14:07:00+09:00"));
+        m.put("E12_dashboard_night_gap", new EmergencyDtos.NightGapReport(
+                "2026-11-26", 22, 6, List.of(
+                        new EmergencyDtos.NightGapRow("2026-11-26T23:00+09:00", "수영구", 1, 3, 2, null),
+                        new EmergencyDtos.NightGapRow("2026-11-27T00:00+09:00", "해운대구", 0, 4, 1, "NO_PHARMACY"))));
         m.put("REQ_E02_guide", new EmergencyDtos.GuideRequest("아파요", "en", null, null, Area.HAEUNDAE, EmType.MILD));
         return m;
     }

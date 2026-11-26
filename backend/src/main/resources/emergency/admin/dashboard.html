@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- [긴급 담당] API-E09~E11 초안 기반 상황판 정적 화면. -->
+<!-- [긴급 담당] API-E09~E12 초안 기반 상황판 정적 화면. -->
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -100,6 +100,24 @@
     .fallback-stat { display: flex; align-items: center; justify-content: space-between; margin: -3px 1px 5px; color: var(--muted); font-size: 11px; }
     .fallback-stat strong { color: var(--text); font-size: 12px; }
     .recent-panel { margin-top: 16px; padding-bottom: 8px; }
+    .night-gap-panel { margin-top: 16px; }
+    .night-gap-actions { display: flex; align-items: center; gap: 8px; }
+    .night-gap-actions label { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .night-gap-actions input {
+      padding: 7px 9px; color: var(--text); background: var(--surface);
+      border: 1px solid var(--line); border-radius: 8px; font: inherit;
+    }
+    .night-gap-table { min-width: 930px; }
+    .night-gap-table th:first-child, .night-gap-table td:first-child {
+      position: sticky; left: 0; z-index: 1; background: var(--surface); font-weight: 750;
+    }
+    .night-gap-table td { min-width: 112px; text-align: center; }
+    .night-gap-cell { display: grid; gap: 3px; }
+    .night-gap-cell strong { font-size: 11px; }
+    .night-gap-cell small { color: var(--muted); font-size: 10px; }
+    .night-gap-table td.gap-no-pharmacy { color: var(--red); background: var(--red-soft); }
+    .night-gap-table td.gap-pharmacy-closed { color: var(--yellow); background: var(--yellow-soft); }
+    .night-gap-error { padding: 18px; color: var(--muted); text-align: center; }
     .table-wrap { overflow: auto; }
     table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
     th { padding: 9px 10px; color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
@@ -208,6 +226,23 @@
       </article>
     </section>
 
+    <section class="panel night-gap-panel" aria-label="심야 의료 공백">
+      <div class="panel-head">
+        <div><h2 class="panel-title">심야 의료 공백</h2><p class="panel-note">22:00부터 다음 날 06:00 전까지의 약국·편의점 운영과 경증 요청</p></div>
+        <div class="night-gap-actions">
+          <label for="nightGapDate">날짜</label>
+          <input id="nightGapDate" type="date">
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="night-gap-table">
+          <thead id="nightGapHead"><tr><th>구</th></tr></thead>
+          <tbody id="nightGapRows"><tr><td class="night-gap-error">리포트를 불러오는 중입니다.</td></tr></tbody>
+        </table>
+      </div>
+      <p class="footer-note">색상: 약국 0곳 + 경증 요청 있음(빨강) / 약국 0곳(주황). 편의점 수는 보조 지표입니다.</p>
+    </section>
+
     <section class="panel recent-panel">
       <div class="panel-head">
         <div><h2 class="panel-title">최근 이벤트</h2><p class="panel-note">새 이벤트는 실시간으로 목록 상단에 추가됩니다.</p></div>
@@ -235,7 +270,7 @@
         URGENT: "위급", MILD: "경증", LOST: "분실", THREAT: "위협",
         FIRE: "화재", WAY: "길 안내", NON: "기타"
       };
-      const state = { range: "today", summary: null, recent: [], map: null, markers: null, charts: {} };
+      const state = { range: "today", summary: null, recent: [], nightGap: null, map: null, markers: null, charts: {} };
       const $ = (id) => document.getElementById(id);
       const asNumber = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
       const pct = (value) => `${(asNumber(value) * 100).toFixed(1)}%`;
@@ -249,6 +284,13 @@
         if (state.range === "24h") from.setTime(now.getTime() - 24 * 60 * 60 * 1000);
         if (state.range === "7d") from.setTime(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         return { from: from.toISOString(), to: now.toISOString() };
+      };
+      const seoulTimeParts = (date) => Object.fromEntries(new Intl.DateTimeFormat("en-US", {
+        timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23"
+      }).formatToParts(date).map((part) => [part.type, part.value]));
+      const localDate = () => {
+        const parts = seoulTimeParts(new Date());
+        return `${parts.year}-${parts.month}-${parts.day}`;
       };
       const formatTime = (value) => {
         const date = new Date(value);
@@ -299,8 +341,30 @@
             llmFailRate: 0.083,
             fallbackRate: 0.126
           },
-          recent
+          recent,
+          nightGap: mockNightGap($("nightGapDate").value || localDate())
         };
+      }
+
+      function mockNightGap(date) {
+        const hours = [];
+        for (let offset = 0; offset < 8; offset++) {
+          const dateTime = new Date(`${date}T22:00:00+09:00`);
+          dateTime.setTime(dateTime.getTime() + offset * 3_600_000);
+          const parts = seoulTimeParts(dateTime);
+          const at = `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:00+09:00`;
+          const suyeongPharmacies = offset === 0 ? 2 : offset === 1 ? 1 : 0;
+          const haeundaePharmacies = offset === 0 ? 1 : 0;
+          const suyeongRequests = offset === 1 ? 2 : offset === 2 ? 1 : 0;
+          const haeundaeRequests = offset === 1 ? 1 : 0;
+          hours.push(
+            { hour: at, district: "수영구", openPharmacies: suyeongPharmacies, openConvenience: 3, mildRequests: suyeongRequests,
+              gap: suyeongPharmacies === 0 ? (suyeongRequests > 0 ? "NO_PHARMACY" : "PHARMACY_CLOSED") : null },
+            { hour: at, district: "해운대구", openPharmacies: haeundaePharmacies, openConvenience: 4, mildRequests: haeundaeRequests,
+              gap: haeundaePharmacies === 0 ? (haeundaeRequests > 0 ? "NO_PHARMACY" : "PHARMACY_CLOSED") : null }
+          );
+        }
+        return { date, startHour: 22, endHour: 6, rows: hours };
       }
 
       function setChartsTheme() {
@@ -478,6 +542,64 @@
         });
       }
 
+      function renderNightGap(report) {
+        const head = $("nightGapHead");
+        const body = $("nightGapRows");
+        head.replaceChildren();
+        body.replaceChildren();
+        const rows = Array.isArray(report?.rows) ? report.rows : [];
+        if (!rows.length) {
+          const empty = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.className = "night-gap-error";
+          cell.colSpan = 9;
+          cell.textContent = "표시할 심야 리포트 데이터가 없습니다.";
+          empty.append(cell);
+          body.append(empty);
+          return;
+        }
+        const hours = [...new Set(rows.map((row) => row.hour))].sort();
+        const districts = [...new Set(rows.map((row) => row.district))];
+        const header = document.createElement("tr");
+        const districtHeading = document.createElement("th");
+        districtHeading.textContent = "구";
+        header.append(districtHeading);
+        hours.forEach((value) => {
+          const th = document.createElement("th");
+          th.textContent = new Intl.DateTimeFormat("ko-KR", {
+            timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23"
+          }).format(new Date(value));
+          header.append(th);
+        });
+        head.append(header);
+        districts.forEach((district) => {
+          const tr = document.createElement("tr");
+          const districtCell = document.createElement("td");
+          districtCell.textContent = district;
+          tr.append(districtCell);
+          hours.forEach((hour) => {
+            const item = rows.find((row) => row.district === district && row.hour === hour);
+            const td = document.createElement("td");
+            if (!item) {
+              td.textContent = "—";
+            } else {
+              if (item.gap === "NO_PHARMACY") td.className = "gap-no-pharmacy";
+              if (item.gap === "PHARMACY_CLOSED") td.className = "gap-pharmacy-closed";
+              const content = document.createElement("div");
+              content.className = "night-gap-cell";
+              const main = document.createElement("strong");
+              main.textContent = `약국 ${asNumber(item.openPharmacies)} · 경증 ${asNumber(item.mildRequests)}`;
+              const convenience = document.createElement("small");
+              convenience.textContent = `편의점 ${asNumber(item.openConvenience)}`;
+              content.append(main, convenience);
+              td.append(content);
+            }
+            tr.append(td);
+          });
+          body.append(tr);
+        });
+      }
+
       function renderAlert(alert) {
         const stack = $("alerts");
         const banner = document.createElement("div");
@@ -510,11 +632,27 @@
         renderAll();
       }
 
+      async function loadNightGap() {
+        const date = $("nightGapDate").value;
+        if (mockMode) {
+          state.nightGap = mockNightGap(date);
+          renderNightGap(state.nightGap);
+          return;
+        }
+        const response = await fetch(`${API}/night-gap?${new URLSearchParams({ date })}`, {
+          headers: { Accept: "application/json" }
+        });
+        if (!response.ok) throw new Error("심야 의료 공백 API 응답 오류");
+        state.nightGap = await response.json();
+        renderNightGap(state.nightGap);
+      }
+
       function renderAll(highlightFirst = false) {
         renderMetrics();
         renderMap();
         renderCharts();
         renderRecent(highlightFirst);
+        renderNightGap(state.nightGap);
       }
 
       function handleEvent(item) {
@@ -567,16 +705,27 @@
         });
       });
 
+      $("nightGapDate").value = localDate();
+      $("nightGapDate").addEventListener("change", () => {
+        loadNightGap().catch(() => {
+          $("nightGapRows").innerHTML = '<tr><td class="night-gap-error" colspan="9">심야 리포트를 불러오지 못했습니다.</td></tr>';
+        });
+      });
+
       if (mockMode) {
         const data = mockData();
         state.summary = data.summary;
         state.recent = data.recent;
+        state.nightGap = data.nightGap;
         renderAll();
         setConnection(true);
         startMockStream();
       } else {
         setConnection(false);
         loadApi().then(() => setConnection(true)).catch(() => setConnection(false));
+        loadNightGap().catch(() => {
+          $("nightGapRows").innerHTML = '<tr><td class="night-gap-error" colspan="9">심야 리포트를 불러오지 못했습니다.</td></tr>';
+        });
         const stream = new EventSource(`${API}/stream`);
         stream.onopen = () => setConnection(true);
         stream.onerror = () => setConnection(false);

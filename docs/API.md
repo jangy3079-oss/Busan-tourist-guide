@@ -61,7 +61,7 @@
 | 관리자: 장소 수집·정규화 | `API-C06` | local-admin |
 | 관리자: 지구대·안내소 CSV, 지식베이스 반영 | `API-E04`, `API-E05` | local-admin |
 | 관리자: 약국·응급실 동기화 수동 실행·상태 | `API-E06`, `API-E07` | 평소에는 매일 04:00 자동 |
-| 관리자: 상황판 | `API-E09`, `API-E10`, `API-E11` | local-admin. 페이지 `/admin/emergency/dashboard` |
+| 관리자: 상황판 | `API-E09`~`API-E12` | local-admin. 페이지 `/admin/emergency/dashboard` |
 
 ---
 
@@ -295,8 +295,17 @@ SDD 추적표에 연결된 FR이 없다. 필요해지면 이 번호를 쓴다.
   - 규칙(`ruleId`·기간·건수)은 `backend/src/main/resources/emergency/dashboard.json`
 - 견본: `docs/contract/E11_dashboard_alert.json`
 
+### API-E12 심야 의료 공백 (관리자) — `GET /api/v1/admin/emergency/dashboard/night-gap?date=YYYY-MM-DD`
+- `date`는 조회 기준일(현지 시각, 22시부터 다음 날 06시 전까지). 빠지거나 날짜 형식이 틀리면 400 `INVALID_INPUT`
+- 응답: `{ "date", "startHour", "endHour", "rows" }`
+  - `rows`: 시간·구별 `{ "hour", "district", "openPharmacies", "openConvenience", "mildRequests", "gap" }`
+  - `hour`는 한국 표준시 오프셋을 포함한 ISO-8601 시각. 06:00 정각은 조회에서 제외
+  - `gap`: `NO_PHARMACY`(열린 약국 0곳이며 경증 요청 있음), `PHARMACY_CLOSED`(열린 약국 0곳), 그 밖에는 `null`
+- 운영 판정은 해당 시각 정각 기준이며 공휴일·전날 공휴일·자정 넘김 운영시간을 반영
+- 견본: `docs/contract/E12_dashboard_night_gap.json`
+
 ### 상황판 페이지 — `GET /admin/emergency/dashboard` (HTML, local-admin)
-- API-E09~E11을 부르는 정적 페이지. 긴급 패키지 안에서 제공함
+- API-E09~E12를 부르는 정적 페이지. 긴급 패키지 안에서 제공함
 
 ---
 

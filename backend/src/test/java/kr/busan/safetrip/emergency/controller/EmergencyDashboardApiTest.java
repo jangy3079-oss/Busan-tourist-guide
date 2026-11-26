@@ -19,6 +19,7 @@ import kr.busan.safetrip.emergency.service.CallEventRecorder;
 import kr.busan.safetrip.emergency.service.DashboardConfig;
 import kr.busan.safetrip.emergency.service.DashboardQueryService;
 import kr.busan.safetrip.emergency.service.DashboardStream;
+import kr.busan.safetrip.emergency.service.NightGapReportService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -44,6 +45,7 @@ class EmergencyDashboardApiTest {
     private final CallEventRecorder calls = mock(CallEventRecorder.class);
     private final NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
     private final DashboardStream stream = new DashboardStream();
+    private final NightGapReportService nightGap = mock(NightGapReportService.class);
     private MockMvc mvc;
 
     @BeforeEach
@@ -51,7 +53,7 @@ class EmergencyDashboardApiTest {
         DashboardQueryService queries = new DashboardQueryService(jdbc, new DashboardConfig());
         mvc = MockMvcBuilders.standaloneSetup(
                         new EmergencyController(null, calls),
-                        new EmergencyDashboardController(queries, stream),
+                        new EmergencyDashboardController(queries, stream, nightGap),
                         new EmergencyDashboardPageController())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
@@ -143,11 +145,34 @@ class EmergencyDashboardApiTest {
     }
 
     @Test
-    void dashboardPageIsServedAndCallsOnlyE09ToE11() throws Exception {
+    void dashboardPageIsServedAndCallsDashboardApis() throws Exception {
         var res = mvc.perform(get("/admin/emergency/dashboard")).andExpect(status().isOk()).andReturn().getResponse();
         assertThat(res.getContentType()).startsWith(MediaType.TEXT_HTML_VALUE);
         String html = res.getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
-        assertThat(html).contains("/api/v1/admin/emergency/dashboard").contains("/summary").contains("/recent").contains("/stream")
+        assertThat(html).contains("/api/v1/admin/emergency/dashboard")        .contains("/summary").contains("/recent").contains("/stream").contains("/night-gap")
+        .contains("nightGapDate").contains("심야 의료 공백")
                 .contains("\"emergency\"").contains("\"alert\"");
+    }
+
+    @Test
+    void nightGapReturnsReportAndRejectsInvalidDate() throws Exception {
+        var date = java.time.LocalDate.of(2026, 11, 26);
+        when(nightGap.report(date)).thenReturn(new NightGapReportService.Report(date, 22, 6, List.of(
+                new NightGapReportService.Row(
+                        java.time.OffsetDateTime.parse("2026-11-26T23:00+09:00"),
+                        "수영구", 0, 2, 1, "NO_PHARMACY"))));
+
+        mvc.perform(get("/api/v1/admin/emergency/dashboard/night-gap").param("date", "2026-11-26"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.date").value("2026-11-26"))
+                .andExpect(jsonPath("$.startHour").value(22))
+                .andExpect(jsonPath("$.endHour").value(6))
+                .andExpect(jsonPath("$.rows[0].hour").value("2026-11-26T23:00+09:00"))
+                .andExpect(jsonPath("$.rows[0].district").value("수영구"))
+                .andExpect(jsonPath("$.rows[0].gap").value("NO_PHARMACY"));
+
+        mvc.perform(get("/api/v1/admin/emergency/dashboard/night-gap").param("date", "not-a-date"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 }
