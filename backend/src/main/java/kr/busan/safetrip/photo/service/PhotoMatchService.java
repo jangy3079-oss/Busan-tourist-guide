@@ -74,7 +74,7 @@ public class PhotoMatchService {
                 : matcher.match(blocks, lat, lng);
         List<PhotoDtos.Candidate> candidates = new ArrayList<>();
         for (ScoredCandidate c : r.candidates()) {
-            details.detail(c.contentId()).ifPresent(d -> candidates.add(new PhotoDtos.Candidate(d, c.score(), c.distanceM(), c.matchedText())));
+            details.candidate(c.contentId(), c.score(), c.distanceM(), c.matchedText()).ifPresent(candidates::add);
         }
         String matchId = logger.log(blocks == null ? List.of() : blocks, r.decision().name(), r.candidates());
         log.info("photo.match ocrMs={} matchMs={} decision={} candidates={}", (t1 - t0) / 1_000_000,

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import kr.busan.safetrip.common.api.PlaceDetail;
 import kr.busan.safetrip.common.domain.Place;
 import kr.busan.safetrip.common.domain.PlaceRepository;
+import kr.busan.safetrip.photo.dto.PhotoDtos;
 import kr.busan.safetrip.photo.repository.PhotoPlaces;
 
 /**
@@ -47,6 +48,11 @@ public class PlaceDetails {
 
     public Optional<PlaceDetail> detail(String contentId) {
         return place(contentId).map(this::detail);
+    }
+
+    /** 사진 결과 후보 한 곳: 상세 + 상호 읽는 법(#232) */
+    public Optional<PhotoDtos.Candidate> candidate(String contentId, double score, Integer distanceM, String matchedText) {
+        return place(contentId).map(p -> new PhotoDtos.Candidate(detail(p), score, distanceM, matchedText, p.getNameEn(), p.getNameJa()));
     }
 
     public PlaceDetail detail(Place p) {

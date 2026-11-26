@@ -181,7 +181,9 @@
     "place": { …PlaceDetail(API-C05와 같은 모양)…, "openStatus": "OPEN|CLOSED|UNKNOWN" },
     "score": 0.82,                     // 0~1. 화면에는 82점으로
     "distanceM": 420,                  // 위치 없으면 null
-    "matchedText": "해운대암소갈비"     // 매칭된 간판 텍스트 블록(다중 간판 구분용)
+    "matchedText": "해운대암소갈비",    // 매칭된 간판 텍스트 블록(다중 간판 구분용)
+    "nameEn": "Haeundae Amso Galbi",   // 읽는 법(#232, API-C01 stops와 같은 값). 없으면 null. place.name 은 원문 그대로
+    "nameJa": "ヘウンデ・アムソカルビ"
   }]
 }
 ```
@@ -322,5 +324,5 @@ SDD 추적표에 연결된 FR이 없다. 필요해지면 이 번호를 쓴다.
 
 ## 열린 결정
 1. ~~사진 HEIC 허용 여부~~ → 미지원으로 결정(jpg/jpeg/png만, `docs/spec/PENDING.md` CHG-202, #39).
-2. 상호 로마자 표기: FR-P010은 "번역·음역하지 않고 원문 그대로" → 계약에 로마자 필드 없음(프로토타입의 영문 표기 줄은 빠짐).
+2. ~~상호 로마자 표기~~ → 원문은 그대로 두고 읽는 법(`nameEn`/`nameJa`)을 덧붙이기로 함(#216, #232, `docs/spec/PENDING.md` CHG-208).
 3. 프로토타입의 기상특보 배너(화재·재난)는 SRS FR이 없어 계약에 넣지 않았다.

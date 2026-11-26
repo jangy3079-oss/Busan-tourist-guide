@@ -154,7 +154,17 @@ class PhotoPlace {
   final int? distM; // 위치 없거나 이름 검색이면 null
   final bool openNow;
   final String? overview, source; // TourAPI 개요 원문, 출처·수집일
-  const PhotoPlace(this.contentId, this.name, this.category, this.address, this.romanized, this.hours, this.lat, this.lng, this.distM, this.openNow, {this.overview, this.source});
+  final String? nameEn, nameJa; // #232 읽는 법. 원문 name 은 그대로 두고 영·일 화면에서 덧붙인다(CourseStop 과 같은 규칙)
+  const PhotoPlace(this.contentId, this.name, this.category, this.address, this.romanized, this.hours, this.lat, this.lng, this.distM, this.openNow, {this.overview, this.source, this.nameEn, this.nameJa});
+  /// 요청 언어의 읽는 법. 한국어거나 없거나 원문과 같으면 null
+  String? readingIn(Lang l) {
+    final r = switch (l) { Lang.en => nameEn, Lang.ja => nameJa, Lang.ko => null };
+    return r == null || r.isEmpty || r == name ? null : r;
+  }
+  String nameIn(Lang l) {
+    final r = readingIn(l);
+    return r == null ? name : '$name ($r)';
+  }
 }
 
 class PhotoCandidate {

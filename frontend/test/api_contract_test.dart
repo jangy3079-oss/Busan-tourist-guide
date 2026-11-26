@@ -96,6 +96,10 @@ void main() {
     expect(r.candidates.single.score, 96);
     expect(r.confirmed!.distM, 420);
     expect(r.confirmed!.openNow, true);
+    final c = r.confirmed!; // 읽는 법(#232): 원문은 그대로, 영·일만 괄호로
+    expect(c.nameIn(Lang.ko), c.name);
+    expect(c.nameIn(Lang.en), '${c.name} (Haeundae Amso Galbi)');
+    expect(c.readingIn(Lang.ja), 'ヘウンデ・アムソカルビ');
     expect(calls.last.headers['content-type'], startsWith('multipart/form-data'));
     expect(await repo.narrate('2789475', Lang.ko, matchId: 'm_51c0'), isNotEmpty);
     expect(jsonDecode(calls.last.body), {'lang': 'ko', 'matchId': 'm_51c0'});
