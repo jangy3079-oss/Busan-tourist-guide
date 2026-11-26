@@ -1,0 +1,24 @@
+{
+  "_comment": "실시간 응급실 병상·진료 메시지 설정(FR-E012, E020, NFR-E007).",
+  "bedsUrl": "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmRltmUsefulSckbdInfoInqire",
+  "messageUrl": "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEmrrmSrsillDissMsgInqire",
+  "sido": "부산광역시",
+  "districts": ["수영구", "해운대구"],
+  "bedsParams": {
+    "sido": "STAGE1",
+    "district": "STAGE2"
+  },
+  "messageParams": {
+    "sido": "Q0",
+    "district": "Q1"
+  },
+  "pageNoParam": "pageNo",
+  "numOfRowsParam": "numOfRows",
+  "numOfRows": 100,
+  "cacheSeconds": 300,
+  "failureBackoffSeconds": 30,
+  "timeoutSeconds": 3,
+  "dailyQuota": 1000,
+  "noTreatmentPhrases": ["진료불가", "진료 불가"],
+  "messageTypePriority": ["응급", "중증질환"]
+}
