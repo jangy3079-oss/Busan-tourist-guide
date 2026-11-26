@@ -278,7 +278,7 @@ class EmergencyResultScreen extends ConsumerWidget {
           XBtn(icon: 'bank', title: tr('embassy', l), sub: tr('embassySub', l), iconBg: C.seaT, iconFg: C.sea, onTap: () => showEmbassySheet(context, ref)),
         if (places.isNotEmpty) ...[
           SecTitle(tr('helpNow', l), sub: tr('helpSub', l)),
-          MapView(pins: [for (final p in places) p.point], area: st.area, showMe: !st.hasCoords, height: 170,
+          MapView(pins: [for (final p in places) p.point], area: st.area, me: st.hasCoords ? MapPoint(st.lat!, st.lng!) : null, height: 170,
               caption: st.hasCoords ? et('hereMe', l) : et('hereArea', l, [area.nameOf(l)])),
           const SizedBox(height: 8),
           for (var i = 0; i < places.length; i++) PlaceRow(i, places[i]),
@@ -316,6 +316,14 @@ class EmergencyResultScreen extends ConsumerWidget {
         // NFR-E008 기준 시각·출처 (#109)
         if (places.isNotEmpty) Src([if (g.dataAsOf.isNotEmpty) g.dataAsOf, et('callFirst', l)].join(' · ')),
       ],
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          et('disclaimer', l),
+          key: const ValueKey('em-disclaimer'),
+          style: const TextStyle(fontSize: 12, color: C.text3, height: 1.45),
+        ),
+      ),
     ]));
   }
 }
@@ -529,6 +537,13 @@ Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
                     ]),
                     const SizedBox(height: 10),
                     ClipRRect(borderRadius: BorderRadius.circular(rMd), child: ContactBar(top: st.top)), // FR-E004
+                    const SizedBox(height: 8),
+                    Text(
+                      et('disclaimer', l),
+                      key: const ValueKey('card-disclaimer'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white60, fontSize: 11.5, height: 1.4),
+                    ),
                   ]),
                 ),
               ),

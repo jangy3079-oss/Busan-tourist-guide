@@ -39,6 +39,12 @@ const Map<String, List<String>> kEmText = {
   'asOf': ['데이터 기준 {0} · 출처 {1}', 'Data as of {0} · Source: {1}', 'データ基準 {0}・出典 {1}'],
   'asOfTime': ['데이터 기준 {0}', 'Data as of {0}', 'データ基準 {0}'],
   'asOfSrc': ['출처 {0}', 'Source: {0}', '出典 {0}'],
+  // 면책 문구 (#127)
+  'disclaimer': [
+    '이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.',
+    'This guide is not medical advice. In an emergency, call 119 immediately.',
+    'この案内は医療判断ではありません。緊急時はすぐ119に電話してください。',
+  ],
   // UI-E03 한국어 카드
   'transLabel': ['', 'English', '日本語'],
   'copied': ['주소를 복사했어요', 'Address copied', '住所をコピーしました'],

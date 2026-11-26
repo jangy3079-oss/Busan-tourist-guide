@@ -392,7 +392,8 @@ class EmergencyServiceGuideTest {
 
     @Test
     void keepsKeywordUrgentOverLlmMildToPreventMisses() {
-        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.9, Map.of("symptom", "FEVER"))))
+        doReturn(Optional.of(new SituationClassifier.ClassificationResult(
+                new Triage(EmType.MILD, Urgency.NORMAL, 0.9, Map.of("symptom", "FEVER")), false)))
                 .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
@@ -407,7 +408,8 @@ class EmergencyServiceGuideTest {
 
     @Test
     void usesLlmUrgentWhenNoKeywordMatches() {
-        doReturn(Optional.of(new Triage(EmType.URGENT, Urgency.URGENT, 0.9, Map.of("who", "FRIEND", "symptom", "INJURY"))))
+        doReturn(Optional.of(new SituationClassifier.ClassificationResult(
+                new Triage(EmType.URGENT, Urgency.URGENT, 0.9, Map.of("who", "FRIEND", "symptom", "INJURY")), false)))
                 .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
@@ -422,7 +424,8 @@ class EmergencyServiceGuideTest {
 
     @Test
     void promotesTopContactTo119WhenLlmMarksMildAsUrgent() {
-        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.URGENT, 0.85, Map.of("who", "CHILD", "symptom", "FEVER"))))
+        doReturn(Optional.of(new SituationClassifier.ClassificationResult(
+                new Triage(EmType.MILD, Urgency.URGENT, 0.85, Map.of("who", "CHILD", "symptom", "FEVER")), false)))
                 .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
@@ -435,7 +438,8 @@ class EmergencyServiceGuideTest {
 
     @Test
     void routesLostStolenFromLlmHowSlotTo112AndStolenCard() {
-        doReturn(Optional.of(new Triage(EmType.LOST, Urgency.NORMAL, 0.93, Map.of("how", "STOLEN", "item", "PASSPORT"))))
+        doReturn(Optional.of(new SituationClassifier.ClassificationResult(
+                new Triage(EmType.LOST, Urgency.NORMAL, 0.93, Map.of("how", "STOLEN", "item", "PASSPORT")), false)))
                 .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
@@ -449,7 +453,8 @@ class EmergencyServiceGuideTest {
 
     @Test
     void routesMildInsectSlotToNeedsMedsFallbackErAndInsectCard() {
-        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.91, Map.of("who", "SELF", "symptom", "INSECT"))))
+        doReturn(Optional.of(new SituationClassifier.ClassificationResult(
+                new Triage(EmType.MILD, Urgency.NORMAL, 0.91, Map.of("who", "SELF", "symptom", "INSECT")), false)))
                 .when(classifier).classifyOrFail(anyString());
 
         HelpPlaceEntity convenience = entity(
@@ -472,7 +477,8 @@ class EmergencyServiceGuideTest {
 
     @Test
     void requestsTypeSelectionWhenLlmConfidenceBelowThresholdAndNoKeyword() {
-        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.4, Map.of())))
+        doReturn(Optional.of(new SituationClassifier.ClassificationResult(
+                new Triage(EmType.MILD, Urgency.NORMAL, 0.4, Map.of()), false)))
                 .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(

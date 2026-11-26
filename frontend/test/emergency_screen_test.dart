@@ -14,6 +14,7 @@ import 'package:busan_safetrip/features/emergency/emergency_controller.dart';
 import 'package:busan_safetrip/features/emergency/emergency_link.dart';
 import 'package:busan_safetrip/features/emergency/emergency_screens.dart';
 import 'package:busan_safetrip/state/providers.dart';
+import 'package:busan_safetrip/widgets/map_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,14 +63,6 @@ void main() {
   late List<String> links;
 
   Future<void> pumpApp(WidgetTester t, EmergencyRepository repo, {LocationResult loc = _here, String at = '/emergency'}) async {
-    // 공용 AppHead 의 알려진 디버그 assert(Container 에 color·decoration 동시 지정)만 넘긴다. 공용 담당에게 수정 요청함(T20 보고)
-    final onError = FlutterError.onError, builder = ErrorWidget.builder;
-    FlutterError.onError = (d) {
-      if ('${d.exception}'.contains('color == null || decoration == null') && '${d.stack}'.contains('AppHead.build')) return;
-      onError!(d);
-    };
-    ErrorWidget.builder = (_) => const SizedBox.shrink();
-    addTearDown(() { FlutterError.onError = onError; ErrorWidget.builder = builder; });
     t.view.physicalSize = const Size(800, 1800); // 테스트 글꼴(Ahem)은 실제보다 넓어 영어 제목이 넘친다
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -297,5 +290,55 @@ void main() {
     expect(links, ['tel:112']);
     expect(repo.callEvents.single, [null, '112', Lang.ko]); // E02 전이면 eventId 없음
     expect(t.takeException(), isNull);
+  });
+
+  testWidgets('결과 화면과 카드 전체 화면에 3개 국어 면책 문구가 표시된다 (#127)', (t) async {
+    final sent = <http.Request>[];
+    await pumpApp(t, _contractRepo(sent));
+    await send(t, '친구가 쓰러졌어요');
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('em-disclaimer')), findsOneWidget);
+    expect(find.text('이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.'), findsOneWidget);
+
+    await t.tap(find.text(tr('full', Lang.ko)));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('card-disclaimer')), findsOneWidget);
+    expect(find.text('이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.'), findsWidgets);
+
+    // 영어·일본어 전환 확인
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('This guide is not medical advice. In an emergency, call 119 immediately.'), findsWidgets);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('この案内は医療判断ではありません。緊急時はすぐ119に電話してください。'), findsWidgets);
+  });
+
+  testWidgets('대사관 시트: 1330 전화가 맨 위, 외교부 목록은 보조 링크 (EMBASSY)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.lost, topContact: '1330', extra: EmExtra.embassy);
+    await pumpApp(t, repo);
+    await send(t, '여권을 잃어버렸어요');
+    await t.pumpAndSettle();
+    await t.tap(find.text(tr('embassy', Lang.ko)));
+    await t.pumpAndSettle();
+    final call = find.byKey(const ValueKey('embassy-1330'));
+    final list = find.byKey(const ValueKey('embassy-list'));
+    expect(find.text('자국 대사관 연락처를 1330에 물어보세요'), findsOneWidget);
+    expect(find.text('외교부 주한공관 목록(한국어)'), findsOneWidget);
+    expect(t.getTopLeft(call).dy, lessThan(t.getTopLeft(list).dy));
+    await t.tap(call);
+    await t.tap(list);
+    expect(links, ['tel:1330', kEmbassyListUrl]);
+  });
+
+  testWidgets('위치를 허용하면 결과 지도에 내 좌표를 넘긴다 (#184 #185)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.mild, topContact: '1330', places: [HelpPlace('p1', '광안약국', '약국', 35.15, 129.11, 300, '운영 중', '')]);
+    await pumpApp(t, repo);
+    await send(t, '벌레에 물렸어요');
+    await t.pumpAndSettle();
+    final map = t.widget<MapView>(find.byType(MapView));
+    expect(map.showMe, isTrue);
+    expect([map.me?.lat, map.me?.lng], [35.1532, 129.1186]);
   });
 }

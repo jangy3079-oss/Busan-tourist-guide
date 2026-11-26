@@ -35,7 +35,7 @@ public class RequestLogEntity {
     @Column(name = "elapsed_ms", nullable = false)
     private int elapsedMs;
 
-    @Column(name = "fallback", length = 40)
+    @Column(name = "fallback", length = 200)
     private String fallback;
 
     @Column(name = "created_at", nullable = false)

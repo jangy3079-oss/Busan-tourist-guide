@@ -13,14 +13,18 @@ class MapView extends StatelessWidget {
   final List<MapPoint>? path;
   final bool route, showMe;
   final Area area;
+  /// 실제 내 위치(FR-E013). 없으면 showMe 일 때 지역 대표 좌표에 점을 그린다
+  final MapPoint? me;
   final double height;
   final String caption;
   /// 핀을 누르면 그 핀의 순번(0부터). null이면 지도는 보기 전용 (FR-C014 출발 장소 고르기에서 사용)
   final void Function(int index)? onPinTap;
-  const MapView({super.key, required this.pins, this.path, this.route = false, this.showMe = true, required this.area, this.height = 190, this.caption = '공통 지도 위젯 (COMP-C09) · 예시', this.onPinTap});
+  const MapView({super.key, required this.pins, this.path, this.route = false, this.showMe = true, required this.area, this.me, this.height = 190, this.caption = '공통 지도 위젯 (COMP-C09) · 예시', this.onPinTap});
+
+  MapPoint? get _me => showMe ? (me ?? MapPoint(kAreas[area]!.lat, kAreas[area]!.lng)) : null;
 
   int? _hit(Offset local, Size size) {
-    final xy = _projector(pins, area, height);
+    final xy = _projector(pins, area, height, _me);
     final p = Offset(local.dx * _MapPainter.W / size.width, local.dy * height / size.height);
     int? best;
     var bestD = 20.0;
@@ -43,7 +47,7 @@ class MapView extends StatelessWidget {
                 // 카카오 로고·저작권 표시가 아래쪽에 있어 설명 글자를 얹지 않는다
                 ? kakaoMap(
                     pins: pins, path: route ? (path ?? pins) : const [],
-                    me: showMe ? MapPoint(kAreas[area]!.lat, kAreas[area]!.lng) : null, onPinTap: onPinTap)
+                    me: _me, onPinTap: onPinTap)
                 : s.connectionState == ConnectionState.done ? _drawn() : const ColoredBox(color: C.subtle),
           ),
         ),
@@ -51,7 +55,7 @@ class MapView extends StatelessWidget {
 
   Widget _drawn() => Stack(children: [
             Positioned.fill(child: LayoutBuilder(builder: (ctx, box) {
-              final paint = CustomPaint(painter: _MapPainter(pins, path, route, showMe, area, height));
+              final paint = CustomPaint(painter: _MapPainter(pins, path, route, _me, area, height));
               if (onPinTap == null) return paint;
               return GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -71,10 +75,10 @@ class MapView extends StatelessWidget {
 }
 
 /// 위경도 → 340×H 그림 좌표. 그림과 핀 누르기 판정이 같은 식을 쓴다.
-Offset Function(double, double) _projector(List<MapPoint> pins, Area area, double H) {
+Offset Function(double, double) _projector(List<MapPoint> pins, Area area, double H, MapPoint? me) {
   const W = _MapPainter.W;
   final b = kAreas[area]!;
-  final all = [MapPoint(b.lat, b.lng), ...pins];
+  final all = [me ?? MapPoint(b.lat, b.lng), ...pins];
   List<double> pm(double lat, double lng) => [(lng - b.lng) * math.cos(35.15 * math.pi / 180) * 111320, (lat - b.lat) * 110540];
   final ms = [for (final p in all) pm(p.lat, p.lng)];
   double mn(int i) => ms.map((m) => m[i]).reduce(math.min);
@@ -92,17 +96,17 @@ Offset Function(double, double) _projector(List<MapPoint> pins, Area area, doubl
 class _MapPainter extends CustomPainter {
   final List<MapPoint> pins;
   final List<MapPoint>? path;
-  final bool route, showMe;
+  final bool route;
+  final MapPoint? me;
   final Area area;
   final double H;
-  _MapPainter(this.pins, this.path, this.route, this.showMe, this.area, this.H);
+  _MapPainter(this.pins, this.path, this.route, this.me, this.area, this.H);
   static const double W = 340;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.scale(size.width / W, size.height / H);
-    final b = kAreas[area]!;
-    final xy = _projector(pins, area, H);
+    final xy = _projector(pins, area, H, me);
 
     canvas.drawRect(Rect.fromLTWH(0, 0, W, H), Paint()..color = const Color(0xFFEFEDE7));
     final road = Paint()..color = Colors.white..strokeCap = StrokeCap.butt;
@@ -137,8 +141,8 @@ class _MapPainter extends CustomPainter {
       for (final p in rp.skip(1)) { final o = xy(p.lat, p.lng); pth.lineTo(o.dx, o.dy); }
       _dashed(canvas, pth, Paint()..color = C.blue..style = PaintingStyle.stroke..strokeWidth = 3..strokeCap = StrokeCap.round, 6, 5);
     }
-    if (showMe) {
-      final me = xy(b.lat, b.lng);
+    if (me != null) {
+      final me = xy(this.me!.lat, this.me!.lng);
       canvas.drawCircle(me, 16, Paint()..color = C.blue.withValues(alpha: .14));
       canvas.drawCircle(me, 6.5, Paint()..color = C.blue);
       canvas.drawCircle(me, 6.5, Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2.5);
@@ -178,5 +182,5 @@ class _MapPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _MapPainter o) => o.pins != pins || o.area != area || o.route != route || o.path != path;
+  bool shouldRepaint(covariant _MapPainter o) => o.pins != pins || o.area != area || o.route != route || o.path != path || o.me?.lat != me?.lat || o.me?.lng != me?.lng;
 }

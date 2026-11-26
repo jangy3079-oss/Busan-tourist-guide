@@ -7,6 +7,7 @@
 1. **지금 누구의 작업인가?** 사용자에게 `코스 / 사진 / 긴급 / 공용` 중 어느 담당인지 확인한다. 브랜치명(`feat/course-*` 등)이 힌트가 될 수 있으나 확실하지 않으면 묻는다.
 2. 고칠 파일의 **맨 위 주석**(`[코스 담당]` `[사진 담당]` `[긴급 담당]` `[공용]`)을 읽는다. 담당과 다르면 **수정하지 않는다**.
 3. 상세 규칙은 `docs/OWNERSHIP.md`, API는 `docs/API.md`, 추가로 필요한 함수는 `docs/EXTRA_FUNCTIONS.md`.
+4. 요구사항·설계 명세는 `docs/spec/srs.md`·`sdd.md`(Word 원본 자동 변환본, 직접 수정 금지)와 `docs/spec/PENDING.md`의 `합의` 항목이 기준이다. 명세와 다르게 구현하면 `PENDING.md`에 CHG 항목을 같은 PR로 추가한다(`docs/spec/README.md`).
 
 ## 1. 경로별 소유권 (요약)
 | 경로 | 소유 | 에이전트가 해도 되는 일 |
@@ -67,6 +68,6 @@ flutter test                  # 계약 견본(docs/contract)을 Api*Repository�
 - 긴급: 모든 긴급 화면·오류 응답에 112/119/1330 연락 정보가 항상 있어야 한다(FR-E004). LLM/공공API가 죽어도 저장 데이터로 안내를 계속한다(NFR-E003).
 - 코스: 설명(API-C02)은 코스(API-C01)와 분리해 늦게 와도 코스를 먼저 보여준다. 긴급 문장·범위 밖·코스 없음은 200 + `status`로 응답(오류 아님).
 - 긴급: 프론트는 API-E01(키워드, 1초)과 API-E02(상세)를 동시에 보낸다. 도움처·카드·할 일은 E02에서만 온다.
-- 사진: 허용 형식 jpg/jpeg/png, 10MB(SRS FR-P002). HEIC는 미결정(질문할 것).
+- 사진: 허용 형식 jpg/jpeg/png, 10MB(SRS FR-P002). HEIC는 미지원(CHG-202).
 - DB: PostgreSQL + pgvector, 스키마는 Flyway로만 변경(`ddl-auto: none`).
 - 관리자 API는 `@Profile("local-admin")`에서만 활성화.

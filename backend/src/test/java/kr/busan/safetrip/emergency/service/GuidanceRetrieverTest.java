@@ -185,6 +185,57 @@ class GuidanceRetrieverTest {
     }
 
     @Test
+    void rejectsMalformedGuidanceJsonFieldsAndRuntimeErrorsAndAppliesSlotGroupAndConditions() {
+        when(repo.findCandidates(eq("ko"), eq(EmType.MILD), anyString())).thenReturn(List.of(MILD_NIGHT, CONTACT_1330));
+        String tooLong = "가".repeat(201);
+        List<String> malformed = List.of(
+                "{invalid-json}",
+                "{\"steps\":[\"하나\",\"둘\"]}", // docIds 누락
+                "{\"steps\":[\"하나\",\"둘\"],\"docIds\":[]}", // docIds 비어 있음
+                "{\"steps\":[\"하나\",\"둘\"],\"docIds\":[123]}", // docIds 비문자
+                "{\"docIds\":[\"mild-night\"]}", // steps 누락
+                "{\"steps\":[123,\"둘\"],\"docIds\":[\"mild-night\"]}", // steps 비문자
+                "{\"steps\":[\"   \",\"둘\"],\"docIds\":[\"mild-night\"]}", // 빈 step
+                "{\"steps\":[\"" + tooLong + "\",\"둘\"],\"docIds\":[\"mild-night\"]}" // 길이 초과
+        );
+        for (String answer : malformed) {
+            llmAnswer = answer;
+            GuidanceRetriever.Guidance g = retriever().retrieve(EmType.MILD, null, Map.of(), "열이 나요", Lang.KO, "1330", null);
+            assertThat(g.steps()).as(answer).isEqualTo(MILD_NIGHT.steps());
+            assertThat(g.top1()).as(answer).isTrue();
+        }
+
+        // 비체크 RuntimeException 시 Top-1 대체
+        llmError = new IllegalStateException("boom");
+        GuidanceRetriever.Guidance onErr = retriever().retrieve(EmType.MILD, null, Map.of(), "열이 나요", Lang.KO, "1330", null);
+        assertThat(onErr.steps()).isEqualTo(MILD_NIGHT.steps());
+        assertThat(onErr.top1()).isTrue();
+        llmError = null;
+
+        // slotGroups(URGENT symptom=DROWNING → group DROWNING) 및 docConditions(LOST item=PASSPORT / WALLET) 검증
+        KbDoc urgentGeneral = kb("urgent-general", List.of("URGENT"), List.of(), "일반1", "일반2");
+        KbDoc urgentWater = kb("urgent-water", List.of("URGENT"), List.of("DROWNING"), "익수1", "익수2");
+        when(repo.findCandidates(eq("ko"), eq(EmType.URGENT), anyString())).thenReturn(List.of(urgentGeneral, urgentWater));
+        llmAnswer = "{\"steps\":[\"익수1\",\"익수2\"],\"docIds\":[\"urgent-water\"]}";
+        GuidanceRetriever.Guidance water = retriever().retrieve(
+                EmType.URGENT, null, Map.of("symptom", "DROWNING"), "바다에 빠졌어요", Lang.KO, "119", null);
+        assertThat(water.sources()).extracting(Source::id).containsExactly("urgent-water");
+
+        KbDoc lostPassport = kb("lost-passport", List.of("LOST"), List.of("LOST"), "여권1", "여권2");
+        KbDoc lostItems = kb("lost-items", List.of("LOST"), List.of("LOST"), "소지품1", "소지품2");
+        when(repo.findCandidates(eq("ko"), eq(EmType.LOST), anyString())).thenReturn(List.of(lostPassport, lostItems));
+        llmAnswer = "{\"steps\":[\"여권1\",\"여권2\"],\"docIds\":[\"lost-passport\"]}";
+        GuidanceRetriever.Guidance pp = retriever().retrieve(
+                EmType.LOST, null, Map.of("item", "PASSPORT"), "여권 분실", Lang.KO, "1330", null);
+        assertThat(pp.sources()).extracting(Source::id).containsExactly("lost-passport");
+
+        llmAnswer = "{\"steps\":[\"소지품1\",\"소지품2\"],\"docIds\":[\"lost-items\"]}";
+        GuidanceRetriever.Guidance wallet = retriever().retrieve(
+                EmType.LOST, null, Map.of("item", "WALLET"), "지갑 분실", Lang.KO, "1330", null);
+        assertThat(wallet.sources()).extracting(Source::id).containsExactly("lost-items");
+    }
+
+    @Test
     void usesStoredFallbackStepsWhenNoKnowledgeBaseCandidate() {
         when(repo.findCandidates(any(), any(), any())).thenReturn(List.of());
         when(repo.findByKeyAndLang(anyString(), anyString())).thenReturn(java.util.Optional.empty());
