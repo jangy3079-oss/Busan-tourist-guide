@@ -24,7 +24,7 @@ public class RetentionScheduler {
         this.props = props;
     }
 
-    @Scheduled(cron = "0 30 3 * * *")
+    @Scheduled(cron = "${app.retention.cron:0 30 3 * * *}")
     public void run() {
         int days = props.retention() == null || props.retention().logDays() <= 0 ? 30 : props.retention().logDays();
         Instant cutoff = Instant.now().minus(Duration.ofDays(days));
