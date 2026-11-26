@@ -111,10 +111,18 @@ class PlaceNarrationServiceTest {
     void LLM_실패하면_템플릿_언어별() {
         when(ai.complete(any())).thenThrow(new BusinessException(ErrorCode.AI_UNAVAILABLE, "x"));
         assertEquals("할매국밥은(는) 부산 수영구 광안동에 있는 음식점입니다.", svc.narrate("100", Lang.KO, null).text());
-        assertEquals("할매국밥 is a restaurant at 부산 수영구 광안동.", svc.narrate("100", Lang.EN, null).text());
+        // 영·일 템플릿은 한글 주소 원문 대신 구 이름을 그 언어로(#153). 주소 원문은 정보 카드에 있다
+        assertEquals("할매국밥 is a restaurant in Suyeong-gu, Busan.", svc.narrate("100", Lang.EN, null).text());
         PhotoDtos.NarrationResponse ja = svc.narrate("100", Lang.JA, null);
         assertTrue(ja.template());
-        assertEquals("할매국밥は부산 수영구 광안동にある飲食店です。", ja.text());
+        assertEquals("할매국밥は釜山・水営区にある飲食店です。", ja.text());
+    }
+
+    @Test
+    void 구를_모르면_부산으로() {
+        when(ai.complete(any())).thenThrow(new BusinessException(ErrorCode.AI_UNAVAILABLE, "x"));
+        when(p.getAddress()).thenReturn("부산 중구");
+        assertEquals("할매국밥 is a restaurant in Busan.", svc.narrate("100", Lang.EN, null).text());
     }
 
     @Test

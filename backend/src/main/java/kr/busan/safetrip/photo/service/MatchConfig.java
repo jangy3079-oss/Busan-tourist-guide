@@ -32,9 +32,10 @@ public class MatchConfig {
     public static final String DEFAULT_PADDLE_URL = "http://127.0.0.1:8866";
     /** templates: 언어 코드(ko·en·ja) → 템플릿, categoryNames: 업종 → (언어 코드 → 이름)
      *  promptLengthRatio: 언어 코드 → 비율. LLM 에 알려 줄 글자 수 = maxChars × 비율(검증은 maxChars 그대로). 없으면 1.0
-     *  reminders: 원문 뒤에 붙이는 언어별 다시 지시 */
+     *  reminders: 원문 뒤에 붙이는 언어별 다시 지시, districts: 구 이름(또는 default) → (언어 코드 → 표기) */
     public record Narration(int maxChars, Map<String, String> templates, Map<String, Map<String, String>> categoryNames,
-                            Map<String, Double> promptLengthRatio, Map<String, String> reminders) {
+                            Map<String, Double> promptLengthRatio, Map<String, String> reminders,
+                            Map<String, Map<String, String>> districts) {
         /** LLM 에 알려 줄 글자 수 */
         public int askChars(String lang) {
             return (int) (maxChars * promptLengthRatio.getOrDefault(lang, 1.0));
@@ -90,7 +91,8 @@ public class MatchConfig {
         if (ratio != null) ratio.forEach((k, v) -> ratios.put(k, ((Number) v).doubleValue()));
         Map<String, String> reminders = (Map<String, String>) na.get("reminders");
         this.narration = new Narration(num(na, "maxChars").intValue(), (Map<String, String>) na.get("templates"),
-                (Map<String, Map<String, String>>) na.get("categoryNames"), ratios, reminders == null ? Map.of() : reminders);
+                (Map<String, Map<String, String>>) na.get("categoryNames"), ratios, reminders == null ? Map.of() : reminders,
+                na.get("districts") == null ? Map.of() : (Map<String, Map<String, String>>) na.get("districts"));
     }
 
     private static Number num(Map<String, Object> m, String key) {

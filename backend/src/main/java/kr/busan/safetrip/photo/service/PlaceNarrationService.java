@@ -84,7 +84,7 @@ public class PlaceNarrationService {
         return new PhotoDtos.NarrationResponse(contentId, template(p, lang), true);
     }
 
-    /** FR-P012 템플릿: 상호·업종·주소 */
+    /** FR-P012 템플릿: 상호·업종·주소(영·일은 주소 대신 구 이름, #153) */
     String template(Place p, Lang lang) {
         String code = lang.name().toLowerCase();
         Map<String, String> names = cfg.categoryNames() == null ? null : cfg.categoryNames().get(p.getCategory());
@@ -92,7 +92,17 @@ public class PlaceNarrationService {
         return cfg.templates().get(code)
                 .replace("{name}", nz(p.getName()))
                 .replace("{category}", category)
-                .replace("{address}", nz(p.getAddress()));
+                .replace("{address}", nz(p.getAddress()))
+                .replace("{district}", district(p.getAddress(), code));
+    }
+
+    /** 주소에 들어 있는 구 이름을 그 언어 표기로. 없으면 default */
+    private String district(String address, String code) {
+        String addr = nz(address);
+        Map<String, String> hit = cfg.districts().entrySet().stream()
+                .filter(e -> !"default".equals(e.getKey()) && addr.contains(e.getKey()))
+                .map(Map.Entry::getValue).findFirst().orElse(cfg.districts().get("default"));
+        return hit == null ? "" : nz(hit.get(code));
     }
 
     /** LLM 에 줄 근거 = 이 장소의 TourAPI 원문만 */
