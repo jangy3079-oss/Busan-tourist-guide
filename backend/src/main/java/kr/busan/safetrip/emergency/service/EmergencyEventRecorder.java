@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import kr.busan.safetrip.common.api.EmType;
 import kr.busan.safetrip.common.api.Lang;
@@ -36,10 +37,14 @@ public class EmergencyEventRecorder {
     private final DashboardConfig.Settings settings;
     private final Clock clock;
     private final Supplier<UUID> idSupplier;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Autowired
-    public EmergencyEventRecorder(EmergencyEventRepository repository, DashboardConfig config) {
-        this(repository, config, Clock.systemUTC(), UUID::randomUUID);
+    public EmergencyEventRecorder(
+            EmergencyEventRepository repository,
+            DashboardConfig config,
+            ApplicationEventPublisher eventPublisher) {
+        this(repository, config, Clock.systemUTC(), UUID::randomUUID, eventPublisher);
     }
 
     EmergencyEventRecorder(
@@ -47,10 +52,20 @@ public class EmergencyEventRecorder {
             DashboardConfig config,
             Clock clock,
             Supplier<UUID> idSupplier) {
+        this(repository, config, clock, idSupplier, event -> {});
+    }
+
+    EmergencyEventRecorder(
+            EmergencyEventRepository repository,
+            DashboardConfig config,
+            Clock clock,
+            Supplier<UUID> idSupplier,
+            ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
         this.settings = config.settings();
         this.clock = clock;
         this.idSupplier = idSupplier;
+        this.eventPublisher = eventPublisher;
     }
 
     public Optional<UUID> record(
@@ -87,7 +102,19 @@ public class EmergencyEventRecorder {
                     llmFailed,
                     stepsFallback);
             EmergencyEventEntity saved = repository.save(event);
-            return Optional.ofNullable(saved == null ? null : saved.getId());
+            if (saved == null || saved.getId() == null) {
+                return Optional.empty();
+            }
+            DashboardEvent dashboardEvent = new DashboardEvent(
+                    saved.getId(), saved.getCreatedAt(), saved.getEmType(), saved.getUrgency(),
+                    saved.getDistrict(), saved.getDong(), saved.getGridId(), saved.getTopContact(),
+                    saved.isLlmFailed(), saved.isStepsFallback());
+            try {
+                eventPublisher.publishEvent(new DashboardEventRecorded(dashboardEvent));
+            } catch (RuntimeException e) {
+                log.warn("emergency.dashboard event publish failed: {}", e.getClass().getSimpleName());
+            }
+            return Optional.of(saved.getId());
         } catch (RuntimeException e) {
             log.warn("emergency.dashboard record failed: {}", e.getClass().getSimpleName());
             return Optional.empty();

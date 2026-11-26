@@ -1,7 +1,35 @@
 {
-  "_comment": "상황판 저장 시 격자·보존 기간·시각 정밀도 설정(T17a).",
+  "_comment": "상황판 격자·보존·집계·알림 설정(T17a/T18a).",
   "gridLatStep": 0.0027,
   "gridLngStep": 0.0033,
   "retentionDays": 30,
-  "timeBucketSec": 60
+  "timeBucketSec": 60,
+  "summaryMaxRangeDays": 31,
+  "alertCooldownSec": 900,
+  "alertRules": [
+    {
+      "id": "urgent-cluster",
+      "level": "CRITICAL",
+      "window": 1800,
+      "minCount": 3,
+      "scope": "GRID",
+      "emTypes": ["URGENT"]
+    },
+    {
+      "id": "fire-any",
+      "level": "CRITICAL",
+      "window": 600,
+      "minCount": 1,
+      "scope": "ALL",
+      "emTypes": ["FIRE"]
+    },
+    {
+      "id": "threat-cluster",
+      "level": "WARN",
+      "window": 3600,
+      "minCount": 2,
+      "scope": "DISTRICT",
+      "emTypes": ["THREAT"]
+    }
+  ]
 }

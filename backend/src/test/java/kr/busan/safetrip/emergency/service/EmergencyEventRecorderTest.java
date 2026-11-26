@@ -13,11 +13,14 @@ import kr.busan.safetrip.common.api.Lang;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 import kr.busan.safetrip.emergency.entity.EmergencyEventEntity;
 import kr.busan.safetrip.emergency.repository.EmergencyEventRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -74,16 +77,53 @@ class EmergencyEventRecorderTest {
     @Test
     void returnsEmptyWhenDatabaseWriteFails() {
         EmergencyEventRepository repository = mock(EmergencyEventRepository.class);
+        ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
         when(repository.save(any(EmergencyEventEntity.class)))
                 .thenThrow(new IllegalStateException("database unavailable"));
         EmergencyEventRecorder recorder = new EmergencyEventRecorder(
                 repository,
                 new DashboardConfig(),
                 Clock.fixed(FIXED_TIME, ZoneOffset.UTC),
-                () -> UUID.fromString("123e4567-e89b-12d3-a456-426614174000"));
+                () -> UUID.fromString("123e4567-e89b-12d3-a456-426614174000"),
+                eventPublisher);
 
         assertThat(recorder.record(
                 EmType.MILD, Urgency.NORMAL, Lang.KO, null, null, null, "1330",
                 Map.of(), false, false, false)).isEmpty();
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void publishesSanitizedInternalEventOnlyAfterSuccessfulSave() {
+        EmergencyEventRepository repository = mock(EmergencyEventRepository.class);
+        ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+        UUID id = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+        when(repository.save(any(EmergencyEventEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        EmergencyEventRecorder recorder = new EmergencyEventRecorder(
+                repository,
+                new DashboardConfig(),
+                Clock.fixed(FIXED_TIME, ZoneOffset.UTC),
+                () -> id,
+                eventPublisher);
+
+        assertThat(recorder.record(
+                EmType.URGENT, Urgency.URGENT, Lang.EN, "해운대구", "우동",
+                "r13021c39139", "119", Map.of(), false, true, false)).contains(id);
+
+        org.mockito.ArgumentCaptor<DashboardEventRecorded> captor =
+                org.mockito.ArgumentCaptor.forClass(DashboardEventRecorded.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().event()).isEqualTo(new DashboardEvent(
+                id,
+                Instant.parse("2026-11-26T04:05:00Z"),
+                "URGENT",
+                "URGENT",
+                "해운대구",
+                "우동",
+                "r13021c39139",
+                "119",
+                true,
+                false));
     }
 }
