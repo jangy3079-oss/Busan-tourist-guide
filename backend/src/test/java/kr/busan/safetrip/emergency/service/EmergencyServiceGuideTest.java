@@ -85,7 +85,7 @@ class EmergencyServiceGuideTest {
                 new KoreanCardBuilder(),
                 new GuidanceRetriever(), // 아직 NotImplementedYetException → fallback-steps.json 검증
                 new RegionResolver(),
-                new ReverseGeocoder(), // 아직 NotImplementedYetException → 대체 주소 검증
+                new ReverseGeocoder(), // 키가 없으므로 대체 주소 검증
                 new FallbackSteps(),
                 new EmergencyMessages(),
                 FIXED_CLOCK);
