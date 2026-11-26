@@ -5,7 +5,7 @@
   "andMaxGap": { "cjk": 4, "latinWords": 3 },
   "excludes": {
     "ko": ["문화재", "폭발적", "불꽃놀이", "지진 체험", "지진 기념관", "지진 박물관"],
-    "en": ["fireworks", "earthquake museum", "earthquake memorial", "cold beer", "cold beers", "cold drink", "cold drinks", "cold noodle", "cold noodles"],
+    "en": ["fireworks", "earthquake museum", "earthquake memorial", "cold beer", "cold beers", "cold drink", "cold drinks", "cold noodle", "cold noodles", "sprain-free"],
     "ja": ["地震体験", "地震の資料", "津波の心配がない", "刃物の専門店", "刃物店"]
   },
   "groups": [
@@ -145,9 +145,9 @@
     {
       "type": "MILD",
       "group": "NEEDS_MEDS",
-      "ko": ["복통", "복통이", "배가+아파", "배가+아프", "배아파", "설사", "설사해", "설사를", "가벼운 상처", "상처가", "찰과상", "무릎이+까", "까졌", "두드러기", "피부 발진", "벌레 물렸", "벌레에 물"],
-      "en": ["stomachache", "abdominal cramps", "stomach pain", "abdominal pain", "diarrhea", "minor cut", "small cut", "cut my", "cut myself", "hives", "skin rash", "bug bite", "insect bite"],
-      "ja": ["腹痛", "お腹が痛", "おなかが痛", "下痢", "軽い傷", "すり傷", "擦り傷", "じんましん", "蕁麻疹", "虫刺され", "虫に刺され"]
+      "ko": ["복통", "복통이", "배가+아파", "배가+아프", "배아파", "설사", "설사해", "설사를", "가벼운 상처", "상처가", "찰과상", "무릎이+까", "까졌", "두드러기", "피부 발진", "벌레 물렸", "벌레에 물", "삐었", "발목을 접질", "접질렸"],
+      "en": ["stomachache", "abdominal cramps", "stomach pain", "abdominal pain", "diarrhea", "minor cut", "small cut", "cut my", "cut myself", "hives", "skin rash", "bug bite", "insect bite", "sprain", "sprained", "twisted my ankle", "ankle hurts"],
+      "ja": ["腹痛", "お腹が痛", "おなかが痛", "下痢", "軽い傷", "すり傷", "擦り傷", "じんましん", "蕁麻疹", "虫刺され", "虫に刺され", "捻挫", "足首をひね"]
     },
     {
       "type": "MILD",

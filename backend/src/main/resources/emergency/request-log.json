@@ -6,6 +6,7 @@
     "LLM_TIMEOUT",
     "LLM_UNAVAILABLE",
     "LLM_SCHEMA",
+    "LLM_SLOT_DROPPED",
     "LLM_LOW_CONF",
     "USER_TYPE",
     "GUIDANCE_TOP1",
