@@ -9,6 +9,16 @@
   "contactPrefix": "contact-",
   "allowedNumbers": ["112", "119", "1330", "1345"],
   "minNumberDigits": 3,
+  "_languageCheck": "출력 언어 비율 검증 기준(NFR-E009, #208). 숫자·공백·문장부호를 제외한 글자 수가 minLetters 이상이면 대상 언어 문자 비율이 minRatio 이상이어야 하고, 비한국어 응답의 한글 비율이 maxHangulInNonKo를 넘으면 거부한다.",
+  "languageCheck": {
+    "minLetters": 4,
+    "minRatio": {
+      "ko": 0.5,
+      "en": 0.6,
+      "ja": 0.4
+    },
+    "maxHangulInNonKo": 0.15
+  },
   "_slotGroups": "LLM 슬롯 코드 → 지식베이스 groups 값(키워드 그룹이 없을 때 문서 우선순위에 사용)",
   "slotGroups": {
     "URGENT": { "symptom": { "DROWNING": "DROWNING" } },

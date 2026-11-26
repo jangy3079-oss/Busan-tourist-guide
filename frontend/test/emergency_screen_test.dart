@@ -312,4 +312,63 @@ void main() {
     expect(map.showMe, isTrue);
     expect([map.me?.lat, map.me?.lng], [35.1532, 129.1186]);
   });
+
+  testWidgets('360px 영어 화면에서 카드 Full screen 버튼이 한 줄로 표시된다 (#208)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        cardKo: '외국인 관광객입니다. 저는 배가 아픕니다. 약을 사고 싶습니다. 도와주세요.',
+        cardTranslated: 'I am a foreign tourist. I: stomach pain. I want to buy medicine. Please help.',
+        address: '부산 해운대구 해운대해변로 264',
+      );
+    await pumpApp(t, repo);
+    t.view.physicalSize = const Size(360, 800);
+    t.view.devicePixelRatio = 1;
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+
+    await send(t, 'I have stomach pain');
+    await t.pumpAndSettle();
+
+    final btnFinder = find.byKey(const ValueKey('full-screen-btn'));
+    final labelFinder = find.byKey(const ValueKey('full-screen-label'));
+    expect(btnFinder, findsOneWidget);
+    expect(labelFinder, findsOneWidget);
+    final label = t.widget<Text>(labelFinder);
+    expect(label.data, 'Full screen');
+    expect(label.maxLines, 1);
+    expect(label.softWrap, isFalse);
+    // 두 줄로 줄바꿈되면 높이가 60px 이상으로 커진다 — 한 줄 버튼 높이(48px 전후) 확인
+    expect(t.getSize(btnFinder).height, lessThanOrEqualTo(52));
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('언어 전환 시 일반 분류 결과는 type 없이 재요청해 슬롯을 유지하고, 수동 선택은 type을 유지한다 (#208)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        cardKo: '외국인 관광객입니다. 저는 배가 아픕니다. 약을 사고 싶습니다. 도와주세요.',
+      );
+    await pumpApp(t, repo);
+    await send(t, '배가 너무 아파요 약이 필요해요');
+    await t.pumpAndSettle();
+    expect(repo.calls.last['type'], isNull);
+
+    // 일반 분류 상태에서 일본어로 전환 → type=null 유지 (서버가 슬롯을 다시 추출)
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(repo.calls.last['lang'], Lang.ja);
+    expect(repo.calls.last['type'], isNull);
+
+    // 유형을 수동 선택한 뒤 언어를 바꾸면 선택한 type 을 유지
+    repo.guideR = const EmGuideResult(type: EmType.lost, topContact: '1330');
+    await box.read(emergencyProvider.notifier).chooseType(EmType.lost);
+    await t.pumpAndSettle();
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(repo.calls.last['lang'], Lang.en);
+    expect(repo.calls.last['type'], EmType.lost);
+  });
 }

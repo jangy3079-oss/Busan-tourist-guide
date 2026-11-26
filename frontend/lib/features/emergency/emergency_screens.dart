@@ -291,7 +291,11 @@ class EmergencyResultScreen extends ConsumerWidget {
                 Text(g.cardTranslated, style: const TextStyle(fontSize: 13, color: C.text3, height: 1.5)),
               ],
               const SizedBox(height: 10),
-              Row(children: [Expanded(child: Text(tr('cardHint', l), style: const TextStyle(fontSize: 12.5, color: C.text3))), SizedBox(width: 132, child: Btn(tr('full', l), icon: 'move', kind: BtnKind.dark, onTap: () => showKoreanCard(context)))]),
+              Row(children: [
+                Expanded(child: Text(tr('cardHint', l), style: const TextStyle(fontSize: 12.5, color: C.text3))),
+                const SizedBox(width: 8),
+                _FullScreenBtn(label: tr('full', l), onTap: () => showKoreanCard(context)),
+              ]),
             ]),
           ),
           const SizedBox(height: 10),
@@ -324,6 +328,43 @@ class EmergencyResultScreen extends ConsumerWidget {
 void _pickType(BuildContext context, WidgetRef ref, EmType t) {
   ref.read(emergencyProvider.notifier).chooseType(t);
   context.go(t == EmType.non ? '/emergency/non' : '/emergency/result');
+}
+
+/// 한국어 카드 '전체 화면' 버튼: 360px 영어("Full screen")에서도 한 줄로 유지한다(#208).
+class _FullScreenBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _FullScreenBtn({required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48, maxWidth: 152),
+        child: Material(
+          color: C.text,
+          borderRadius: BorderRadius.circular(rMd),
+          child: InkWell(
+            key: const ValueKey('full-screen-btn'),
+            borderRadius: BorderRadius.circular(rMd),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Ic('move', size: 16, color: Colors.white),
+                  const SizedBox(width: 5),
+                  Text(
+                    label,
+                    key: const ValueKey('full-screen-label'),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 /// 도움처 한 줄 (FR-E011·E012·E014): 이름·종류·거리·운영 상태와 오늘 운영시간·응급실 병상/경고·전화·길찾기

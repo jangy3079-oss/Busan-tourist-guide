@@ -161,7 +161,8 @@ class EmergencyServiceGuideTest {
         assertThat(res.triage().urgency()).isEqualTo(Urgency.URGENT);
         assertThat(res.topContact()).isEqualTo("119");
         assertThat(res.card()).isNotNull();
-        assertThat(res.card().ko()).contains("쓰러져서 의식이 없습니다.");
+        assertThat(res.card().ko()).contains("의식이 없습니다.");
+        assertThat(res.card().ko()).doesNotContain("쓰러져서");
         assertThat(res.card().address()).isEqualTo("부산 수영구 광안리해수욕장 부근");
         assertThat(res.stepsFallback()).isTrue();
         assertThat(res.sources()).extracting(s -> s.id()).containsExactly("fb_urgent");
@@ -403,7 +404,8 @@ class EmergencyServiceGuideTest {
         assertThat(res.triage().urgency()).isEqualTo(Urgency.URGENT);
         assertThat(res.triage().confidence()).isEqualTo(1.0);
         assertThat(res.topContact()).isEqualTo("119");
-        assertThat(res.card().ko()).contains("쓰러져서 의식이 없습니다.");
+        assertThat(res.card().ko()).contains("의식이 없습니다.");
+        assertThat(res.card().ko()).doesNotContain("쓰러져서");
     }
 
     @Test
