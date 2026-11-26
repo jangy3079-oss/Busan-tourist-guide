@@ -1,0 +1,5 @@
+{
+  "_comment": "API-C07 근거 카드 번역 설정. 번역문의 한글 비율이 maxHangulRatio 를 넘으면 실패로 보고 원문만 보인다(장소 이름 정도만 한글로 남는 것은 허용)",
+  "timeoutSec": 10,
+  "maxHangulRatio": 0.2
+}

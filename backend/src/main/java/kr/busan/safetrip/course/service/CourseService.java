@@ -236,7 +236,7 @@ public class CourseService {
     }
 
     /** 운영시간·휴무일 원문을 줄로 잇는다(문장은 바꾸지 않는다) */
-    private static String hoursText(Place p) {
+    static String hoursText(Place p) {
         if (p.getRestText() == null) return p.getHoursText();
         return p.getHoursText() == null ? p.getRestText() : p.getHoursText() + "\n" + p.getRestText();
     }

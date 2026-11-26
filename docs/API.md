@@ -151,6 +151,15 @@
 ```
 이 `PlaceDetail` 모양은 사진 결과의 장소 정보에도 그대로 쓴다.
 
+### API-C07 근거 카드 번역(참고) — `GET /api/v1/places/{contentId}/translation?lang=ja`
+근거: FR-C011(원문 표시), FR-C010(요청 언어)
+API-C05의 국문 개요·운영시간을 요청 언어로 번역한 **참고 문장**. 원문은 API-C05 그대로 두고 화면에서 번역 아래에 함께 보인다.
+```json
+{ "contentId": "126081", "lang": "ja", "overview": "広安里海水浴場は…", "hours": "常時開放", "translated": true }
+```
+- `lang=ko`이거나 번역 실패(LLM 장애·한글이 많이 남음)면 `translated=false`, `overview`·`hours`는 null → 화면은 원문만
+- 성공한 번역은 서버 메모리에 장소·언어별로 둔다(같은 장소를 다시 열면 바로 옴)
+
 ### API-C06 지식베이스 수집 (관리자) — local-admin
 근거: FR-C017, C018, FR-P020
 | 경로 | 동작 |

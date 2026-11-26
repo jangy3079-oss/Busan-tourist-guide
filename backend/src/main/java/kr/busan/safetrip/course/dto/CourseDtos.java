@@ -72,6 +72,8 @@ public final class CourseDtos {
                                  List<MapPointDto> path, Notice notice) {}
 
     public record NarrationItem(String contentId, String text) {}
+    /** API-C07 근거 카드 번역(참고). translated=false 면 원문만 보인다 */
+    public record Translation(String contentId, String lang, String overview, String hours, boolean translated) {}
     /** API-C02 */
     public record NarrationResponse(String courseId, String title, List<NarrationItem> items, boolean template) {}
 

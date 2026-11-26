@@ -35,6 +35,8 @@ const Map<String, List<String>> kCourseText = {
   'ev': ['근거 카드 · 공식 관광정보 원문', 'Source card · official tourism text (Korean)', '根拠カード・公式観光情報の原文(韓国語)'],
   'evLoad': ['원문을 불러오는 중…', 'Loading the original text…', '原文を読み込み中…'],
   'evOverview': ['개요 원문', 'Overview', '概要(原文)'],
+  'evOverviewTr': ['개요(AI 번역)', 'Overview (AI translation, for reference)', '概要(AI翻訳・参考)'],
+  'evHoursTr': ['운영(AI 번역)', 'Hours (AI translation, for reference)', '営業(AI翻訳・参考)'],
   'evHours': ['운영 원문', 'Hours', '営業(原文)'],
   'evSource': ['출처', 'Source', '出典'],
   'close': ['닫기', 'Close', '閉じる'],

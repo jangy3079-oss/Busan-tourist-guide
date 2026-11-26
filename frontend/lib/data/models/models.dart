@@ -141,7 +141,8 @@ class PlacePin {
 class Evidence {
   final String name, overview, hours, source;
   final String? imageUrl; // TourAPI 대표 이미지. 없으면 기본 이미지(FR-C011)
-  const Evidence(this.name, this.overview, this.hours, this.source, {this.imageUrl});
+  final String? overviewTr, hoursTr; // 요청 언어 번역(참고, API-C07). 없으면 원문만
+  const Evidence(this.name, this.overview, this.hours, this.source, {this.imageUrl, this.overviewTr, this.hoursTr});
 }
 
 // ---------------- 사진 (API-P01~P03) ----------------

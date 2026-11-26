@@ -38,7 +38,15 @@ class ApiCourseRepository implements CourseRepository {
   @override
   Future<Evidence> evidence(String contentId, Lang lang) async {
     final j = await api.get('/places/$contentId', {'lang': langCode(lang)});
-    return Evidence(j['name'] ?? '', j['overview'] ?? '', j['hoursText'] ?? '', sourceLine(j['source'] as String?, j['collectedAt'] as String?, lang), imageUrl: j['imageUrl'] as String?);
+    Map<String, dynamic>? t;
+    if (lang != Lang.ko) {
+      try {
+        t = await api.get('/places/$contentId/translation', {'lang': langCode(lang)}); // 번역은 참고용. 실패해도 원문은 보인다
+      } catch (_) {}
+    }
+    final ok = t?['translated'] == true;
+    return Evidence(j['name'] ?? '', j['overview'] ?? '', j['hoursText'] ?? '', sourceLine(j['source'] as String?, j['collectedAt'] as String?, lang),
+        imageUrl: j['imageUrl'] as String?, overviewTr: ok ? t!['overview'] as String? : null, hoursTr: ok ? t!['hours'] as String? : null);
   }
 
   CourseResult _result(Map<String, dynamic> j) {
