@@ -55,6 +55,15 @@ const Map<String, List<String>> kPhotoText = {
   'byName': ['가게 이름으로 찾기', 'Search by shop name', '店名で探す'],
   'nameHint': ['예: 암소갈비', 'e.g. 암소갈비 (Korean name)', '例:암소갈비(韓国語の店名)'],
   'searchNone': ['"{0}"(으)로 찾은 가게가 없어요', 'No shop found for "{0}"', '「{0}」で見つかるお店はありません'],
+  // 업종(TourAPI 분류) 표기. FR-P010은 상호만 원문 유지라 업종은 요청 언어로(#225). 모르는 업종은 원문
+  'cat.음식점': ['음식점', 'Restaurant', '飲食店'],
+  'cat.카페': ['카페', 'Cafe', 'カフェ'],
+  'cat.쇼핑': ['쇼핑', 'Shopping', 'ショッピング'],
+  'cat.관광지': ['관광지', 'Tourist spot', '観光地'],
+  'cat.문화시설': ['문화시설', 'Cultural facility', '文化施設'],
 };
+
+/// 업종을 요청 언어로. 표에 없으면 원문 그대로
+String photoCategory(String category, Lang l) => kPhotoText.containsKey('cat.$category') ? pt('cat.$category', l) : category;
 
 String pt(String k, Lang l, [List<Object> args = const []]) => trIn(kPhotoText, k, l, args);

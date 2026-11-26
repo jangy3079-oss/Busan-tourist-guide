@@ -1,4 +1,5 @@
 // [사진 담당] 사진 화면 상태. 이 폴더(features/photo)는 사진 담당만 수정한다.
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/location.dart';
 import '../../data/models/models.dart';
@@ -34,8 +35,11 @@ final photoLocationProvider = Provider<Future<LocationResult> Function()>((ref) 
 
 class PhotoController extends Notifier<PhotoState> {
   int _token = 0;
-  List<int>? _bytes; // 다시 시도용. 화면을 떠나면(reset) 바로 버린다(NFR-P002)
+  Uint8List? _bytes; // 다시 시도·화면 표시용. 화면을 떠나면(reset) 바로 버린다(NFR-P002)
   String _fileName = 'photo.jpg';
+
+  /// 올린 사진(분석 중·결과 화면 표시용, #224). 샘플이나 이름 검색이면 null
+  Uint8List? get image => _bytes;
 
   @override
   PhotoState build() => const PhotoState();
@@ -45,7 +49,7 @@ class PhotoController extends Notifier<PhotoState> {
   /// API-P01 → (확정이면) API-P02. 실제 사진이면 찍을 때마다 위치를 한 번 묻는다(FR-P003). 거부·실패면 위치 없이 보낸다
   Future<void> identify({List<int>? bytes, String fileName = 'photo.jpg', String? sample}) async {
     final my = ++_token;
-    _bytes = bytes;
+    _bytes = bytes == null ? null : (bytes is Uint8List ? bytes : Uint8List.fromList(bytes));
     _fileName = fileName;
     state = PhotoState(phase: PhotoPhase.scanning, sample: sample, loc: state.loc);
     try {
@@ -76,9 +80,19 @@ class PhotoController extends Notifier<PhotoState> {
     _narrate(my, p);
   }
 
+  /// 언어를 바꿨을 때 선택된 가게 설명을 그 언어로 다시 받는다(#225)
+  void renarrate() {
+    final p = state.selected;
+    if (p == null) return;
+    final my = ++_token;
+    state = state.copy(narration: null, narrationFailed: false);
+    _narrate(my, p);
+  }
+
   /// API-P03 이름 직접 검색(FR-P016)
   Future<void> searchByName(String name) async {
     final my = ++_token;
+    _bytes = null; // 이름 검색 결과에 이전 사진이 나오지 않게
     state = state.copy(error: null, lastQuery: name);
     try {
       final r = await ref.read(photoRepoProvider).search(name, ref.read(langProvider));
