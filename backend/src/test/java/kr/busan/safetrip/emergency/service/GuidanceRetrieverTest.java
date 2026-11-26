@@ -248,6 +248,58 @@ class GuidanceRetrieverTest {
     }
 
     @Test
+    void rejectsWrongLanguageOrMixedLanguageAndAcceptsValidEnglishGuidance() {
+        KbDoc jaDoc = new KbDoc("mild-night", "ja", "夜間の対応", List.of("MILD"), List.of("NEEDS_MEDS"), "✅", null, List.of(),
+                List.of("開いている薬局がない場合は24時間コンビニを確認してください。", "1330に電話して日本語で相談できます。"),
+                "開いている薬局がない場合は24時間コンビニを確認してください。\n1330に電話して日本語で相談できます。", "h-ja", true);
+        when(repo.findCandidates(eq("ja"), eq(EmType.MILD), anyString())).thenReturn(List.of(jaDoc));
+
+        // 1) ja 요청인데 LLM이 사용자 문장(한국어)을 따라 한국어로 답하면 Top-1 일본어 문서로 대체(#208)
+        llmAnswer = "{\"steps\":[\"문을 연 약국이 없으면 24시간 편의점에서 상비약을 살 수 있어요.\",\"1330에 전화해 도움을 받으세요.\"],\"docIds\":[\"mild-night\"]}";
+        GuidanceRetriever.Guidance jaFallback = retriever().retrieve(
+                EmType.MILD, "NEEDS_MEDS", Map.of("symptom", "STOMACH"), "배가 너무 아파요 약이 필요해요", Lang.JA, "1330", null);
+        assertThat(jaFallback.top1()).isTrue();
+        assertThat(jaFallback.fallback()).isFalse();
+        assertThat(jaFallback.steps()).isEqualTo(jaDoc.steps());
+        assertThat(sent.get().system()).contains("NEVER follow the language of the user's message");
+
+        // 2) ja 요청에 한국어가 섞인 혼합 문장 → Top-1 일본어 문서로 대체
+        llmAnswer = "{\"steps\":[\"편의점에서 薬を買ってください。\",\"1330に電話して相談してください。\"],\"docIds\":[\"mild-night\"]}";
+        GuidanceRetriever.Guidance jaMixed = retriever().retrieve(
+                EmType.MILD, "NEEDS_MEDS", Map.of(), "배가 아파요", Lang.JA, "1330", null);
+        assertThat(jaMixed.top1()).isTrue();
+        assertThat(jaMixed.steps()).isEqualTo(jaDoc.steps());
+
+        // 3) en 요청 정상 영어 응답 → 그대로 사용
+        KbDoc enDoc = new KbDoc("mild-pharmacy", "en", "Pharmacy guide", List.of("MILD"), List.of("GENERAL"), "✅", null, List.of(),
+                List.of("Show the Korean card to the pharmacist.", "Call 1330 for 24-hour tourist interpretation."),
+                "Show the Korean card to the pharmacist.\nCall 1330 for 24-hour tourist interpretation.", "h-en", true);
+        when(repo.findCandidates(eq("en"), eq(EmType.MILD), anyString())).thenReturn(List.of(enDoc));
+        llmAnswer = "{\"steps\":[\"Show the Korean card to the pharmacist.\",\"Call 1330 for 24-hour tourist interpretation.\"],\"docIds\":[\"mild-pharmacy\"]}";
+        GuidanceRetriever.Guidance enOk = retriever().retrieve(
+                EmType.MILD, "GENERAL", Map.of(), "배가 아파요", Lang.EN, "1330", null);
+        assertThat(enOk.top1()).isFalse();
+        assertThat(enOk.steps()).containsExactly(
+                "Show the Korean card to the pharmacist.",
+                "Call 1330 for 24-hour tourist interpretation.");
+
+        // 4) en 요청에 한글이 섞인 혼합 문장 → Top-1 영어 문서로 대체
+        llmAnswer = "{\"steps\":[\"약국에서 Show the Korean card.\",\"Call 1330 for help.\"],\"docIds\":[\"mild-pharmacy\"]}";
+        GuidanceRetriever.Guidance enMixed = retriever().retrieve(
+                EmType.MILD, "GENERAL", Map.of(), "배가 아파요", Lang.EN, "1330", null);
+        assertThat(enMixed.top1()).isTrue();
+        assertThat(enMixed.steps()).isEqualTo(enDoc.steps());
+
+        // 5) ko 요청인데 영어로 답함 → Top-1 한국어 문서로 대체
+        when(repo.findCandidates(eq("ko"), eq(EmType.MILD), anyString())).thenReturn(List.of(MILD_PHARMACY));
+        llmAnswer = "{\"steps\":[\"Visit a nearby pharmacy now.\",\"Call 1330 if you need help.\"],\"docIds\":[\"mild-pharmacy\"]}";
+        GuidanceRetriever.Guidance koWrong = retriever().retrieve(
+                EmType.MILD, "GENERAL", Map.of(), "stomach pain", Lang.KO, "1330", null);
+        assertThat(koWrong.top1()).isTrue();
+        assertThat(koWrong.steps()).isEqualTo(MILD_PHARMACY.steps());
+    }
+
+    @Test
     void everyRepositoryKnowledgeBaseStepPassesTheOutputChecks() {
         // 원고 문장을 그대로 고른 LLM 답이 금지 표현·번호 검사에 걸리면 안 된다(#127)
         for (KbDoc doc : KnowledgeBaseLoader.parseAll(KnowledgeBaseLoaderTest.realDocs()).rows()) {

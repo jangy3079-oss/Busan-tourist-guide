@@ -68,6 +68,12 @@ public class GuidanceRetriever {
             Map<String, List<String>> excludeSlots) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    record RawLanguageCheck(
+            Integer minLetters,
+            Map<String, Double> minRatio,
+            Double maxHangulInNonKo) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
     record RawConfig(
             Integer timeoutSec,
             Integer maxRetry,
@@ -78,9 +84,15 @@ public class GuidanceRetriever {
             String contactPrefix,
             List<String> allowedNumbers,
             Integer minNumberDigits,
+            RawLanguageCheck languageCheck,
             Map<String, Map<String, Map<String, String>>> slotGroups,
             Map<String, RawDocCondition> docConditions,
             Map<String, List<String>> forbidden) {}
+
+    private record LanguageCheck(
+            int minLetters,
+            Map<String, Double> minRatio,
+            double maxHangulInNonKo) {}
 
     private record Config(
             int timeoutSec,
@@ -92,6 +104,7 @@ public class GuidanceRetriever {
             String contactPrefix,
             Set<String> allowedNumbers,
             int minNumberDigits,
+            LanguageCheck languageCheck,
             Map<String, Map<String, Map<String, String>>> slotGroups,
             Map<String, RawDocCondition> docConditions,
             List<Pattern> forbiddenPatterns,
@@ -310,10 +323,15 @@ public class GuidanceRetriever {
             log.warn("emergency.guidance llm failed: {}", e.getClass().getSimpleName());
             return Optional.empty();
         }
-        return parseAndValidate(rawResponse, topDocs, cfg);
+        return parseAndValidate(rawResponse, topDocs, langCode, cfg);
     }
 
     Optional<Guidance> parseAndValidate(String rawResponse, List<KbDoc> topDocs, Config cfg) {
+        String inferredLang = (topDocs != null && !topDocs.isEmpty()) ? topDocs.get(0).lang() : null;
+        return parseAndValidate(rawResponse, topDocs, inferredLang, cfg);
+    }
+
+    Optional<Guidance> parseAndValidate(String rawResponse, List<KbDoc> topDocs, String langCode, Config cfg) {
         String extracted = SituationClassifier.extractFirstJsonObject(rawResponse);
         if (extracted == null) {
             log.warn("emergency.guidance invalid: noJsonObject");
@@ -379,7 +397,7 @@ public class GuidanceRetriever {
             return Optional.empty();
         }
 
-        // 3) 허용 숫자열(전화번호 형태) 검증 + 4) 금지 표현 검증(AI-REQ-E04)
+        // 3) 허용 숫자열(전화번호 형태) 검증 + 4) 금지 표현 검증(AI-REQ-E04) + 5) 출력 언어 비율 검증(#208)
         Set<String> allowedNums = collectAllowedNumbers(topDocs, cfg);
         for (String step : steps) {
             if (!hasOnlyAllowedNumbers(step, allowedNums, cfg.minNumberDigits())) {
@@ -388,6 +406,10 @@ public class GuidanceRetriever {
             }
             if (containsForbidden(step, cfg.forbiddenPatterns())) {
                 log.warn("emergency.guidance invalid: forbiddenExpression");
+                return Optional.empty();
+            }
+            if (!matchesTargetLanguage(step, langCode, cfg.languageCheck())) {
+                log.warn("emergency.guidance invalid: languageMismatch lang={}", langCode);
                 return Optional.empty();
             }
         }
@@ -439,6 +461,69 @@ public class GuidanceRetriever {
             }
         }
         return false;
+    }
+
+    /** 출력 문장이 요청 언어(langCode)로 작성됐는지 문자 비율로 검증한다(기준값은 guidance.json, #208). */
+    static boolean matchesTargetLanguage(String step, String langCode, LanguageCheck check) {
+        if (step == null || langCode == null || langCode.isBlank() || check == null) {
+            return true;
+        }
+        String normLang = langCode.toLowerCase(Locale.ROOT);
+        Double minRatio = check.minRatio().get(normLang);
+        if (minRatio == null) {
+            return true;
+        }
+        int letters = 0;
+        int hangul = 0;
+        int latin = 0;
+        int jaScript = 0;
+        for (int i = 0; i < step.length(); ) {
+            int cp = step.codePointAt(i);
+            i += Character.charCount(cp);
+            if (isHangul(cp)) {
+                letters++;
+                hangul++;
+            } else if (isJapaneseScript(cp)) {
+                letters++;
+                jaScript++;
+            } else if (isAsciiLatin(cp)) {
+                letters++;
+                latin++;
+            } else if (Character.isLetter(cp)) {
+                letters++;
+            }
+        }
+        if (letters < check.minLetters()) {
+            return true;
+        }
+        double hangulRatio = (double) hangul / letters;
+        if (!"ko".equals(normLang) && hangulRatio > check.maxHangulInNonKo()) {
+            return false;
+        }
+        return switch (normLang) {
+            case "ko" -> hangulRatio >= minRatio;
+            case "en" -> (double) latin / letters >= minRatio;
+            case "ja" -> (double) jaScript / letters >= minRatio;
+            default -> true;
+        };
+    }
+
+    private static boolean isHangul(int cp) {
+        return (cp >= 0xAC00 && cp <= 0xD7A3)
+                || (cp >= 0x1100 && cp <= 0x11FF)
+                || (cp >= 0x3130 && cp <= 0x318F);
+    }
+
+    private static boolean isJapaneseScript(int cp) {
+        return (cp >= 0x3040 && cp <= 0x309F) // Hiragana
+                || (cp >= 0x30A0 && cp <= 0x30FF) // Katakana (includes ー U+30FC)
+                || (cp >= 0x31F0 && cp <= 0x31FF) // Katakana Phonetic Extensions
+                || (cp >= 0x4E00 && cp <= 0x9FFF) // CJK Unified Ideographs
+                || (cp >= 0x3400 && cp <= 0x4DBF); // CJK Extension A
+    }
+
+    private static boolean isAsciiLatin(int cp) {
+        return (cp >= 'A' && cp <= 'Z') || (cp >= 'a' && cp <= 'z');
     }
 
     private String embedSafely(String text) {
@@ -603,6 +688,7 @@ public class GuidanceRetriever {
         Set<String> allowedNums = raw.allowedNumbers() == null ? Set.of() : Set.copyOf(raw.allowedNumbers());
         String contactPrefix = raw.contactPrefix() == null ? "contact-" : raw.contactPrefix();
         int minDigits = raw.minNumberDigits() == null ? 3 : raw.minNumberDigits();
+        LanguageCheck languageCheck = parseLanguageCheck(raw.languageCheck(), cfgPath);
         return new Config(
                 raw.timeoutSec(),
                 raw.maxRetry(),
@@ -613,10 +699,36 @@ public class GuidanceRetriever {
                 contactPrefix,
                 allowedNums,
                 minDigits,
+                languageCheck,
                 raw.slotGroups() == null ? Map.of() : raw.slotGroups(),
                 raw.docConditions() == null ? Map.of() : raw.docConditions(),
                 List.copyOf(forbidden),
                 prompt);
+    }
+
+    private static LanguageCheck parseLanguageCheck(RawLanguageCheck raw, String cfgPath) {
+        if (raw == null) {
+            throw new IllegalStateException("guidance.json languageCheck가 없습니다: " + cfgPath);
+        }
+        if (raw.minLetters() == null || raw.minLetters() < 1) {
+            throw new IllegalStateException("guidance.json languageCheck.minLetters가 올바르지 않습니다: " + cfgPath);
+        }
+        if (raw.minRatio() == null || raw.minRatio().isEmpty()) {
+            throw new IllegalStateException("guidance.json languageCheck.minRatio가 비어 있습니다: " + cfgPath);
+        }
+        Map<String, Double> ratios = new LinkedHashMap<>();
+        for (Map.Entry<String, Double> e : raw.minRatio().entrySet()) {
+            Double v = e.getValue();
+            if (v == null || !Double.isFinite(v) || v <= 0.0 || v > 1.0) {
+                throw new IllegalStateException("guidance.json languageCheck.minRatio 값이 올바르지 않습니다: " + e.getKey());
+            }
+            ratios.put(e.getKey().toLowerCase(Locale.ROOT), v);
+        }
+        double maxHangul = raw.maxHangulInNonKo() == null ? 0.15 : raw.maxHangulInNonKo();
+        if (!Double.isFinite(maxHangul) || maxHangul < 0.0 || maxHangul > 1.0) {
+            throw new IllegalStateException("guidance.json languageCheck.maxHangulInNonKo가 올바르지 않습니다: " + cfgPath);
+        }
+        return new LanguageCheck(raw.minLetters(), Map.copyOf(ratios), maxHangul);
     }
 
     private static <T> T readJson(String path, Class<T> type) {

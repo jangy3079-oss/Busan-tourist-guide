@@ -30,7 +30,7 @@
     },
     "symptom": {
       "URGENT": {
-        "UNCONSCIOUS": { "ko": "쓰러져서 의식이 없습니다.", "en": "collapsed and unconscious", "ja": "倒れて意識がありません" },
+        "UNCONSCIOUS": { "ko": "의식이 없습니다.", "en": "unconscious", "ja": "意識がありません" },
         "NOT_BREATHING": { "ko": "숨을 쉬지 않습니다.", "en": "not breathing", "ja": "息をしていません" },
         "CHEST_PAIN": { "ko": "가슴 통증이 심합니다.", "en": "severe chest pain", "ja": "激しい胸の痛みがあります" },
         "SEIZURE": { "ko": "경련을 하고 있습니다.", "en": "having a seizure", "ja": "けいれんしています" },
@@ -38,16 +38,17 @@
         "BURN": { "ko": "심한 화상을 입었습니다.", "en": "severe burn", "ja": "重度のやけどを負いました" },
         "INJURY": { "ko": "크게 다쳤습니다.", "en": "serious injury", "ja": "大けがをしました" },
         "POISONING": { "ko": "약물이나 독성 물질을 삼켰습니다.", "en": "swallowed medicine or toxic substance", "ja": "薬や有害な物質を飲み込みました" },
-        "ALLERGY": { "ko": "얼굴과 목이 붓고 숨쉬기 힘듭니다.", "en": "swollen face and throat, hard to breathe", "ja": "顔と喉が腫れて息苦しいです" },
+        "ALLERGY": { "ko": "심한 알레르기 반응이 있습니다.", "en": "severe allergic reaction", "ja": "重いアレルギー反応があります" },
         "DROWNING": { "ko": "물에 빠졌습니다.", "en": "fell into the water", "ja": "水におぼれました" }
       },
       "MILD": {
         "FEVER": { "ko": "열이 납니다.", "en": "fever", "ja": "熱があります" },
         "HEADACHE": { "ko": "머리가 아픕니다.", "en": "headache", "ja": "頭痛があります" },
-        "STOMACH": { "ko": "배가 아프고 설사를 합니다.", "en": "stomach pain and diarrhea", "ja": "腹痛と下痢があります" },
+        "STOMACH": { "ko": "배가 아픕니다.", "en": "stomach pain", "ja": "お腹が痛いです" },
+        "DIARRHEA": { "ko": "설사를 합니다.", "en": "diarrhea", "ja": "下痢をしています" },
         "COLD": { "ko": "감기 기운이 있습니다.", "en": "cold symptoms", "ja": "風邪の症状があります" },
         "MINOR_CUT": { "ko": "가볍게 다쳤습니다.", "en": "minor cut or scrape", "ja": "軽いけがをしました" },
-        "RASH": { "ko": "두드러기가 났습니다.", "en": "hives or skin rash", "ja": "じんましんが出ています" },
+        "RASH": { "ko": "피부에 발진이 났습니다.", "en": "skin rash", "ja": "皮膚に発疹が出ています" },
         "INSECT": { "ko": "벌레에 물렸습니다.", "en": "insect bite", "ja": "虫に刺されました" },
         "MUSCLE": { "ko": "근육통이 있습니다.", "en": "muscle pain", "ja": "筋肉痛があります" }
       }
@@ -116,7 +117,7 @@
   "groupRules": {
     "MILD": {
       "slot": "symptom",
-      "matchCodes": ["STOMACH", "MINOR_CUT", "RASH", "INSECT"],
+      "matchCodes": ["STOMACH", "DIARRHEA", "MINOR_CUT", "RASH", "INSECT"],
       "matchGroup": "NEEDS_MEDS",
       "defaultGroup": "GENERAL"
     },

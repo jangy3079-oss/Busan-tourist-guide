@@ -23,15 +23,15 @@ class EmState {
   final EmLoc loc;
   final double? lat, lng;
   final Object? error; // API-E02 실패(서버 오류·시간 초과) → 오류 카드 + 연락 버튼 + 유형 버튼
-  final bool areaPicked, big, needTypeSheet, needArea;
-  const EmState({this.text = '', this.phase = EmPhase.idle, this.type, this.quick, this.guide, this.area = Area.gwangalli, this.loc = EmLoc.unknown, this.lat, this.lng, this.error, this.areaPicked = false, this.big = false, this.needTypeSheet = false, this.needArea = false});
+  final bool areaPicked, big, needTypeSheet, needArea, userPickedType;
+  const EmState({this.text = '', this.phase = EmPhase.idle, this.type, this.quick, this.guide, this.area = Area.gwangalli, this.loc = EmLoc.unknown, this.lat, this.lng, this.error, this.areaPicked = false, this.big = false, this.needTypeSheet = false, this.needArea = false, this.userPickedType = false});
   String? get top => guide?.topContact ?? quick?.topContact;
   bool get hasCoords => lat != null && lng != null && !areaPicked;
-  EmState copy({String? text, EmPhase? phase, Object? type = _k, Object? quick = _k, Object? guide = _k, Area? area, EmLoc? loc, Object? lat = _k, Object? lng = _k, Object? error = _k, bool? areaPicked, bool? big, bool? needTypeSheet, bool? needArea}) => EmState(
+  EmState copy({String? text, EmPhase? phase, Object? type = _k, Object? quick = _k, Object? guide = _k, Area? area, EmLoc? loc, Object? lat = _k, Object? lng = _k, Object? error = _k, bool? areaPicked, bool? big, bool? needTypeSheet, bool? needArea, bool? userPickedType}) => EmState(
         text: text ?? this.text, phase: phase ?? this.phase,
         type: type == _k ? this.type : type as EmType?, quick: quick == _k ? this.quick : quick as EmQuickResult?, guide: guide == _k ? this.guide : guide as EmGuideResult?,
         area: area ?? this.area, loc: loc ?? this.loc, lat: lat == _k ? this.lat : lat as double?, lng: lng == _k ? this.lng : lng as double?, error: error == _k ? this.error : error,
-        areaPicked: areaPicked ?? this.areaPicked, big: big ?? this.big, needTypeSheet: needTypeSheet ?? this.needTypeSheet, needArea: needArea ?? this.needArea);
+        areaPicked: areaPicked ?? this.areaPicked, big: big ?? this.big, needTypeSheet: needTypeSheet ?? this.needTypeSheet, needArea: needArea ?? this.needArea, userPickedType: userPickedType ?? this.userPickedType);
 }
 
 const _k = Object();
@@ -49,15 +49,20 @@ class EmergencyController extends Notifier<EmState> {
   int _token = 0; // 이전 요청 응답 무시용 (화면을 떠났다 돌아온 경우)
   @override
   EmState build() {
-    // 언어를 바꾸면 상세 안내를 그 언어로 다시 받는다(API-E02는 요청 언어로만 응답)
-    ref.listen<Lang>(langProvider, (prev, next) { if (prev != next && state.guide != null && state.type != null) _guide(type: state.type, keepPhase: true); });
+    // 언어를 바꾸면 상세 안내를 그 언어로 다시 받는다(API-E02는 요청 언어로만 응답).
+    // 사용자가 유형을 직접 고른 경우에만 type 을 유지하고, 일반 분류 결과였다면 type=null 로 보내 슬롯을 유지한다(#208).
+    ref.listen<Lang>(langProvider, (prev, next) {
+      if (prev != next && state.guide != null && state.type != null) {
+        _guide(type: state.userPickedType ? state.type : null, keepPhase: true);
+      }
+    });
     return const EmState();
   }
 
   /// 긴급 화면 진입. prefill은 코스에서 넘어온 문장 (FR-C013)
   void open({String prefill = ''}) {
     _token++;
-    state = state.copy(text: prefill, phase: EmPhase.idle, type: null, quick: null, guide: null, error: null, needTypeSheet: false, needArea: false);
+    state = state.copy(text: prefill, phase: EmPhase.idle, type: null, quick: null, guide: null, error: null, needTypeSheet: false, needArea: false, userPickedType: false);
   }
 
   void toggleBig() => state = state.copy(big: !state.big);
@@ -89,7 +94,7 @@ class EmergencyController extends Notifier<EmState> {
   /// 유형 선택 시트(UI-E04)에서 직접 고른 경우 → API-E02를 type 지정으로 다시 호출 (FR-E008)
   Future<void> chooseType(EmType t) async {
     _token++;
-    state = state.copy(phase: EmPhase.loading, type: null, guide: null, error: null, needTypeSheet: false);
+    state = state.copy(phase: EmPhase.loading, type: null, guide: null, error: null, needTypeSheet: false, userPickedType: true);
     await _guide(type: t);
   }
 
@@ -100,7 +105,7 @@ class EmergencyController extends Notifier<EmState> {
   /// E01은 위치를 기다리지 않는다. E02는 좌표(허용) 또는 지역(거부)이 정해진 뒤 보낸다
   Future<void> _run(String text) async {
     final my = ++_token;
-    state = state.copy(phase: EmPhase.loading, type: null, quick: null, guide: null, error: null, needTypeSheet: false, needArea: false);
+    state = state.copy(phase: EmPhase.loading, type: null, quick: null, guide: null, error: null, needTypeSheet: false, needArea: false, userPickedType: false);
     final repo = ref.read(emergencyRepoProvider);
     final lang = ref.read(langProvider);
     // E01: 실패해도 연락 버튼은 기본 순서로 이미 보인다(FR-E004)
