@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,8 @@ public class SituationClassifier {
 
     private static final Logger log = LoggerFactory.getLogger(SituationClassifier.class);
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final Pattern THINK_BLOCK = Pattern.compile("(?is)<think>.*?</think>");
+    private static final Pattern CODE_FENCE = Pattern.compile("(?i)```(?:json)?");
     private static final String PURPOSE = "emergency.classify";
     private static final String SLOT_SCHEMA_PLACEHOLDER = "{SLOT_SCHEMA}";
     private static final String DEFAULT_CONFIG_RESOURCE = "/emergency/classify.json";
@@ -85,11 +88,12 @@ public class SituationClassifier {
         String masked = PiiMasker.mask(text);
         String rawResponse;
         try {
+            // Ollama MLX 런타임의 response_format 501 호환을 위해 jsonMode=false로 호출하고 JSON 객체를 직접 추출·검증한다.
             rawResponse = aiService.complete(new AiRequest(
                     PURPOSE,
                     buildSystemPrompt(cfg.promptTemplate()),
                     masked,
-                    true,
+                    false,
                     Duration.ofSeconds(cfg.timeoutSec()),
                     cfg.maxRetry()));
         } catch (BusinessException e) {
@@ -150,14 +154,55 @@ public class SituationClassifier {
         return template.replace(SLOT_SCHEMA_PLACEHOLDER, schema.toString().stripTrailing());
     }
 
+    /** 앞뒤 공백·<think> 블록·코드펜스를 제거한 뒤 첫 '{'부터 짝이 맞는 '}'까지 추출한다. */
+    static String extractFirstJsonObject(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String cleaned = THINK_BLOCK.matcher(raw).replaceAll("");
+        cleaned = CODE_FENCE.matcher(cleaned).replaceAll("").trim();
+        int start = cleaned.indexOf('{');
+        if (start < 0) {
+            return null;
+        }
+        int depth = 0;
+        boolean inString = false;
+        boolean escaped = false;
+        for (int i = start; i < cleaned.length(); i++) {
+            char c = cleaned.charAt(i);
+            if (inString) {
+                if (escaped) {
+                    escaped = false;
+                } else if (c == '\\') {
+                    escaped = true;
+                } else if (c == '"') {
+                    inString = false;
+                }
+            } else {
+                if (c == '"') {
+                    inString = true;
+                } else if (c == '{') {
+                    depth++;
+                } else if (c == '}') {
+                    depth--;
+                    if (depth == 0) {
+                        return cleaned.substring(start, i + 1);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
     private Optional<Triage> parseAndValidate(String rawResponse) {
-        if (rawResponse == null || rawResponse.isBlank()) {
-            log.warn("emergency.classify invalid: empty");
+        String extracted = extractFirstJsonObject(rawResponse);
+        if (extracted == null) {
+            log.warn("emergency.classify invalid: noJsonObject");
             return Optional.empty();
         }
         JsonNode root;
         try {
-            root = JSON.readTree(rawResponse);
+            root = JSON.readTree(extracted);
         } catch (Exception e) {
             log.warn("emergency.classify invalid: notJson");
             return Optional.empty();

@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -94,7 +93,7 @@ class SituationClassifierTest {
         AiRequest req = captured.get();
         assertThat(req).isNotNull();
         assertThat(req.purpose()).isEqualTo("emergency.classify");
-        assertThat(req.jsonMode()).isTrue();
+        assertThat(req.jsonMode()).isFalse();
         assertThat(req.timeout()).isEqualTo(Duration.ofSeconds(5));
         assertThat(req.maxRetry()).isEqualTo(0);
         assertThat(req.user()).contains("[phone]").contains("[email]")
@@ -109,6 +108,35 @@ class SituationClassifierTest {
                 .contains("TSUNAMI")
                 .contains("LOST_WAY");
         assertThat(classifier.confidenceThreshold()).isEqualTo(0.6);
+    }
+
+    @Test
+    void extractsFirstBalancedJsonFromVariousLlmResponseShapes() {
+        // 1) 순수 JSON
+        assertType("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"symptom\":\"FEVER\"}}", EmType.MILD);
+
+        // 2) 코드펜스로 감싼 JSON
+        assertType("```json\n{\"type\":\"FIRE\",\"urgency\":\"URGENT\",\"confidence\":0.95,\"slots\":{\"situation\":\"SMOKE\"}}\n```", EmType.FIRE);
+
+        // 3) 앞에 설명 문장이 붙은 JSON
+        assertType("Here is the classification result:\n{\"type\":\"WAY\",\"urgency\":\"NORMAL\",\"confidence\":0.88,\"slots\":{\"situation\":\"HOTEL\"}}", EmType.WAY);
+
+        // 4) <think> 블록(내부 중괄호 포함) 뒤 JSON
+        assertType("<think>analyze {draft} first</think>\n{\"type\":\"THREAT\",\"urgency\":\"URGENT\",\"confidence\":0.94,\"slots\":{\"situation\":\"FOLLOWED\"}}", EmType.THREAT);
+
+        // 5) JSON 두 개 → 첫 번째만 사용
+        assertType("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":0.97,\"slots\":{\"symptom\":\"UNCONSCIOUS\"}}\n{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.5,\"slots\":{}}", EmType.URGENT);
+
+        // 6) 중괄호 짝 안 맞음 → empty
+        assertEmpty("{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.9,\"slots\":{\"symptom\":\"FEVER\"");
+        assertEmpty("   ");
+    }
+
+    private void assertType(String rawResponse, EmType expectedType) {
+        SituationClassifier classifier = new SituationClassifier(req -> rawResponse, cardBuilder);
+        Optional<Triage> res = classifier.classify("sample");
+        assertThat(res).as("expected %s for: %s", expectedType, rawResponse).isPresent();
+        assertThat(res.get().type()).isEqualTo(expectedType);
     }
 
     private void assertEmpty(String jsonResponse) {
@@ -132,33 +160,12 @@ class SituationClassifierTest {
 
         AtomicInteger aiErrors = new AtomicInteger();
         AtomicInteger aiTimeouts = new AtomicInteger();
-        AtomicBoolean mlxFallbackUsed = new AtomicBoolean(false);
         AtomicReference<String> lastRaw = new AtomicReference<>();
 
-        // 먼저 공용 SpringAiService(jsonMode=true)로 1회 점검 — Ollama MLX runner의 http501 시 jsonMode=false로 우회
-        boolean usePromptJsonFallback = false;
-        try {
-            realAi.complete(new AiRequest("emergency.classify.probe", "Respond with JSON {\"ok\":true}.", "ping", true, Duration.ofSeconds(5), 0));
-        } catch (BusinessException e) {
-            System.out.println("[WARN] SpringAiService(jsonMode=true) failed on probe: " + e.code()
-                    + " — retrying via SpringAiService(jsonMode=false) for eval");
-            usePromptJsonFallback = true;
-            mlxFallbackUsed.set(true);
-        }
-
-        final boolean promptJsonMode = usePromptJsonFallback;
         AIService instrumented = req -> {
             lastRaw.set(null);
             try {
-                AiRequest effective = promptJsonMode
-                        ? new AiRequest(req.purpose(), req.system(), req.user(), false, req.timeout(), req.maxRetry())
-                        : req;
-                String out = realAi.complete(effective);
-                if (promptJsonMode && out != null) {
-                    int s = out.indexOf('{');
-                    int e = out.lastIndexOf('}');
-                    if (s >= 0 && e > s) out = out.substring(s, e + 1);
-                }
+                String out = realAi.complete(req);
                 lastRaw.set(out);
                 return out;
             } catch (BusinessException e) {
@@ -235,7 +242,7 @@ class SituationClassifierTest {
         long p95 = latenciesMs.get(Math.min(latenciesMs.size() - 1, (int) Math.ceil(latenciesMs.size() * 0.95) - 1));
         long max = latenciesMs.get(latenciesMs.size() - 1);
 
-        System.out.println("========== LIVE OLLAMA EVAL SUMMARY (" + model + ", mlxFallback=" + mlxFallbackUsed.get() + ") ==========");
+        System.out.println("========== LIVE OLLAMA EVAL SUMMARY (" + model + ", production path) ==========");
         System.out.printf("Total: %d, Overall accuracy: %d/%d (%.1f%%)%n", total, correct, total, 100.0 * correct / total);
         for (var e : langStats.entrySet()) {
             int c = e.getValue()[0], n = e.getValue()[1];

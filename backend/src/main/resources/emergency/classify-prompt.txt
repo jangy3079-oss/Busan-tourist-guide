@@ -34,3 +34,5 @@ User: I can't find my hotel
 {"type":"WAY","urgency":"NORMAL","confidence":0.94,"slots":{"situation":"HOTEL"}}
 User: 해운대 근처 문화재 보러 가고 싶어요
 {"type":"NON","urgency":"NORMAL","confidence":0.97,"slots":{}}
+
+Output a single JSON object only. No prose, no markdown code fences.
