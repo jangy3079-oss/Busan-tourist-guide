@@ -39,7 +39,7 @@ class ApiContractTest {
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders.standaloneSetup(
-                new CourseController(new CourseService(null, null, null, null)),
+                new CourseController(new CourseService(null, null, null, null), new kr.busan.safetrip.course.service.EvidenceTranslationService(null, null)),
                 new CourseAdminController(new KnowledgeIngestor(null, null, new AppProperties(null, null, null, null, null), null, null)),
                 new PhotoController(new PhotoMatchService(null, null, null, null, null), new PlaceSearchService(), new PlaceNarrationService()),
                 new EmergencyController(new EmergencyService(null, null, null, null, null, null)),
@@ -68,6 +68,7 @@ class ApiContractTest {
         notImplemented(json(post("/api/v1/courses/c_1/edits"), "{\"startPlaceId\":\"264570\"}"));               // C03 출발 장소
         notImplemented(get("/api/v1/places").param("area", "HAEUNDAE"));                       // C04
         notImplemented(get("/api/v1/places/126081").param("lang", "ja"));                     // C05
+        notImplemented(get("/api/v1/places/126081/translation").param("lang", "ja"));         // C07
         notImplemented(post("/api/v1/admin/knowledge/ingest"));                              // C06
         notImplemented(post("/api/v1/admin/knowledge/name-norm"));
         notImplemented(get("/api/v1/admin/knowledge/status"));

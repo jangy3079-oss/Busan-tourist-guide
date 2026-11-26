@@ -14,6 +14,7 @@ import kr.busan.safetrip.common.api.Lang;
 import kr.busan.safetrip.common.api.PlaceDetail;
 import kr.busan.safetrip.course.dto.CourseDtos;
 import kr.busan.safetrip.course.service.CourseService;
+import kr.busan.safetrip.course.service.EvidenceTranslationService;
 
 /**
  * [코스 담당] COMP-C01 CourseController
@@ -27,9 +28,11 @@ import kr.busan.safetrip.course.service.CourseService;
 @RequestMapping("/api/v1")
 public class CourseController {
     private final CourseService service;
+    private final EvidenceTranslationService translation;
 
-    public CourseController(CourseService service) {
+    public CourseController(CourseService service, EvidenceTranslationService translation) {
         this.service = service;
+        this.translation = translation;
     }
 
     /** API-C01 코스 생성 */
@@ -62,5 +65,11 @@ public class CourseController {
     @GetMapping("/places/{contentId}")
     public PlaceDetail evidence(@PathVariable String contentId, @RequestParam(defaultValue = "ko") String lang) {
         return service.evidence(contentId, Lang.parse(lang));
+    }
+
+    /** API-C07 근거 카드 번역(참고). 원문은 API-C05 그대로 */
+    @GetMapping("/places/{contentId}/translation")
+    public CourseDtos.Translation translation(@PathVariable String contentId, @RequestParam(defaultValue = "ko") String lang) {
+        return translation.translate(contentId, Lang.parse(lang));
     }
 }

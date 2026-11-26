@@ -212,7 +212,12 @@ Future<void> showEvidenceSheet(BuildContext context, WidgetRef ref, String conte
           Text(placeName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
           Text(ct('ev', l), style: const TextStyle(fontSize: 13.5, color: C.text3)),
           const SizedBox(height: 8),
-          if (snap.hasError) ErrorCard(snap.error!) else if (e == null) WaitRow(ct('evLoad', l), spinColor: C.blue) else KV([(ct('evOverview', l), Text(e.overview)), (ct('evHours', l), Text(e.hours)), (ct('evSource', l), Text(e.source))]),
+          if (snap.hasError) ErrorCard(snap.error!) else if (e == null) WaitRow(ct('evLoad', l), spinColor: C.blue) else KV([
+            // 영·일이면 번역(참고)을 먼저, 원문은 그대로 아래에(FR-C011, API-C07)
+            if (e.overviewTr != null) (ct('evOverviewTr', l), Text(e.overviewTr!)),
+            if (e.hoursTr != null) (ct('evHoursTr', l), Text(e.hoursTr!)),
+            (ct('evOverview', l), Text(e.overview)), (ct('evHours', l), Text(e.hours)), (ct('evSource', l), Text(e.source)),
+          ]),
           const SizedBox(height: 10),
           Btn(ct('close', l), onTap: () => Navigator.of(ctx).pop()),
         ]);
