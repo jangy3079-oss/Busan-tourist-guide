@@ -26,14 +26,15 @@ class EvidenceTranslationServiceTest {
         when(p.getHoursText()).thenReturn("상시 개방");
         PlaceRepository places = mock(PlaceRepository.class);
         when(places.findByContentId("1")).thenReturn(Optional.of(p));
-        return new EvidenceTranslationService(req -> { calls.incrementAndGet(); if (reply == null) throw new RuntimeException("down"); return reply; }, places);
+        return new EvidenceTranslationService(req -> { calls.incrementAndGet(); if (reply == null) throw new RuntimeException("down"); return reply; }, places, new CourseSettings());
     }
 
     @Test
     void translatesAndCaches() {
-        EvidenceTranslationService s = service("{\"overview\":\"広安里海水浴場(광안리)は砂浜が広い。\",\"hours\":\"常時開放\"}");
+        EvidenceTranslationService s = service("{\"overview\":\"光安里海水浴場は砂浜が広い。\",\"hours\":\"常時開放\"}");
         CourseDtos.Translation t = s.translate("1", Lang.JA);
         assertTrue(t.translated());
+        assertEquals("広安里海水浴場は砂浜が広い。", t.overview()); // 오표기 교정(termFix)
         assertEquals("常時開放", t.hours());
         s.translate("1", Lang.JA);
         assertEquals(1, calls.get()); // 두 번째는 캐시

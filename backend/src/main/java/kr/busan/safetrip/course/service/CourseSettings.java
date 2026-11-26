@@ -54,6 +54,14 @@ public class CourseSettings {
     public String narrationPrompt() { return narrationPrompt; }
 
     /** 다국어 문구. {0} 자리에 arg. 없는 키는 키 그대로 */
+    /** LLM 이 쓴 문장의 지명 오표기를 바로잡는다(intent.json termFix, 예: 光安→広安). 코스 설명·근거 번역 공통 */
+    public String fixTerms(String text, Lang lang) {
+        Map<String, String> m = intent.termFix() == null ? null : intent.termFix().get(lang.name().toLowerCase(java.util.Locale.ROOT));
+        if (text == null || m == null) return text;
+        for (Map.Entry<String, String> e : m.entrySet()) text = text.replace(e.getKey(), e.getValue());
+        return text;
+    }
+
     public String msg(Lang lang, String key, Object... args) {
         String s = messages.get(lang.name().toLowerCase()).getOrDefault(key, key);
         for (int i = 0; i < args.length; i++) s = s.replace("{" + i + "}", String.valueOf(args[i]));
