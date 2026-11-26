@@ -43,4 +43,13 @@ class OutputValidatorTest {
         assertTrue(v.isValid("海雲台散策", grounding, others, Lang.JA, 60));                  // 한자만 쓴 제목
         assertFalse(v.isValid(" ", grounding, others, Lang.KO, 60));
     }
+
+    /** 영·일 문장에 코스 장소 이름이 한글 원문으로 들어간 것은 허용. 그 밖의 한글은 여전히 거부 */
+    @Test
+    void allowsCoursePlaceNameInHangul() {
+        assertTrue(v.isValid("광안리해수욕장から始まるコース", grounding, others, Lang.JA, 60));
+        assertTrue(v.isValid("Start at 광안리해수욕장", grounding, others, Lang.EN, 60));
+        assertFalse(v.isValid("광안리해수욕장から광안대교へ", grounding, others, Lang.JA, 60));  // 코스 장소 이름이 아닌 한글
+        assertFalse(v.isValid("광안리해수욕장", grounding, others, Lang.JA, 60));             // 이름만 있고 일본어 없음
+    }
 }
