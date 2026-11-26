@@ -29,7 +29,10 @@ public class CourseSettings {
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
                          int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise,
-                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted, Unsupported unsupported) {}
+                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted, Unsupported unsupported, NextDay nextDay) {}
+
+    /** 날짜를 말하지 않았는데 시간이 지났으면 내일로(#230). lateHour 이후에 시각도 말하지 않았으면 내일 startTime */
+    public record NextDay(int lateHour, String startTime) {}
 
     /** 수정 문장 중 지원하지 않는 요청(식사 시각 지정·가격). 코스를 바꾸지 않고 안내한다 */
     public record Unsupported(List<String> mealWords, String timePattern, List<String> priceWords) {}
