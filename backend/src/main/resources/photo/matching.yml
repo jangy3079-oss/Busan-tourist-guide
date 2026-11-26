@@ -5,6 +5,8 @@
 #   2026-11-25 초기값 작성 (사진 담당)
 #   2026-11-25 ocr 제한시간·재시도, narration(설명 길이·템플릿·업종 이름) 추가
 #   2026-11-26 ocr.paddleUrl 추가(#41, 로컬 PaddleOCR 서버 주소)
+#   2026-11-26 narration.promptLengthRatio·reminders 추가(#153, Claude 기준 프롬프트)
+#   2026-11-26 narration.promptLengthRatio 언어별로(en 0.55, #153 측정에서 영어 길이 초과)
 
 image:
   allowedFormats: [jpg, jpeg, png]   # FR-P002
@@ -46,6 +48,14 @@ normalize:
 
 narration:
   maxChars: 60                       # FR-P011: 설명 길이 상한(언어 공통)
+  # LLM 에는 maxChars × 비율 글자로 알려 준다(검증은 maxChars 그대로, #144와 같은 방식)
+  # en: 45자로 알려도 63~69자로 써서 길이 초과가 났다(#153 측정) → 0.55(33자)
+  promptLengthRatio: { ko: 0.75, en: 0.55, ja: 0.75 }
+  # 장소 원문 뒤에 붙이는 언어별 다시 지시. {maxChars}=LLM 에 알려 주는 글자 수. 상호는 한글 그대로 둔다(FR-P010)
+  reminders:
+    ko: "안내 문장 하나를 한국어로 {maxChars}자 이내로 쓰세요. 상호는 원문 그대로 씁니다."
+    en: "Write one guide sentence in English only, at most {maxChars} characters. Keep the Korean shop name as written; no other Korean words. Shorter is better; a sentence over the limit is thrown away."
+    ja: "案内文を一文、日本語だけで{maxChars}文字以内で書いてください。ハングルは店名だけ(原文のまま)。地名は「水営区」「海雲台」のように日本語表記。"
   # FR-P012 템플릿 설명. {name}=한글 원문 상호, {category}=업종(언어별 이름), {address}=주소 원문
   templates:
     ko: "{name}은(는) {address}에 있는 {category}입니다."

@@ -20,7 +20,7 @@ import kr.busan.safetrip.photo.repository.PhotoPlaces;
 
 /**
  * [사진 담당] COMP-P08 PlaceNarrationService
- * 요구사항: FR-P011, P012, P019, AI-REQ-P02, AI-REQ-P03, AI-REQ-P04
+ * 요구사항: FR-P011, P012, P019, AI-REQ-P02, AI-REQ-P03, AI-REQ-P04 / #153(Claude 기준 프롬프트)
  * 상태: 완료
  * 수정 규칙: 사진 담당만 수정. 코스·긴급 담당은 수정 금지(필요하면 사진 담당에게 요청).
  *
@@ -65,13 +65,19 @@ public class PlaceNarrationService {
 
         String source = source(p);
         try {
-            String system = prompt.replace("{lang}", languageName(lang)).replace("{maxChars}", String.valueOf(cfg.maxChars()));
-            String text = ai.complete(new AiRequest("photo.narration", system, "<place>\n" + source + "\n</place>", false, null)).strip();
+            // LLM 은 글자 수를 조금씩 넘긴다. 줄인 값을 알려 주고 검증은 원래 한도로 한다(#144와 같은 방식)
+            String ask = String.valueOf(cfg.askChars(lang.name().toLowerCase()));
+            String system = prompt.replace("{lang}", languageName(lang)).replace("{maxChars}", ask);
+            // 원문이 한국어라 끝에서 언어를 다시 말하지 않으면 한국어로 답한다(#141, #153)
+            String reminder = cfg.reminders().getOrDefault(lang.name().toLowerCase(), "").replace("{maxChars}", ask);
+            String user = "<place>\n" + source + "\n</place>" + (reminder.isEmpty() ? "" : "\n" + reminder);
+            String text = ai.complete(new AiRequest("photo.narration", system, user, false, null)).strip();
             List<String> others = photoPlaces.names();
-            if (validator.isValid(text, source, lang, cfg.maxChars(), p.getName(), others)) {
+            String reason = validator.reason(text, source, lang, cfg.maxChars(), p.getName(), others);
+            if (reason == null) {
                 return new PhotoDtos.NarrationResponse(contentId, text, false);
             }
-            log.info("photo.narration 검증 실패 → 템플릿");
+            log.info("photo.narration 검증 실패({} {} len={}) → 템플릿", reason, lang, text.length());
         } catch (BusinessException e) {
             log.info("photo.narration LLM 사용 불가({}) → 템플릿", e.code());
         }

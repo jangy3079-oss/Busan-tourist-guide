@@ -69,6 +69,33 @@ class PlaceNarrationServiceTest {
     }
 
     @Test
+    void 원문_뒤에서_언어와_줄인_글자_수를_다시_지시한다() {
+        when(ai.complete(any())).thenReturn("돼지국밥 전문점입니다.");
+        svc.narrate("100", Lang.JA, null);
+        ArgumentCaptor<AiRequest> cap = ArgumentCaptor.forClass(AiRequest.class);
+        verify(ai).complete(cap.capture());
+        AiRequest req = cap.getValue();
+        String afterData = req.user().substring(req.user().indexOf("</place>"));
+        assertTrue(afterData.contains("日本語だけで45文字以内"), afterData); // 60 × 0.75
+        assertTrue(req.system().contains("at most 45 characters"));
+    }
+
+    @Test
+    void 영어는_더_짧게_알려_준다() {
+        when(ai.complete(any())).thenReturn("할매국밥 serves pork soup.");
+        svc.narrate("100", Lang.EN, null);
+        ArgumentCaptor<AiRequest> cap = ArgumentCaptor.forClass(AiRequest.class);
+        verify(ai).complete(cap.capture());
+        assertTrue(cap.getValue().user().contains("at most 33 characters")); // 60 × 0.55
+    }
+
+    @Test
+    void 알려_주는_글자_수는_줄여도_검증은_60자() {
+        when(ai.complete(any())).thenReturn("돼지국밥과 수육을 내는 광안동의 국밥집으로, 1975년부터 이어 온 할매국밥입니다. 국물이 진합니다.");
+        assertFalse(svc.narrate("100", Lang.KO, null).template()); // 45자는 넘지만 60자 안이면 통과
+    }
+
+    @Test
     void 원문에_없는_숫자_다른_장소_언어_불일치_길이초과는_템플릿() {
         when(ai.complete(any())).thenReturn("1980년에 문을 연 국밥집입니다.");
         assertTrue(svc.narrate("100", Lang.KO, null).template());
@@ -95,6 +122,11 @@ class PlaceNarrationServiceTest {
         assertTrue(validator.isValid("할매국밥 serves pork soup since 1975.", "overview: 1975", Lang.EN, 60, "할매국밥", List.of()));
         assertTrue(validator.isValid("할매국밥は豚クッパの店です。", "", Lang.JA, 60, "할매국밥", List.of()));
         assertFalse(validator.isValid("할매국밥 돼지국밥집", "", Lang.EN, 60, "할매국밥", List.of()));
+        // 일본어도 상호 밖 한글은 안 된다(#153: "LED約8천만 개" 같은 문장이 통과했던 문제)
+        assertFalse(validator.isValid("할매국밥は約8천만 개の店です。", "overview: 8", Lang.JA, 60, "할매국밥", List.of()));
+        assertEquals("LANGUAGE", validator.reason("할매국밥は約8천만 개の店です。", "overview: 8", Lang.JA, 60, "할매국밥", List.of()));
+        assertEquals("LENGTH", validator.reason("a".repeat(61), "", Lang.EN, 60, "할매국밥", List.of()));
+        assertEquals("NUMBER", validator.reason("할매국밥 since 1980.", "overview: 1975", Lang.EN, 60, "할매국밥", List.of()));
         assertFalse(validator.isValid(" ", "", Lang.KO, 60, "할매국밥", List.of()));
         // 주소처럼 원문에 있는 말은 다른 장소 이름이어도 허용
         assertTrue(validator.isValid("광안리해수욕장 근처 국밥집입니다.", "address: 광안리해수욕장 앞", Lang.KO, 60, "할매국밥", List.of("광안리해수욕장")));

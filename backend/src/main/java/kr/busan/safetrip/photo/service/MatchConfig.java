@@ -30,8 +30,16 @@ public class MatchConfig {
     /** paddleUrl: 로컬 PaddleOCR 서버 주소(PaddleOcrEngine). 없으면 DEFAULT_PADDLE_URL */
     public record Ocr(double minBlockConfidence, int timeoutSec, int maxRetry, String paddleUrl) {}
     public static final String DEFAULT_PADDLE_URL = "http://127.0.0.1:8866";
-    /** templates: 언어 코드(ko·en·ja) → 템플릿, categoryNames: 업종 → (언어 코드 → 이름) */
-    public record Narration(int maxChars, Map<String, String> templates, Map<String, Map<String, String>> categoryNames) {}
+    /** templates: 언어 코드(ko·en·ja) → 템플릿, categoryNames: 업종 → (언어 코드 → 이름)
+     *  promptLengthRatio: 언어 코드 → 비율. LLM 에 알려 줄 글자 수 = maxChars × 비율(검증은 maxChars 그대로). 없으면 1.0
+     *  reminders: 원문 뒤에 붙이는 언어별 다시 지시 */
+    public record Narration(int maxChars, Map<String, String> templates, Map<String, Map<String, String>> categoryNames,
+                            Map<String, Double> promptLengthRatio, Map<String, String> reminders) {
+        /** LLM 에 알려 줄 글자 수 */
+        public int askChars(String lang) {
+            return (int) (maxChars * promptLengthRatio.getOrDefault(lang, 1.0));
+        }
+    }
 
     private final Image image;
     private final Ocr ocr;
@@ -77,8 +85,12 @@ public class MatchConfig {
         if (conf != null) conf.forEach((k, v) -> confusables.put(String.valueOf(k), String.valueOf(v)));
         this.normalize = new Normalize((List<String>) no.get("branchSuffixes"), confusables);
         Map<String, Object> na = (Map<String, Object>) root.get("narration");
+        Map<String, Double> ratios = new java.util.HashMap<>();
+        Map<String, Object> ratio = (Map<String, Object>) na.get("promptLengthRatio");
+        if (ratio != null) ratio.forEach((k, v) -> ratios.put(k, ((Number) v).doubleValue()));
+        Map<String, String> reminders = (Map<String, String>) na.get("reminders");
         this.narration = new Narration(num(na, "maxChars").intValue(), (Map<String, String>) na.get("templates"),
-                (Map<String, Map<String, String>>) na.get("categoryNames"));
+                (Map<String, Map<String, String>>) na.get("categoryNames"), ratios, reminders == null ? Map.of() : reminders);
     }
 
     private static Number num(Map<String, Object> m, String key) {
