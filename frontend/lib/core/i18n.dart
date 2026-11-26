@@ -101,7 +101,7 @@ const Map<String, List<String>> L = {
   'collected': ['수집일 {0}', 'Collected {0}', '収集日 {0}'],
   'bStay': ['코스 계속 만들기', 'Keep planning', 'コース作成を続ける'],
   'bFrom': ['{0}에서 출발', 'Start from {0}', '{0}から出発'],
-  'bFixed': ['이 가게를 1번으로 고정하고 코스를 짜는 중', 'Planning a course starting from this place', 'このお店を1番に固定してコースを作成中'],
+  'bFixed': ['{0}에서 출발해요. 하고 싶은 것을 말해 주세요. 예: 저녁 먹고 바다 보기', 'Starting from {0}. Tell me what you would like to do, e.g. dinner and a sea view', '{0}から出発します。したいことを教えてください。例：夕食と海の景色'],
 };
 
 const Map<String, List<List<String>>> kChips = {
