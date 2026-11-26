@@ -26,6 +26,8 @@ public interface HelpPlaceRepository extends JpaRepository<HelpPlaceEntity, Long
 
     List<HelpPlaceEntity> findByKindAndSource(String kind, String source);
 
+    List<HelpPlaceEntity> findBySource(String source);
+
     long countByKindAndSource(String kind, String source);
 
     void deleteByKindAndSource(String kind, String source);

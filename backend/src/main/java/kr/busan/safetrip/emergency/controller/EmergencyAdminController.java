@@ -1,5 +1,6 @@
 package kr.busan.safetrip.emergency.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,11 +15,12 @@ import org.springframework.web.bind.annotation.RestController;
 import kr.busan.safetrip.common.exception.NotImplementedYetException;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos;
 import kr.busan.safetrip.emergency.service.DataSyncScheduler;
+import kr.busan.safetrip.emergency.service.HelpPlaceImporter;
 
 /**
  * [긴급 담당] COMP-E12 EmergencyAdminController
  * 요구사항: FR-E019, E021, E022, NFR-E005
- * 상태: E06·E07 위임 완료 / E04·E05 TODO
+ * 상태: E04·E06·E07 위임 완료 / E05 TODO
  * 수정 규칙: 긴급 담당만 수정. 코스·사진 담당은 수정 금지(필요하면 긴급 담당에게 요청).
  *
  * 관리자 API(API-E04~E07). local-admin 프로필에서만 뜬다(NFR-E005).
@@ -28,16 +30,23 @@ import kr.busan.safetrip.emergency.service.DataSyncScheduler;
 @RequestMapping("/api/v1/admin/emergency")
 public class EmergencyAdminController {
     private final DataSyncScheduler sync;
+    private final HelpPlaceImporter importer;
 
+    /** 공용 계약 테스트(ApiContractTest) 호환용 1-인자 생성자. */
     public EmergencyAdminController(DataSyncScheduler sync) {
+        this(sync, null);
+    }
+
+    @Autowired
+    public EmergencyAdminController(DataSyncScheduler sync, HelpPlaceImporter importer) {
         this.sync = sync;
+        this.importer = importer;
     }
 
     /** API-E04 정적 도움처 CSV 적재(좌표계 변환 포함) */
     @PostMapping(value = "/places/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public EmergencyDtos.ImportResult importPlaces(@RequestParam String kind, @RequestPart("file") MultipartFile file) {
-        throw new NotImplementedYetException("긴급 담당", "EmergencyAdminController.importPlaces");
-
+        return importer.importCsv(kind, file);
     }
 
     /** API-E05 지식베이스·키워드·카드 템플릿·결정표 다시 읽기 */
