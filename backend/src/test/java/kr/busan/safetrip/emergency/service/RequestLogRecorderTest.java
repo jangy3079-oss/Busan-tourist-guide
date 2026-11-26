@@ -28,6 +28,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 import kr.busan.safetrip.emergency.entity.RequestLogEntity;
 import kr.busan.safetrip.emergency.repository.HelpPlaceRepository;
 import kr.busan.safetrip.emergency.repository.RequestLogRepository;
+import kr.busan.safetrip.emergency.service.SituationClassifier.ClassificationResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -110,7 +111,10 @@ class RequestLogRecorderTest {
         assertThat(saved.get(1).getFallback()).isEqualTo("LLM_SCHEMA");
 
         when(classifier.classifyOrFail(anyString())).thenReturn(java.util.Optional.of(
-                new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(EmType.MILD, Urgency.NORMAL, 0.3, java.util.Map.of())));
+                new ClassificationResult(
+                        new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(
+                                EmType.MILD, Urgency.NORMAL, 0.3, java.util.Map.of()),
+                        false)));
         service.guide(new GuideRequest("열이 나요", "ko", 35.1532, 129.1186, null, null));
         assertThat(saved.get(2).getFallback()).startsWith("LLM_LOW_CONF,");
     }
@@ -119,12 +123,34 @@ class RequestLogRecorderTest {
     void marksGeocodeFailWhenVWorldGivesNoAddress() {
         when(geocoder.toAddress(org.mockito.ArgumentMatchers.anyDouble(), org.mockito.ArgumentMatchers.anyDouble())).thenReturn(null);
         when(classifier.classifyOrFail(anyString())).thenReturn(java.util.Optional.of(
-                new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(EmType.MILD, Urgency.NORMAL, 0.9, java.util.Map.of())));
+                new ClassificationResult(
+                        new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(
+                                EmType.MILD, Urgency.NORMAL, 0.9, java.util.Map.of()),
+                        false)));
 
         GuideResponse res = service.guide(new GuideRequest("열이 나요", "ko", 35.1532, 129.1186, null, null));
 
         assertThat(res.card().address()).isNotBlank(); // 대체 주소
         assertThat(saved.get(0).getFallback()).contains("GEOCODE_FAIL");
+    }
+
+    @Test
+    void recordsDroppedSlotsButNotAnOrdinaryEmptySlotsObject() {
+        when(classifier.classifyOrFail(anyString())).thenReturn(java.util.Optional.of(
+                new ClassificationResult(
+                        new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(
+                                EmType.MILD, Urgency.NORMAL, 0.9, java.util.Map.of()),
+                        true)));
+        service.guide(new GuideRequest("도와주세요", "ko", 35.1532, 129.1186, null, null));
+        assertThat(saved.get(0).getFallback()).startsWith("LLM_SLOT_DROPPED,");
+
+        when(classifier.classifyOrFail(anyString())).thenReturn(java.util.Optional.of(
+                new ClassificationResult(
+                        new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(
+                                EmType.MILD, Urgency.NORMAL, 0.9, java.util.Map.of()),
+                        false)));
+        service.guide(new GuideRequest("도와주세요", "ko", 35.1532, 129.1186, null, null));
+        assertThat(saved.get(1).getFallback()).doesNotContain("LLM_SLOT_DROPPED");
     }
 
     @Test

@@ -327,11 +327,13 @@ public class EmergencyService {
         }
 
         boolean llmDown = false;
-        Optional<Triage> llmResult;
+        Optional<SituationClassifier.ClassificationResult> llmResult;
         try {
             llmResult = classifyWithLlm(req.text());
             if (llmResult.isEmpty() && classifier != null) {
                 fallback.add("LLM_SCHEMA");
+            } else if (llmResult.isPresent() && llmResult.get().slotsDropped()) {
+                fallback.add("LLM_SLOT_DROPPED");
             }
         } catch (BusinessException e) {
             llmDown = true;
@@ -339,7 +341,8 @@ public class EmergencyService {
             llmResult = Optional.empty();
         }
         double threshold = classifier == null ? 0.6 : classifier.confidenceThreshold();
-        if (llmResult.isPresent() && (llmResult.get().type() == null || llmResult.get().confidence() < threshold)) {
+        if (llmResult.isPresent() && (llmResult.get().triage().type() == null
+                || llmResult.get().triage().confidence() < threshold)) {
             fallback.add("LLM_LOW_CONF");
         }
 
@@ -348,9 +351,9 @@ public class EmergencyService {
         double confidence;
         Map<String, String> slots;
 
-        if (llmResult.isPresent() && llmResult.get().type() != null
-                && llmResult.get().confidence() >= threshold) {
-            Triage llm = llmResult.get();
+        if (llmResult.isPresent() && llmResult.get().triage().type() != null
+                && llmResult.get().triage().confidence() >= threshold) {
+            Triage llm = llmResult.get().triage();
             // ADR-E04 놓침 방지: 키워드가 위급 유형인데 LLM이 비위급 유형이면 키워드 유형·그룹 우선
             if (kwMatch.isPresent() && isUrgentType(kwMatch.get().type()) && !isUrgentType(llm.type())) {
                 type = kwMatch.get().type();
@@ -375,7 +378,8 @@ public class EmergencyService {
         }
 
         // FR-E007 최종 긴급도: 최종 type 위급 OR L.urgency=URGENT OR K.urgent
-        boolean llmUrgent = llmResult.isPresent() && llmResult.get().urgency() == Urgency.URGENT;
+        boolean llmUrgent = llmResult.isPresent()
+                && llmResult.get().triage().urgency() == Urgency.URGENT;
         boolean kwUrgent = kwMatch.isPresent() && kwMatch.get().urgent();
         Urgency urgency = (isUrgentType(type) || llmUrgent || kwUrgent) ? Urgency.URGENT : Urgency.NORMAL;
         return new ClassificationResult(new Triage(type, urgency, confidence, slots), group, llmDown);
@@ -397,12 +401,12 @@ public class EmergencyService {
     }
 
     /** 분류 LLM. 시간 초과·사용 불가는 BusinessException(AI_TIMEOUT|AI_UNAVAILABLE), 빈 결과는 스키마 위반 */
-    private Optional<Triage> classifyWithLlm(String text) {
+    private Optional<SituationClassifier.ClassificationResult> classifyWithLlm(String text) {
         if (classifier == null) {
             return Optional.empty();
         }
         try {
-            Optional<Triage> result = classifier.classifyOrFail(text);
+            Optional<SituationClassifier.ClassificationResult> result = classifier.classifyOrFail(text);
             return result == null ? Optional.empty() : result;
         } catch (BusinessException e) {
             throw e;
