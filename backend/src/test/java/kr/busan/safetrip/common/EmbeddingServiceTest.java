@@ -46,7 +46,7 @@ class EmbeddingServiceTest {
 
     private EmbeddingService service() {
         return new EmbeddingService(new AppProperties(null, new AppProperties.Embedding("http://localhost:" + server.getAddress().getPort(), "m", 2, 1),
-                null, null, null));
+                null, null, null, null));
     }
 
     private ErrorCode fail() {
