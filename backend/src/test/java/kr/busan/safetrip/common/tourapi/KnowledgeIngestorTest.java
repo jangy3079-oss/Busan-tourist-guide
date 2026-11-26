@@ -34,7 +34,7 @@ class KnowledgeIngestorTest {
     private final EmbeddingService embeddings = mock(EmbeddingService.class);
     private final ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
     private final AppProperties props = new AppProperties(null, null, new AppProperties.TourApi("http://localhost:1", "k", 10,
-            List.of(new AppProperties.Region("26", "500")), Map.of(39, "음식점"), List.of("FD05")), null, null, null);
+            List.of(new AppProperties.Region("26", "500")), Map.of(39, "음식점"), List.of("FD05")), null, null);
     private final KnowledgeIngestor ingestor = new KnowledgeIngestor(api, jdbc, props, embeddings, events);
 
     @BeforeEach

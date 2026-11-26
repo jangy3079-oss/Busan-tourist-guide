@@ -14,6 +14,13 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
  */
 @ConfigurationProperties(prefix = "safetrip")
 public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors cors, Retention retention, Emergency emergency) {
+    @ConstructorBinding
+    public AppProperties {}
+
+    /** emergency 가 생기기 전 모양(다른 모듈 테스트가 쓴다). 긴급 키는 없음(null) */
+    public AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors cors, Retention retention) {
+        this(ai, embedding, tourApi, cors, retention, null);
+    }
 
     /** NFR-C005: provider 값만 바꿔 Ollama <-> OpenAI <-> Claude 교체. timeoutSec = 한 번, totalTimeoutSec = 재시도까지 합친 한도 */
     public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int totalTimeoutSec, int maxRetry, long monthlyBudgetKrw,

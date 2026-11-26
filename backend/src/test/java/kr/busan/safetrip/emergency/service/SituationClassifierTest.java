@@ -154,7 +154,7 @@ class SituationClassifierTest {
         String baseUrl = System.getenv().getOrDefault("AI_BASE_URL", "http://localhost:11434");
         AppProperties props = new AppProperties(
                 new AppProperties.Ai("ollama", baseUrl, model, "", 8, 1, 0, 0, 0),
-                null, null, null, null, null);
+                null, null, null, null);
         AiBudget noopBudget = new AiBudget(null, props);
         SpringAiService realAi = new SpringAiService(props, noopBudget);
 
