@@ -49,6 +49,7 @@ class RequestLogRecorderTest {
     private RequestLogRecorder recorder;
     private SituationClassifier classifier;
     private EmergencyService service;
+    private ReverseGeocoder geocoder;
 
     @BeforeEach
     void setUp() {
@@ -62,11 +63,14 @@ class RequestLogRecorderTest {
         HelpPlaceRepository placeRepo = mock(HelpPlaceRepository.class);
         when(placeRepo.findByKindInAndLatBetweenAndLngBetween(anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
                 .thenReturn(List.of());
+        geocoder = mock(ReverseGeocoder.class);
+        when(geocoder.toAddress(org.mockito.ArgumentMatchers.anyDouble(), org.mockito.ArgumentMatchers.anyDouble()))
+                .thenReturn("부산 수영구 광안해변로 219");
         DecisionTable dt = new DecisionTable();
         service = new EmergencyService(
                 new KeywordRuleEngineImpl(), classifier, dt,
                 new HelpPlaceFinder(placeRepo, dt, new OpenNowEvaluator(), mock(ErRealtimeClient.class)), new KoreanCardBuilder(),
-                new GuidanceRetriever(), new RegionResolver(), new ReverseGeocoder(), new FallbackSteps(), new EmergencyMessages(),
+                new GuidanceRetriever(), new RegionResolver(), geocoder, new FallbackSteps(), new EmergencyMessages(),
                 null, CLOCK, recorder, timer);
     }
 
@@ -109,6 +113,18 @@ class RequestLogRecorderTest {
                 new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(EmType.MILD, Urgency.NORMAL, 0.3, java.util.Map.of())));
         service.guide(new GuideRequest("열이 나요", "ko", 35.1532, 129.1186, null, null));
         assertThat(saved.get(2).getFallback()).startsWith("LLM_LOW_CONF,");
+    }
+
+    @Test
+    void marksGeocodeFailWhenVWorldGivesNoAddress() {
+        when(geocoder.toAddress(org.mockito.ArgumentMatchers.anyDouble(), org.mockito.ArgumentMatchers.anyDouble())).thenReturn(null);
+        when(classifier.classifyOrFail(anyString())).thenReturn(java.util.Optional.of(
+                new kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage(EmType.MILD, Urgency.NORMAL, 0.9, java.util.Map.of())));
+
+        GuideResponse res = service.guide(new GuideRequest("열이 나요", "ko", 35.1532, 129.1186, null, null));
+
+        assertThat(res.card().address()).isNotBlank(); // 대체 주소
+        assertThat(saved.get(0).getFallback()).contains("GEOCODE_FAIL");
     }
 
     @Test

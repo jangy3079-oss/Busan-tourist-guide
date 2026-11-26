@@ -19,8 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import kr.busan.safetrip.common.api.EmType;
 import kr.busan.safetrip.common.api.Lang;
+import kr.busan.safetrip.common.api.Area;
 import kr.busan.safetrip.common.exception.BusinessException;
 import kr.busan.safetrip.common.exception.ErrorCode;
+import kr.busan.safetrip.common.util.GeoUtil;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Card;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.DataAsOf;
@@ -45,8 +47,6 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 public class EmergencyService {
     private static final Logger log = LoggerFactory.getLogger(EmergencyService.class);
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
-    private static final int NEAR_PLACE_ADDRESS_MAX_M = 500;
-
     private final KeywordRuleEngineImpl keywords;
     private final SituationClassifier classifier;
     private final DecisionTable decisionTable;
@@ -263,7 +263,7 @@ public class EmergencyService {
         }
 
         // 5. 한국어 카드 (FR-E015, AI-REQ-E07)
-        Card card = buildCard(type, group, triage.slots(), loc, places, lang);
+        Card card = buildCard(type, group, triage.slots(), loc, lang, fallback);
 
         // 6. 지금 할 일 (FR-E016, NFR-E003)
         //    위치·주소·장소 이름은 넘기지 않고, 도움처는 종류만 문서 조건에 쓴다(AI-REQ-E06)
@@ -438,16 +438,16 @@ public class EmergencyService {
             String group,
             Map<String, String> slots,
             LocationContext loc,
-            List<HelpPlace> places,
-            Lang lang) {
+            Lang lang,
+            Set<String> fallback) {
         if (type == EmType.NON) {
             return null;
         }
-        String address = resolveAddressSafely(loc, places);
+        String address = resolveAddressSafely(loc, fallback);
         return cardBuilder.build(type, group, slots, address, lang);
     }
 
-    private String resolveAddressSafely(LocationContext loc, List<HelpPlace> places) {
+    private String resolveAddressSafely(LocationContext loc, Set<String> fallback) {
         if (reverseGeocoder != null) {
             try {
                 String resolved = reverseGeocoder.toAddress(loc.lat(), loc.lng());
@@ -457,18 +457,33 @@ public class EmergencyService {
             } catch (RuntimeException e) {
                 log.warn("emergency.geocode fallback: {}", e.getClass().getSimpleName());
             }
+            fallback.add("GEOCODE_FAIL"); // V-World 가 빈 값·오류 → 아래 대체 주소(T13)
         }
         if (loc.district() == null || loc.district().isBlank()) {
             return null;
         }
-        if (loc.fromArea() && loc.areaLabel() != null && !loc.areaLabel().isBlank()) {
-            return messages.areaFallbackAddress(loc.district(), loc.areaLabel());
+        if (finder != null) {
+            try {
+                Optional<String> nearbyPlace = finder.nearestPlace(loc.lat(), loc.lng(), messages.fallbackPlaceRadiusM())
+                        .map(place -> messages.nearPlaceFallbackAddress(loc.district(), place.getName()));
+                if (nearbyPlace.isPresent()) {
+                    return nearbyPlace.get();
+                }
+            } catch (RuntimeException e) {
+                log.warn("emergency.address place fallback: {}", e.getClass().getSimpleName());
+            }
         }
-        Optional<HelpPlace> nearest = places.stream()
-                .filter(p -> p.distanceM() <= NEAR_PLACE_ADDRESS_MAX_M && p.name() != null && !p.name().isBlank())
-                .min(Comparator.comparingInt(HelpPlace::distanceM));
-        if (nearest.isPresent()) {
-            return messages.nearPlaceFallbackAddress(loc.district(), nearest.get().name());
+        if (regionResolver != null) {
+            Optional<RegionResolver.Anchor> nearbyAnchor = java.util.Arrays.stream(Area.values())
+                    .map(regionResolver::anchor)
+                    .filter(anchor -> loc.district().equals(anchor.district()))
+                    .filter(anchor -> GeoUtil.distanceM(loc.lat(), loc.lng(), anchor.lat(), anchor.lng())
+                            <= messages.fallbackAnchorRadiusM())
+                    .min(Comparator.comparingInt(anchor ->
+                            GeoUtil.distanceM(loc.lat(), loc.lng(), anchor.lat(), anchor.lng())));
+            if (nearbyAnchor.isPresent()) {
+                return messages.areaFallbackAddress(loc.district(), nearbyAnchor.get().label());
+            }
         }
         return messages.districtFallbackAddress(loc.district());
     }
