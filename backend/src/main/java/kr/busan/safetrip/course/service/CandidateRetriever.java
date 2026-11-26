@@ -50,6 +50,7 @@ public class CandidateRetriever {
         if (intent.startPlaceId() != null && ranked.stream().noneMatch(p -> p.getContentId().equals(intent.startPlaceId()))) {
             places.findByContentId(intent.startPlaceId()).ifPresent(p -> ranked.add(0, p));
         }
+        if (log.isDebugEnabled()) log.debug("course.retrieve top={}", ranked.stream().map(Place::getContentId).toList()); // #77 겹침률 측정용(장소 ID만)
         return ranked;
     }
 

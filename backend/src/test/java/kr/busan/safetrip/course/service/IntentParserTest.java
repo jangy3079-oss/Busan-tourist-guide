@@ -53,6 +53,13 @@ class IntentParserTest {
     }
 
     @Test
+    void searchKoBecomesPreference() { // #77
+        assertEquals("온천 한식", parser("{\"searchKo\":\" 온천 한식 \"}").parse("Hot spring and Korean food", TODAY).preference());
+        assertNull(parser("{\"searchKo\":\"\"}").parse("Haeundae tomorrow", TODAY).preference());
+        assertNull(parser("{}").parse("해운대", TODAY).preference());
+    }
+
+    @Test
     void indoorOnly() {
         assertTrue(parser("{\"indoorOnly\":true}").parse("비 오는 날 해운대", TODAY).indoorOnly());
         assertFalse(parser("{}").parse("해운대 산책", TODAY).indoorOnly());
