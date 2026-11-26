@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -92,18 +93,26 @@ public class NarrationService {
         Set<String> others = coursePlaces.find(null, null, SCAN_LIMIT).stream()
                 .filter(p -> !courseIds.contains(p.getContentId())).map(Place::getName).collect(Collectors.toSet());
 
-        String title = n.path("title").asText("");
+        String title = fix(n.path("title").asText(""), lang);
         String why = validator.reason(title, grounding, others, lang, titleMax);
         if (why != null) return rejected("title", why, lang);
         List<CourseDtos.NarrationItem> items = new ArrayList<>();
         for (CourseDtos.Stop s : stops) {
             String text = null;
-            for (JsonNode it : n.path("items")) if (s.contentId().equals(it.path("contentId").asText())) text = it.path("text").asText(null);
+            for (JsonNode it : n.path("items")) if (s.contentId().equals(it.path("contentId").asText())) text = fix(it.path("text").asText(null), lang);
             why = validator.reason(text, grounding, others, lang, itemMax);
             if (why != null) return rejected("item", why, lang);
             items.add(new CourseDtos.NarrationItem(s.contentId(), text));
         }
         return new CourseDtos.NarrationResponse(courseId, title, items, false);
+    }
+
+    /** 프롬프트로 일러도 가끔 나오는 지명 오표기를 바로잡는다(intent.json termFix, 예: 光安→広安) */
+    String fix(String text, Lang lang) {
+        Map<String, String> m = settings.intent().termFix() == null ? null : settings.intent().termFix().get(lang.name().toLowerCase(java.util.Locale.ROOT));
+        if (text == null || m == null) return text;
+        for (Map.Entry<String, String> e : m.entrySet()) text = text.replace(e.getKey(), e.getValue());
+        return text;
     }
 
     private static CourseDtos.NarrationResponse rejected(String field, String why, Lang lang) {

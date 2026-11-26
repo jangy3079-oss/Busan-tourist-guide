@@ -29,7 +29,8 @@ public class CourseSettings {
                          Map<Area, List<String>> areaKeywords, Map<String, List<String>> categoryKeywords,
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
                          int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise,
-                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted, Unsupported unsupported, NextDay nextDay) {}
+                         List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted, Unsupported unsupported, NextDay nextDay,
+                         Map<String, Map<String, String>> termFix) {}
 
     /** 날짜를 말하지 않았는데 시간이 지났으면 내일로(#230). lateHour 이후에 시각도 말하지 않았으면 내일 startTime */
     public record NextDay(int lateHour, String startTime) {}
