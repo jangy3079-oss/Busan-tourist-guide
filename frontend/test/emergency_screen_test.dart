@@ -14,6 +14,7 @@ import 'package:busan_safetrip/features/emergency/emergency_controller.dart';
 import 'package:busan_safetrip/features/emergency/emergency_link.dart';
 import 'package:busan_safetrip/features/emergency/emergency_screens.dart';
 import 'package:busan_safetrip/state/providers.dart';
+import 'package:busan_safetrip/widgets/map_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -300,5 +301,15 @@ void main() {
     await t.tap(call);
     await t.tap(list);
     expect(links, ['tel:1330', kEmbassyListUrl]);
+  });
+
+  testWidgets('위치를 허용하면 결과 지도에 내 좌표를 넘긴다 (#184 #185)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.mild, topContact: '1330', places: [HelpPlace('p1', '광안약국', '약국', 35.15, 129.11, 300, '운영 중', '')]);
+    await pumpApp(t, repo);
+    await send(t, '벌레에 물렸어요');
+    await t.pumpAndSettle();
+    final map = t.widget<MapView>(find.byType(MapView));
+    expect(map.showMe, isTrue);
+    expect([map.me?.lat, map.me?.lng], [35.1532, 129.1186]);
   });
 }
