@@ -33,8 +33,9 @@ class HelpPlace {
   final int distM;
   final String status, sub; // 오늘 운영시간·운영 상태 문구, 부가 문구(응급실 병상·경고 등)
   final bool isEr, openNow;
+  final bool noTreatment; // FR-E012 응급실 진료불가 메시지 → 경고 표시
   final String? phone; // FR-E014 전화 걸기
-  const HelpPlace(this.id, this.name, this.kind, this.lat, this.lng, this.distM, this.status, this.sub, {this.isEr = false, this.openNow = true, this.phone});
+  const HelpPlace(this.id, this.name, this.kind, this.lat, this.lng, this.distM, this.status, this.sub, {this.isEr = false, this.openNow = true, this.phone, this.noTreatment = false});
   MapPoint get point => MapPoint(lat, lng, name: name, isEr: isEr);
 }
 
@@ -57,10 +58,11 @@ class EmGuideResult {
   final List<String> todo; // 지금 할 일 2~3줄
   final String todoSource;
   final String cardKo, cardTranslated, address; // 한국어 카드(FR-E015)
+  final String dataAsOf; // 도움처 데이터 기준 시각·출처 표시 문구(NFR-E008). 없으면 ''
   const EmGuideResult({
     this.type, this.needTypeSelection = false, this.outOfArea = false, this.topContact,
     this.places = const [], this.extra = EmExtra.none, this.todo = const [], this.todoSource = '',
-    this.cardKo = '', this.cardTranslated = '', this.address = '',
+    this.cardKo = '', this.cardTranslated = '', this.address = '', this.dataAsOf = '',
   });
 }
 
