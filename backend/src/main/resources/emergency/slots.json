@@ -1,0 +1,111 @@
+{
+  "_comment": "한국어 카드 슬롯 사전(FR-E015, AI-REQ-E01, AI-REQ-E04, AI-REQ-E07, ADR-E03). 슬롯은 정해진 코드값만 허용하며, 약 이름·진단·보장 표현을 넣지 않는다. 수정 후 API-E05로 다시 적재한다(FR-E022).",
+  "allowedSlots": {
+    "URGENT": ["who", "symptom"],
+    "MILD": ["who", "symptom"],
+    "LOST": ["item"],
+    "THREAT": ["situation"],
+    "FIRE": ["situation"],
+    "WAY": ["situation"],
+    "NON": []
+  },
+  "values": {
+    "who": {
+      "SELF": { "ko": "저는 ", "en": "I", "ja": "私" },
+      "FRIEND": { "ko": "제 친구가 ", "en": "My friend", "ja": "友人" },
+      "FAMILY": { "ko": "제 가족이 ", "en": "My family member", "ja": "家族" },
+      "CHILD": { "ko": "제 아이가 ", "en": "My child", "ja": "子ども" },
+      "COMPANION": { "ko": "일행이 ", "en": "My companion", "ja": "同行者" }
+    },
+    "item": {
+      "PASSPORT": { "ko": "여권을 ", "en": "passport", "ja": "パスポート" },
+      "WALLET": { "ko": "지갑을 ", "en": "wallet", "ja": "財布" },
+      "PHONE": { "ko": "휴대폰을 ", "en": "phone", "ja": "携帯電話" },
+      "BAG": { "ko": "가방을 ", "en": "bag", "ja": "バッグ" },
+      "CARD": { "ko": "카드를 ", "en": "card", "ja": "カード" }
+    },
+    "symptom": {
+      "URGENT": {
+        "UNCONSCIOUS": { "ko": "쓰러져서 의식이 없습니다.", "en": "collapsed and unconscious", "ja": "倒れて意識がありません" },
+        "NOT_BREATHING": { "ko": "숨을 쉬지 않습니다.", "en": "not breathing", "ja": "息をしていません" },
+        "CHEST_PAIN": { "ko": "가슴 통증이 심합니다.", "en": "severe chest pain", "ja": "激しい胸の痛みがあります" },
+        "SEIZURE": { "ko": "경련을 하고 있습니다.", "en": "having a seizure", "ja": "けいれんしています" },
+        "BLEEDING": { "ko": "피가 멈추지 않습니다.", "en": "bleeding that will not stop", "ja": "出血が止まりません" },
+        "BURN": { "ko": "심한 화상을 입었습니다.", "en": "severe burn", "ja": "重度のやけどを負いました" },
+        "INJURY": { "ko": "크게 다쳤습니다.", "en": "serious injury", "ja": "大けがをしました" },
+        "POISONING": { "ko": "약물이나 독성 물질을 삼켰습니다.", "en": "swallowed medicine or toxic substance", "ja": "薬や有害な物質を飲み込みました" },
+        "ALLERGY": { "ko": "얼굴과 목이 붓고 숨쉬기 힘듭니다.", "en": "swollen face and throat, hard to breathe", "ja": "顔と喉が腫れて息苦しいです" },
+        "DROWNING": { "ko": "물에 빠졌습니다.", "en": "fell into the water", "ja": "水におぼれました" }
+      },
+      "MILD": {
+        "FEVER": { "ko": "열이 납니다.", "en": "fever", "ja": "熱があります" },
+        "HEADACHE": { "ko": "머리가 아픕니다.", "en": "headache", "ja": "頭痛があります" },
+        "STOMACH": { "ko": "배가 아프고 설사를 합니다.", "en": "stomach pain and diarrhea", "ja": "腹痛と下痢があります" },
+        "COLD": { "ko": "감기 기운이 있습니다.", "en": "cold symptoms", "ja": "風邪の症状があります" },
+        "MINOR_CUT": { "ko": "가볍게 다쳤습니다.", "en": "minor cut or scrape", "ja": "軽いけがをしました" },
+        "RASH": { "ko": "두드러기가 났습니다.", "en": "hives or skin rash", "ja": "じんましんが出ています" },
+        "INSECT": { "ko": "벌레에 물렸습니다.", "en": "insect bite", "ja": "虫に刺されました" },
+        "MUSCLE": { "ko": "근육통이 있습니다.", "en": "muscle pain", "ja": "筋肉痛があります" }
+      }
+    },
+    "situation": {
+      "THREAT": {
+        "FOLLOWED": { "ko": "누군가 저를 따라오고 있습니다.", "en": "Someone is following me", "ja": "誰かにつけられています" },
+        "ASSAULT": { "ko": "폭행을 당했습니다.", "en": "I was assaulted", "ja": "暴行を受けました" },
+        "HARASS": { "ko": "추행을 당했습니다.", "en": "I was sexually harassed", "ja": "痴漢被害に遭いました" },
+        "THREATENED": { "ko": "위협을 받고 있습니다.", "en": "I am being threatened", "ja": "脅されています" }
+      },
+      "FIRE": {
+        "FIRE": { "ko": "불이 났습니다.", "en": "There is a fire", "ja": "火事が発生しています" },
+        "SMOKE": { "ko": "연기가 나고 있습니다.", "en": "There is smoke", "ja": "煙が出ています" },
+        "GAS": { "ko": "가스 냄새가 납니다.", "en": "There is a gas smell", "ja": "ガスの臭いがします" },
+        "EARTHQUAKE": { "ko": "지진이 났습니다.", "en": "An earthquake occurred", "ja": "地震が発生しました" },
+        "TSUNAMI": { "ko": "해일 경보가 울렸습니다.", "en": "A tsunami alert was issued", "ja": "津波警報が出ています" }
+      },
+      "WAY": {
+        "LOST_WAY": { "ko": "길을 잃었습니다.", "en": "I am lost", "ja": "道に迷いました" },
+        "HOTEL": { "ko": "숙소를 찾지 못하고 있습니다.", "en": "I cannot find my accommodation", "ja": "宿泊先が見つかりません" },
+        "LANGUAGE": { "ko": "한국어를 잘 못합니다.", "en": "I do not speak Korean well", "ja": "韓国語がよくわかりません" }
+      }
+    }
+  },
+  "defaults": {
+    "URGENT": {
+      "who": { "code": "COMPANION" },
+      "symptom": { "ko": "위급한 상태입니다.", "en": "medical emergency", "ja": "緊急の状態です" }
+    },
+    "MILD": {
+      "who": { "code": "SELF" },
+      "symptom": { "ko": "몸이 좋지 않습니다.", "en": "not feeling well", "ja": "体調がよくありません" }
+    },
+    "LOST": {
+      "item": { "ko": "소지품을 ", "en": "belongings", "ja": "所持品" }
+    },
+    "THREAT": {
+      "situation": { "ko": "위험한 상황입니다.", "en": "I am in a dangerous situation", "ja": "危険な状況です" }
+    },
+    "FIRE": {
+      "situation": { "ko": "위험한 상황입니다.", "en": "There is a dangerous situation", "ja": "危険な状況です" }
+    },
+    "WAY": {
+      "situation": { "code": "LOST_WAY" }
+    }
+  },
+  "groupHints": {
+    "URGENT": {
+      "UNCONSCIOUS": { "symptom": "UNCONSCIOUS" },
+      "BREATHING": { "symptom": "NOT_BREATHING" },
+      "CHEST_PAIN": { "symptom": "CHEST_PAIN" },
+      "SEIZURE": { "symptom": "SEIZURE" },
+      "BLEEDING": { "symptom": "BLEEDING" },
+      "SEVERE_BURN": { "symptom": "BURN" },
+      "TRAUMA": { "symptom": "INJURY" },
+      "POISONING": { "symptom": "POISONING" },
+      "ANAPHYLAXIS": { "symptom": "ALLERGY" },
+      "DROWNING": { "symptom": "DROWNING" }
+    },
+    "FIRE": {
+      "FIRE": { "situation": "FIRE" }
+    }
+  }
+}
