@@ -28,19 +28,36 @@ public class EmergencyMessages {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String DEFAULT_RESOURCE = "/emergency/messages.json";
 
-    private final Map<String, String> ko;
+    private final String resourcePath;
+    private volatile Map<String, String> ko;
 
     public EmergencyMessages() {
         this(DEFAULT_RESOURCE);
     }
 
     EmergencyMessages(String resourcePath) {
+        this.resourcePath = resourcePath;
+        reload();
+    }
+
+    public int reload() {
+        Map<String, String> next = loadKo(resourcePath);
+        this.ko = next;
+        return next.size();
+    }
+
+    Runnable prepareReload() {
+        Map<String, String> next = loadKo(resourcePath);
+        return () -> this.ko = next;
+    }
+
+    private static Map<String, String> loadKo(String resourcePath) {
         Map<String, Map<String, String>> all = load(resourcePath);
         Map<String, String> koMap = all.get("ko");
         if (koMap == null || koMap.isEmpty()) {
             throw new IllegalStateException("messages.json에 ko 항목이 없습니다: " + resourcePath);
         }
-        this.ko = Map.copyOf(koMap);
+        return Map.copyOf(koMap);
     }
 
     public String areaFallbackAddress(String district, String label) {

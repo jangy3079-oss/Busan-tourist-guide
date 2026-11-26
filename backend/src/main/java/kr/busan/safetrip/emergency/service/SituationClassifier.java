@@ -118,6 +118,11 @@ public class SituationClassifier {
 
     /** classify.json과 classify-prompt.txt를 다시 읽는다. */
     public void reload() {
+        prepareReload().run();
+    }
+
+    /** classify.json과 프롬프트를 읽고 검증만 한다. 돌려준 함수를 실행해야 바뀐다(API-E05). */
+    Runnable prepareReload() {
         RawConfig raw = readJson(configResourcePath, RawConfig.class);
         if (raw == null || raw.timeoutSec() == null || raw.timeoutSec() <= 0) {
             throw new IllegalStateException("classify.json timeoutSec가 올바르지 않습니다: " + configResourcePath);
@@ -135,7 +140,8 @@ public class SituationClassifier {
         if (template.isBlank() || !template.contains(SLOT_SCHEMA_PLACEHOLDER)) {
             throw new IllegalStateException("classify-prompt.txt에 {SLOT_SCHEMA}가 없습니다: " + promptResourcePath);
         }
-        this.config = new Config(raw.timeoutSec(), raw.maxRetry(), raw.confidenceThreshold(), template);
+        Config next = new Config(raw.timeoutSec(), raw.maxRetry(), raw.confidenceThreshold(), template);
+        return () -> this.config = next;
     }
 
     private String buildSystemPrompt(String template) {

@@ -127,7 +127,7 @@ public class KeywordRuleEngineImpl implements KeywordRuleEngine {
 
     KeywordRuleEngineImpl(RawConfig config) {
         this.resourcePath = null;
-        compileAndSwap(config);
+        compile(config).commit().run();
     }
 
     @Override
@@ -171,13 +171,20 @@ public class KeywordRuleEngineImpl implements KeywordRuleEngine {
         if (resourcePath == null) {
             throw new IllegalStateException("리소스 경로가 지정되지 않았습니다.");
         }
-        RawConfig raw = readConfig(resourcePath);
-        int totalKeywords = compileAndSwap(raw);
-        log.info("emergency keywords loaded: {} entries", totalKeywords);
-        return totalKeywords;
+        StagedReload staged = prepareReload();
+        staged.commit().run();
+        return staged.count();
     }
 
-    private int compileAndSwap(RawConfig raw) {
+    /** 사전 파일을 읽고 컴파일만 한다. commit 전에는 메모리를 바꾸지 않는다(API-E05). */
+    StagedReload prepareReload() {
+        if (resourcePath == null) {
+            throw new IllegalStateException("리소스 경로가 지정되지 않았습니다.");
+        }
+        return compile(readConfig(resourcePath));
+    }
+
+    private StagedReload compile(RawConfig raw) {
         List<EmType> priority = raw.priority() == null ? List.of() : List.copyOf(raw.priority());
         Set<EmType> urgentTypes = raw.urgentTypes() == null || raw.urgentTypes().isEmpty()
                 ? Set.of()
@@ -208,8 +215,12 @@ public class KeywordRuleEngineImpl implements KeywordRuleEngine {
         Map<EmType, List<CompiledGroup>> frozen = new EnumMap<>(EmType.class);
         byType.forEach((k, v) -> frozen.put(k, List.copyOf(v)));
 
-        this.dictionary = new Dictionary(priority, urgentTypes, maxCjkGap, maxLatinWords, excludes, frozen);
-        return totalKeywords;
+        Dictionary next = new Dictionary(priority, urgentTypes, maxCjkGap, maxLatinWords, excludes, frozen);
+        int count = totalKeywords;
+        return new StagedReload(count, () -> {
+            this.dictionary = next;
+            log.info("emergency keywords loaded: {} entries", count);
+        });
     }
 
     /** 띄어쓰기 유지본: NFKC → 소문자 → 연속 공백 1칸. */

@@ -109,6 +109,13 @@ public class DecisionTable {
 
     /** 결정표 파일을 다시 읽고 검증한 뒤 메모리를 교체한다. 행 개수를 돌려준다(API-E05). */
     public int reload() {
+        StagedReload staged = prepareReload();
+        staged.commit().run();
+        return staged.count();
+    }
+
+    /** 결정표 파일을 읽고 검증만 한다. commit 전에는 메모리를 바꾸지 않는다(API-E05). */
+    StagedReload prepareReload() {
         RawConfig raw = readConfig(resourcePath);
         if (raw == null || raw.rows() == null || raw.rows().isEmpty()) {
             throw new IllegalStateException("결정표 rows가 비어 있습니다: " + resourcePath);
@@ -160,14 +167,16 @@ public class DecisionTable {
         groupRows.forEach((k, v) -> frozenGroups.put(k, List.copyOf(v)));
 
         int rowCount = raw.rows().size();
-        this.table = new Table(
+        Table next = new Table(
                 frozenGroups,
                 defaultRows,
                 rowCount,
                 raw.maxPlaces(),
                 List.copyOf(raw.radiusStepsM()));
-        log.info("emergency decision-table loaded: {} rows", rowCount);
-        return rowCount;
+        return new StagedReload(rowCount, () -> {
+            this.table = next;
+            log.info("emergency decision-table loaded: {} rows", rowCount);
+        });
     }
 
     private static <T> List<T> immutableList(List<T> source, String field) {
