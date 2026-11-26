@@ -65,17 +65,36 @@ class PhotoPickScreen extends ConsumerWidget {
             ]),
           ),
         );
-    Widget guide(String icon, String t) => Expanded(child: Column(children: [Ic(icon, color: C.sea), const SizedBox(height: 4), Text(t, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600))]));
+    // 사진 → 글자 → 가게 3단계. 처음 쓰는 사람이 무슨 기능인지 바로 알게 한다(시안 C)
+    Widget step(String icon, String t) => SizedBox(width: 88, child: Column(children: [
+          Container(width: 48, height: 48, alignment: Alignment.center, decoration: const BoxDecoration(color: C.seaT, shape: BoxShape.circle), child: Ic(icon, size: 24, color: C.sea)),
+          const SizedBox(height: 6),
+          Text(t, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+        ]));
     return ScreenFrame(
       head: AppHead(pt('title', l), pt('sub', l), backTo: '/'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // 카메라 미리보기처럼 보이던 어두운 사각형 대신 과정 안내. 촬영은 버튼으로 폰 카메라를 연다(FR-P001)
         Container(
-          height: 190, width: double.infinity, alignment: Alignment.center,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(rLg), gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF2C3138), Color(0xFF1B1E22)])),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [const Ic('focus', size: 44, color: Colors.white70), const SizedBox(height: 6), Text(pt('frame', l), style: const TextStyle(color: Colors.white70, fontSize: 13.5))]),
+          width: double.infinity, padding: const EdgeInsets.fromLTRB(16, 18, 16, 16), decoration: cardDeco(),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(pt('howTitle', l), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 14),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              step('camera', pt('step1', l)),
+              const Padding(padding: EdgeInsets.only(top: 12), child: Ic('right', color: C.text3)),
+              step('focus', pt('step2', l)),
+              const Padding(padding: EdgeInsets.only(top: 12), child: Ic('right', color: C.text3)),
+              step('store', pt('step3', l)),
+            ]),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(color: C.bg, borderRadius: BorderRadius.circular(rMd)),
+              child: Text(pt('tip', l), style: const TextStyle(fontSize: 13, color: C.text2, height: 1.5)),
+            ),
+          ]),
         ),
-        const SizedBox(height: 12),
-        Row(children: [guide('move', pt('near', l)), guide('focus', pt('front', l)), guide('sun', pt('bright', l))]),
         const SizedBox(height: 14),
         Row(children: [
           Expanded(child: Btn(pt('shoot', l), icon: 'camera', kind: BtnKind.primary, onTap: () => _pick(context, ref, ImageSource.camera))),

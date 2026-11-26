@@ -4,10 +4,11 @@ import '../../core/i18n.dart';
 const Map<String, List<String>> kPhotoText = {
   'title': ['간판 사진으로 찾기', 'Find by signboard photo', '看板の写真で探す'],
   'sub': ['사진 기반 안내', 'Photo guide', '写真で案内'],
-  'frame': ['간판이 화면 가운데 오도록 찍어 주세요', 'Keep the sign in the middle of the frame', '看板が画面の中央に来るように撮ってください'],
-  'near': ['가까이', 'Get close', '近づく'],
-  'front': ['정면으로', 'Face it', '正面から'],
-  'bright': ['밝게', 'Good light', '明るく'],
+  'howTitle': ['간판 한 장이면 가게를 찾아드려요', 'One photo of a sign finds the shop', '看板の写真1枚でお店を探します'],
+  'step1': ['1 간판 찍기', '1 Snap the sign', '1 看板を撮る'],
+  'step2': ['2 글자 읽기', '2 Read the text', '2 文字を読む'],
+  'step3': ['3 가게 안내', '3 Shop guide', '3 お店を案内'],
+  'tip': ['간판이 가운데 오도록, 가까이·정면에서·밝게 찍어 주세요', 'Keep the sign in the middle: close, straight on, in good light', '看板を中央に、近くで・正面から・明るい所で撮ってください'],
   'shoot': ['촬영하기', 'Take photo', '撮影する'],
   'album': ['앨범에서 고르기', 'Choose from album', 'アルバム'], // ja: 360px에서 'アルバムから選ぶ'가 한 글자만 줄바꿈됨(#198)
   'samples': ['샘플 사진으로 해 보기', 'Try a sample photo', 'サンプル写真で試す'],
