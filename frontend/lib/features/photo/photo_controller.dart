@@ -15,7 +15,7 @@ class PhotoState {
   final String? sample; // 시연용 샘플 종류 (ok|cand|fail). 실제 사진이면 null
   final MatchResult? result;
   final PhotoPlace? selected; // 확정되었거나 후보에서 고른 가게
-  final String? narration;
+  final PhotoNarration? narration;
   final bool narrationFailed; // 설명을 못 받아도 정보·지도는 그대로 보여 준다(NFR-P004)
   final Object? error; // 식별·검색 요청 실패(타임아웃·서버·네트워크). 화면이 다시 시도 버튼을 보여 준다(#65)
   final PhotoLoc loc;
@@ -23,7 +23,7 @@ class PhotoState {
   const PhotoState({this.phase = PhotoPhase.idle, this.sample, this.result, this.selected, this.narration, this.narrationFailed = false, this.error, this.loc = PhotoLoc.idle, this.lastQuery});
   PhotoState copy({PhotoPhase? phase, Object? sample = _k, Object? result = _k, Object? selected = _k, Object? narration = _k, bool? narrationFailed, Object? error = _k, PhotoLoc? loc, Object? lastQuery = _k}) => PhotoState(
       phase: phase ?? this.phase, sample: sample == _k ? this.sample : sample as String?, result: result == _k ? this.result : result as MatchResult?,
-      selected: selected == _k ? this.selected : selected as PhotoPlace?, narration: narration == _k ? this.narration : narration as String?,
+      selected: selected == _k ? this.selected : selected as PhotoPlace?, narration: narration == _k ? this.narration : narration as PhotoNarration?,
       narrationFailed: narrationFailed ?? this.narrationFailed, error: error == _k ? this.error : error, loc: loc ?? this.loc,
       lastQuery: lastQuery == _k ? this.lastQuery : lastQuery as String?);
 }
@@ -41,16 +41,21 @@ class PhotoController extends Notifier<PhotoState> {
   /// 올린 사진(분석 중·결과 화면 표시용, #224). 샘플이나 이름 검색이면 null
   Uint8List? get image => _bytes;
 
+  /// 사진을 찍을 때 받은 내 위치(지도의 내 위치 점, #238). 메모리에만 두고 화면을 떠나면 버린다(NFR-P003)
+  MapPoint? get me => _me;
+  MapPoint? _me;
+
   @override
   PhotoState build() => const PhotoState();
 
-  void reset() { _token++; _bytes = null; state = PhotoState(loc: state.loc); }
+  void reset() { _token++; _bytes = null; _me = null; state = PhotoState(loc: state.loc); }
 
   /// API-P01 → (확정이면) API-P02. 실제 사진이면 찍을 때마다 위치를 한 번 묻는다(FR-P003). 거부·실패면 위치 없이 보낸다
   Future<void> identify({List<int>? bytes, String fileName = 'photo.jpg', String? sample}) async {
     final my = ++_token;
     _bytes = bytes == null ? null : (bytes is Uint8List ? bytes : Uint8List.fromList(bytes));
     _fileName = fileName;
+    _me = null;
     state = PhotoState(phase: PhotoPhase.scanning, sample: sample, loc: state.loc);
     try {
       double? lat, lng;
@@ -59,6 +64,7 @@ class PhotoController extends Notifier<PhotoState> {
         if (my != _token) return;
         lat = loc.lat;
         lng = loc.lng;
+        _me = lat != null && lng != null ? MapPoint(lat, lng) : null;
         state = state.copy(loc: loc.ok ? PhotoLoc.on : PhotoLoc.off);
       }
       final r = await ref.read(photoRepoProvider).match(bytes, ref.read(langProvider), fileName: fileName, lat: lat, lng: lng, sample: sample);
@@ -93,6 +99,7 @@ class PhotoController extends Notifier<PhotoState> {
   Future<void> searchByName(String name) async {
     final my = ++_token;
     _bytes = null; // 이름 검색 결과에 이전 사진이 나오지 않게
+    _me = null; // 이름 검색은 위치를 쓰지 않는다
     state = state.copy(error: null, lastQuery: name);
     try {
       final r = await ref.read(photoRepoProvider).search(name, ref.read(langProvider));
@@ -107,7 +114,7 @@ class PhotoController extends Notifier<PhotoState> {
     try {
       final s = await ref.read(photoRepoProvider).narrate(p.contentId, ref.read(langProvider), matchId: state.result?.matchId);
       if (my != _token) return;
-      state = state.copy(narration: s, narrationFailed: s.trim().isEmpty);
+      state = state.copy(narration: s, narrationFailed: s.text.trim().isEmpty);
     } catch (_) {
       if (my == _token) state = state.copy(narrationFailed: true);
     }

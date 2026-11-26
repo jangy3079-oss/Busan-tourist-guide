@@ -153,6 +153,16 @@ class PhotoScanScreen extends ConsumerWidget {
   }
 }
 
+/// 확정 화면의 개요·운영 번역(참고, API-C07 #236). 코스 근거 카드와 같은 API를 공용 CourseRepository.evidence 로 받는다. 한국어면 부르지 않음
+final photoTranslationProvider = FutureProvider.autoDispose.family<Evidence?, (String, Lang)>((ref, k) async {
+  if (k.$2 == Lang.ko) return null;
+  try {
+    return await ref.read(courseRepoProvider).evidence(k.$1, k.$2);
+  } catch (_) {
+    return null; // 번역을 못 받아도 원문은 그대로
+  }
+});
+
 class PhotoResultScreen extends ConsumerWidget {
   const PhotoResultScreen({super.key});
   @override
@@ -166,6 +176,8 @@ class PhotoResultScreen extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) { if (context.mounted) context.go('/photo'); });
       return const ScreenFrame(body: SizedBox());
     }
+    final tr = ref.watch(photoTranslationProvider((p.contentId, l))).value; // 개요·운영 번역(참고). 없으면 원문만
+    final me = ref.read(photoProvider.notifier).me;
     return ScreenFrame(
       head: AppHead(pt('found', l), pt('sub', l), backTo: '/photo'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -184,12 +196,17 @@ class PhotoResultScreen extends ConsumerWidget {
               (pt('kCategory', l), Text(photoCategory(p.category, l))),
               (pt('kWhere', l), Text([p.address, if (p.distM != null) pt('fromYou', l, [p.distM!]), if (st.result?.lowAccuracy ?? false) pt('lowAcc', l)].join(' · '))), // FR-P003
               (pt('kHours', l), Row(children: [p.openNow ? TagC.green(pt('open', l)) : TagC.amber(pt('check', l)), const SizedBox(width: 6), Flexible(child: Text(p.hours))])),
+              if (tr?.hoursTr != null) (pt('hoursTr', l), Text(tr!.hoursTr!)),
+              // 영·일이면 번역(참고)을 먼저, 원문은 그대로 아래에(FR-P010, API-C07)
+              if (tr?.overviewTr != null) (pt('overviewTr', l), Text(tr!.overviewTr!, maxLines: 6, overflow: TextOverflow.ellipsis)),
               if (p.overview?.isNotEmpty ?? false) (pt('overview', l), Text(p.overview!, maxLines: 4, overflow: TextOverflow.ellipsis)),
             ]),
           ]),
         ),
         const SizedBox(height: 10),
-        MapView(pins: [MapPoint(p.lat, p.lng, label: '★', name: p.name, isFixed: true)], area: Area.haeundae, height: 150),
+        // 내 위치는 찍을 때 받은 좌표만(없으면 점을 안 그림). 지역은 가게 주소로(#238)
+        MapView(pins: [MapPoint(p.lat, p.lng, label: '★', name: p.name, isFixed: true)], me: me, showMe: me != null,
+            area: p.address.contains('수영구') ? Area.gwangalli : Area.haeundae, height: 150),
         const SizedBox(height: 10),
         Container(
           width: double.infinity, padding: const EdgeInsets.all(14), decoration: cardDeco(),
@@ -197,7 +214,9 @@ class PhotoResultScreen extends ConsumerWidget {
           child: st.narrationFailed
               ? Text(pt('noDesc', l), style: const TextStyle(fontSize: 13, color: C.text3))
               : st.narration != null
-                  ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(st.narration!, style: const TextStyle(fontSize: 14, height: 1.6, color: C.text2)), Src('${pt('generated', l)} · ${p.source ?? 'ⓒ한국관광공사'}')])
+                  ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      if (st.narration!.template) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(pt('simple', l), style: const TextStyle(fontSize: 12, color: C.amber, fontWeight: FontWeight.w600))),
+                      Text(st.narration!.text, style: const TextStyle(fontSize: 14, height: 1.6, color: C.text2)), Src('${pt('generated', l)} · ${p.source ?? 'ⓒ한국관광공사'}')])
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(pt('writing', l), style: const TextStyle(fontSize: 12.5, color: C.text3)), const Skel(.9), const Skel(.66)]),
         ),
         XBtn(icon: 'route', title: pt('toCourse', l), sub: pt('toCourseSub', l), iconBg: C.blueT, iconFg: C.blue, onTap: () => photoToCourse(context, ref, p)),

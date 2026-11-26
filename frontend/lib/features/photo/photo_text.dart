@@ -38,6 +38,9 @@ const Map<String, List<String>> kPhotoText = {
   'generated': ['생성된 안내문 · 근거: 한국관광공사 관광정보 원문', 'Generated guide · based on Korea Tourism Organization data', '生成された案内文・根拠:韓国観光公社の観光情報'],
   'noDesc': ['설명을 만들지 못했어요. 위 정보와 지도는 그대로 볼 수 있어요.', 'We could not write a description. The info and map above are still available.', '説明を作成できませんでした。上の情報と地図はそのままご覧いただけます。'],
   'overview': ['개요 원문', 'Overview (original)', '概要(原文)'],
+  'overviewTr': ['개요(AI 번역)', 'Overview (AI translation, for reference)', '概要(AI翻訳・参考)'], // API-C07(#238)
+  'hoursTr': ['운영(AI 번역)', 'Hours (AI translation, for reference)', '営業(AI翻訳・参考)'],
+  'simple': ['간략 설명으로 표시 중이에요', 'Showing a short description', '簡単な説明を表示しています'], // template=true(FR-P012, #238)
   'kakaoMap': ['카카오맵에서 열기', 'Open in Kakao Map', 'カカオマップで開く'],
   'kakaoMapSub': ['지도앱에서 위치를 보고 길찾기를 해요', 'See the location and get directions in the map app', '地図アプリで場所の確認・道案内ができます'],
   'toCourse': ['여기서 출발하는 코스', 'Start a course here', 'ここから出発するコース'],

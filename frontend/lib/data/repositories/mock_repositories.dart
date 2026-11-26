@@ -123,9 +123,9 @@ class MockPhotoRepository implements PhotoRepository {
   }
 
   @override
-  Future<String> narrate(String contentId, Lang lang, {String? matchId}) async {
+  Future<PhotoNarration> narrate(String contentId, Lang lang, {String? matchId}) async {
     await _wait(1500);
-    return '해운대 해변 근처에서 오래 영업해 온 소갈비 전문점이에요. 양념한 소갈비를 숯불에 구워 먹는 방식이라, 주문할 때 인원수만큼 갈비를 고르면 돼요.';
+    return const PhotoNarration('해운대 해변 근처에서 오래 영업해 온 소갈비 전문점이에요. 양념한 소갈비를 숯불에 구워 먹는 방식이라, 주문할 때 인원수만큼 갈비를 고르면 돼요.');
   }
 
   @override

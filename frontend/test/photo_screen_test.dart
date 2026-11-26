@@ -16,6 +16,7 @@ class _Repo implements PhotoRepository {
   MatchResult result = const MatchResult(MatchDecision.confirmed, [PhotoCandidate(kPhotoPlace, 96)], matchId: 'm_1');
   double? lat, lng;
   String? narratedMatchId;
+  bool template = false;
   int matched = 0;
 
   @override
@@ -28,10 +29,10 @@ class _Repo implements PhotoRepository {
   }
 
   @override
-  Future<String> narrate(String contentId, Lang lang, {String? matchId}) async {
+  Future<PhotoNarration> narrate(String contentId, Lang lang, {String? matchId}) async {
     narratedMatchId = matchId;
     if (narrateError != null) throw narrateError!;
-    return '설명';
+    return PhotoNarration('설명', template: template);
   }
 
   @override
@@ -67,8 +68,17 @@ void main() {
     expect(repo.lat, 35.15);
     expect(st().loc, PhotoLoc.on);
     expect(st().selected, kPhotoPlace);
-    expect(st().narration, '설명');
+    expect(st().narration?.text, '설명');
+    expect(st().narration?.template, false);
     expect(repo.narratedMatchId, 'm_1');
+    expect(ctrl().me?.lat, 35.15); // 지도의 내 위치 점(#238)
+  });
+
+  test('템플릿 설명이면 template 을 그대로 넘긴다(#238)', () async {
+    repo.template = true;
+    await ctrl().identify(bytes: [1]);
+    await settle();
+    expect(st().narration?.template, true);
   });
 
   test('위치를 거부하면 좌표 없이 보낸다(FR-P003)', () async {
@@ -76,6 +86,7 @@ void main() {
     await ctrl().identify(bytes: [1]);
     expect(repo.lat, isNull);
     expect(st().loc, PhotoLoc.off);
+    expect(ctrl().me, isNull); // 위치가 없으면 내 위치 점을 그리지 않는다
   });
 
   test('샘플 시연은 위치를 묻지 않는다', () async {
@@ -151,7 +162,7 @@ void main() {
     ctrl().renarrate();
     expect(st().narration, isNull); // 새 언어 설명을 받는 동안 이전 언어 설명은 지운다
     await settle();
-    expect(st().narration, '설명');
+    expect(st().narration?.text, '설명');
   });
 
   test('업종은 요청 언어로, 모르는 업종은 원문 그대로(#225)', () {

@@ -101,7 +101,9 @@ void main() {
     expect(c.nameIn(Lang.en), '${c.name} (Haeundae Amso Galbi)');
     expect(c.readingIn(Lang.ja), 'ヘウンデ・アムソカルビ');
     expect(calls.last.headers['content-type'], startsWith('multipart/form-data'));
-    expect(await repo.narrate('2789475', Lang.ko, matchId: 'm_51c0'), isNotEmpty);
+    final pn = await repo.narrate('2789475', Lang.ko, matchId: 'm_51c0');
+    expect(pn.text, isNotEmpty);
+    expect(pn.template, false);
     expect(jsonDecode(calls.last.body), {'lang': 'ko', 'matchId': 'm_51c0'});
     expect((await repo.search('없는가게', Lang.ko)).decision, MatchDecision.notFound);
     expect(calls.last.url.queryParameters['q'], '없는가게');

@@ -168,6 +168,13 @@ class PhotoPlace {
   }
 }
 
+/// API-P02 응답. template=true 면 LLM 대신 상호·업종·주소로 만든 대체 설명(FR-P012) → 화면이 "간략 설명"으로 구분(#238)
+class PhotoNarration {
+  final String text;
+  final bool template;
+  const PhotoNarration(this.text, {this.template = false});
+}
+
 class PhotoCandidate {
   final PhotoPlace place;
   final int score; // 0~100 (서버는 0~1)
