@@ -69,7 +69,9 @@ class CourseStop {
   final String id, time, name, desc; // id = contentId
   final double lat, lng;
   final bool changed, fixed, hoursUncertain; // hoursUncertain → '방문 전 확인'(FR-C009)
-  const CourseStop(this.id, this.time, this.name, this.desc, this.lat, this.lng, {this.changed = false, this.fixed = false, this.hoursUncertain = false});
+  final String? category, moveMode; // 화면 언어로 다시 쓰기 위한 서버 값(유형, WALK|TRANSIT|TAXI). 목업은 null
+  final int? moveMin;
+  const CourseStop(this.id, this.time, this.name, this.desc, this.lat, this.lng, {this.changed = false, this.fixed = false, this.hoursUncertain = false, this.category, this.moveMode, this.moveMin});
   MapPoint get point => MapPoint(lat, lng, name: name, isFixed: fixed);
 }
 

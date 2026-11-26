@@ -124,9 +124,9 @@
     {
       "type": "WAY",
       "group": "WAY",
-      "ko": ["길을 잃", "길 잃", "숙소를 못 찾", "호텔을 못 찾", "길을 모르", "어디인지 모르", "말이 안 통", "한국어가 안 통", "소통이 안", "돌아가는 길을 모르"],
-      "en": ["i'm lost", "i’m lost", "im lost", "i am lost", "got lost", "lost my way", "can't find my hotel", "cant find my hotel", "cannot find my hotel", "don't speak korean", "language barrier"],
-      "ja": ["道に迷", "迷子", "ホテルが見つから", "ホテルが見つかりませ", "宿が見つから", "宿が見つかりませ", "帰り道がわから", "どこにいるかわから", "言葉が通じな", "日本語が通じな", "韓国語がわからな", "通じません"]
+      "ko": ["길을 잃", "길 잃", "숙소를 못 찾", "호텔을 못 찾", "길을 모르", "어디인지 모르", "돌아가는 길을 모르", "말이 안 통+도와", "말이 안 통+도움", "한국어가 안 통+도와", "한국어가 안 통+도움", "소통이 안+도와", "소통이 안+도움"],
+      "en": ["i'm lost", "i’m lost", "im lost", "i am lost", "got lost", "lost my way", "can't find my hotel", "cant find my hotel", "cannot find my hotel", "don't speak korean+help", "dont speak korean+help", "do not speak korean+help", "language barrier+help"],
+      "ja": ["道に迷", "迷子", "ホテルが見つから", "ホテルが見つかりませ", "宿が見つから", "宿が見つかりませ", "帰り道がわから", "どこにいるかわから", "言葉が通じな+助け", "言葉が通じな+困って", "日本語が通じな+助け", "日本語が通じな+困って", "韓国語がわからな+助け", "韓国語がわからな+困って", "通じません+助け", "通じません+困って"]
     },
     {
       "type": "LOST",

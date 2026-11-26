@@ -57,6 +57,7 @@ class ApiCourseRepository implements CourseRepository {
           [s['category'], if (s['moveFromPrev'] != null) _move(s['moveFromPrev'])].whereType<String>().where((e) => e.isNotEmpty).join(' · '),
           dbl(s['lat']), dbl(s['lng']),
           changed: s['changed'] ?? false, fixed: s['fixed'] ?? false, hoursUncertain: s['hoursUncertain'] ?? false,
+          category: s['category'], moveMode: s['moveFromPrev']?['mode'], moveMin: s['moveFromPrev']?['minutes'],
         ),
     ];
     final areaA = assumptions.where((a) => a['key'] == 'area').map((a) => a['value'] as String?).firstOrNull;

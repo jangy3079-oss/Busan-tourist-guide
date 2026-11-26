@@ -115,8 +115,8 @@ text,expectedType,expectedGroup
 "I want to have a cold beer by the beach",,
 "City archives and museums",,
 "화분 실내 식물 카페",,
-"I don't speak Korean, plan a 3 hour walk",WAY,WAY
-"韓国語がわからないのですが海雲台で3時間のコース",WAY,WAY
+"I don't speak Korean, plan a 3 hour walk",,
+"韓国語がわからないのですが海雲台で3時間のコース",,
 "건물에 화재가 났어요",FIRE,FIRE
 "친구가 자살하려고 해요",URGENT,SELF_HARM
 "지갑 분실했어요",LOST,LOST
@@ -134,3 +134,10 @@ text,expectedType,expectedGroup
 "여권도난당했어요",LOST,STOLEN
 "남자가날때렸어요",THREAT,THREAT
 "아이가경련해요",URGENT,SEIZURE
+"I don't speak Korean, recommend seafood in Haeundae",,
+"한국어를 잘 못하는데 광안리 카페 추천해 주세요",,
+"電話が通じませんでしたが、ホテルの近くのラーメン屋を教えて",,
+"I don't speak Korean, please help me",WAY,WAY
+"말이 안 통해서 도와주세요",WAY,WAY
+"言葉が通じなくて困っています",WAY,WAY
+"韓国語がわからないので助けてください",WAY,WAY

@@ -5,6 +5,8 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/safetrip}
     username: ${DB_USER:safetrip}
     password: ${DB_PASSWORD:safetrip}
+    hikari:
+      connection-timeout: 5000   # DB 가 끊겼을 때 30초 기다리지 않는다
   jpa:
     hibernate:
       ddl-auto: none        # 스키마는 Flyway 로만 바꾼다
@@ -17,6 +19,10 @@ spring:
       max-file-size: 10MB
       max-request-size: 11MB
       file-size-threshold: 11MB
+
+logging:
+  pattern:
+    correlation: "[%X{requestId:-}] "   # 요청 ID(NFR-C007)
 
 server:
   servlet:

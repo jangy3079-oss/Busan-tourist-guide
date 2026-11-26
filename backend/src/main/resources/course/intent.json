@@ -20,6 +20,12 @@
   "_indoor": "TourAPI 세부 분류 코드(lclsSystm3) 앞부분. 같은 분류에 실내·야외가 섞이면 넣지 않는다(전망대, 산업관광, 기타문화시설 등)",
   "indoorCodes": ["FD", "SH01", "SH04", "SH05", "EX0202", "EX0501", "EX0505", "VE0204", "VE0601", "VE0703", "VE0704", "VE0706", "VE0902", "VE0903", "VE1201"],
   "indoorKeywords": ["실내", "비 오", "비오는", "비가 오", "비가 와", "우천", "indoor", "rainy", " raining", " rains", "室内", "屋内", "雨"],
+  "_demoted": "쇼핑 138곳 중 127곳이 사후면세점(약국·화장품점 등, SH04)이다. 이 유형을 요청하지 않았으면 빼고, 요청했으면 뒤로 보낸다. 요청 문장에 keywords 가 있으면 그대로 둔다(#151)",
+  "demoted": {
+    "category": "쇼핑",
+    "codes": ["SH04"],
+    "keywords": ["면세", "화장품", "약국", "올리브영", "뷰티", "cosmetic", "beauty", "pharmacy", "drugstore", "tax free", "tax-free", "duty free", "duty-free", "olive young", "コスメ", "化粧品", "薬局", "免税", "ドラッグストア"]
+  },
   "relaxOrder": ["stops", "categories", "area", "indoor"],
   "narrationMaxChars": 60,
   "titleMaxChars": 40,
