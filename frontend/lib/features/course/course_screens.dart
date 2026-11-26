@@ -356,12 +356,15 @@ Future<PlacePin?> showStartPlaceSheet(BuildContext context, WidgetRef ref, {Plac
                 showMe: false, area: ar, height: 180, caption: ct('startTap', l),
                 onPinTap: (i) => set(() => sel = pins[i]),
               ),
+              // #214 확정 버튼은 지도 바로 아래(목록 위)에 둔다. 목록 행은 누르면 바로 확정
+              const SizedBox(height: 10),
+              Btn(sel == null ? ct('startNone', l) : ct('startGo', l, [sel!.name]), kind: sel == null ? BtnKind.secondary : BtnKind.primary, onTap: sel == null ? null : () => Navigator.of(ctx).pop(sel)),
               const SizedBox(height: 10),
               for (var i = 0; i < pins.length; i++)
                 Material(
                   color: pins[i].contentId == sel?.contentId ? C.seaT : Colors.transparent, borderRadius: BorderRadius.circular(rMd),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(rMd), onTap: () => set(() => sel = pins[i]),
+                    borderRadius: BorderRadius.circular(rMd), onTap: () => Navigator.of(ctx).pop(pins[i]),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
                       child: Row(children: [
@@ -376,7 +379,5 @@ Future<PlacePin?> showStartPlaceSheet(BuildContext context, WidgetRef ref, {Plac
             ]);
           },
         ),
-        const SizedBox(height: 12),
-        Btn(sel == null ? ct('startNone', l) : ct('startGo', l, [sel!.name]), kind: sel == null ? BtnKind.secondary : BtnKind.primary, onTap: sel == null ? null : () => Navigator.of(ctx).pop(sel)),
       ])));
 }
