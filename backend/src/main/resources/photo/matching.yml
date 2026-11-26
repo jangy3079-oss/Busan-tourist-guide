@@ -4,6 +4,7 @@
 # 변경 이력:
 #   2026-11-25 초기값 작성 (사진 담당)
 #   2026-11-25 ocr 제한시간·재시도, narration(설명 길이·템플릿·업종 이름) 추가
+#   2026-11-26 ocr.paddleUrl 추가(#41, 로컬 PaddleOCR 서버 주소)
 
 image:
   allowedFormats: [jpg, jpeg, png]   # FR-P002
@@ -14,6 +15,7 @@ ocr:
   minBlockConfidence: 0.5            # FR-P004: 이 값 미만 블록은 매칭에서 제외
   timeoutSec: 8                      # NFR-P004: 넘으면 1회 재시도, 그래도 실패면 OCR_FAIL
   maxRetry: 1
+  paddleUrl: http://127.0.0.1:8866   # 로컬 PaddleOCR 서버(resources/photo/ocr-server). 엔진 교체는 safetrip.ocr.engine
 
 score:
   levenshteinWeight: 0.5             # 자모 편집거리 유사도 비중

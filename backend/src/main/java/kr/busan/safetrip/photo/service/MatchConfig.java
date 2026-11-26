@@ -27,7 +27,9 @@ public class MatchConfig {
                            double listMin, int maxCandidates) {}
     public record Search(List<Integer> radiusStepsM, List<Integer> contentTypes) {}
     public record Normalize(List<String> branchSuffixes, Map<String, String> confusables) {}
-    public record Ocr(double minBlockConfidence, int timeoutSec, int maxRetry) {}
+    /** paddleUrl: 로컬 PaddleOCR 서버 주소(PaddleOcrEngine). 없으면 DEFAULT_PADDLE_URL */
+    public record Ocr(double minBlockConfidence, int timeoutSec, int maxRetry, String paddleUrl) {}
+    public static final String DEFAULT_PADDLE_URL = "http://127.0.0.1:8866";
     /** templates: 언어 코드(ko·en·ja) → 템플릿, categoryNames: 업종 → (언어 코드 → 이름) */
     public record Narration(int maxChars, Map<String, String> templates, Map<String, Map<String, String>> categoryNames) {}
 
@@ -62,7 +64,7 @@ public class MatchConfig {
         this.image = new Image((List<String>) img.get("allowedFormats"), num(img, "maxBytes").longValue(),
                 num(img, "maxLongEdgePx").intValue());
         this.ocr = new Ocr(num(ocr, "minBlockConfidence").doubleValue(), num(ocr, "timeoutSec").intValue(),
-                num(ocr, "maxRetry").intValue());
+                num(ocr, "maxRetry").intValue(), String.valueOf(ocr.getOrDefault("paddleUrl", DEFAULT_PADDLE_URL)));
         this.score = new Score(num(sc, "levenshteinWeight").doubleValue(), num(sc, "diceWeight").doubleValue(),
                 num(sc, "containmentFloor").doubleValue(), num(sc, "containmentMinLength").intValue(),
                 num(sc, "textWeight").doubleValue(), num(sc, "distanceWeight").doubleValue());
