@@ -1,10 +1,11 @@
-// [사진 담당] 확정 화면의 두 버튼: '여기서 출발하는 코스'는 contentId를 startPlaceId로 넘기고(FR-P015, TC-P011, #63),
+// [사진 담당] 확정 화면의 두 버튼: '여기서 출발하는 코스'는 그 가게를 출발 장소로 채우고(FR-P015, TC-P011, #63, #226),
 // '카카오맵에서 열기'는 이름·좌표로 카카오맵 링크를 연다(FR-P018, TC-P014, #64). 샘플 사진은 Mock 모드에서만 보인다(#199)
 import 'package:busan_safetrip/core/i18n.dart';
 import 'package:busan_safetrip/data/api/api_client.dart';
 import 'package:busan_safetrip/data/mock_data.dart';
 import 'package:busan_safetrip/data/models/models.dart';
 import 'package:busan_safetrip/data/repositories/repositories.dart';
+import 'package:busan_safetrip/features/course/course_controller.dart';
 import 'package:busan_safetrip/features/photo/photo_controller.dart';
 import 'package:busan_safetrip/features/photo/photo_link.dart';
 import 'package:busan_safetrip/features/photo/photo_screens.dart';
@@ -78,14 +79,15 @@ void main() {
     expect(opened, [kakaoMapUrl(kPhotoPlace.name, kPhotoPlace.lat, kPhotoPlace.lng)]);
   });
 
-  testWidgets('여기서 출발하는 코스 → contentId를 startPlaceId로 넘기고 코스 화면으로', (tester) async {
+  testWidgets('여기서 출발하는 코스 → 그 가게를 출발 장소로 채우고, 바로 보내지 않은 채 코스 화면으로(#226)', (tester) async {
     await pumpResult(tester);
     final btn = find.text('여기서 출발하는 코스');
     await tester.ensureVisible(btn);
     await tester.tap(btn);
     await tester.pumpAndSettle();
     expect(find.text('COURSE'), findsOneWidget);
-    expect(course.startPlaceId, kPhotoPlace.contentId);
+    expect(course.startPlaceId, isNull); // 사용자가 입력하기 전에는 코스를 요청하지 않음
+    expect(box.read(courseProvider).startPlace?.contentId, kPhotoPlace.contentId);
   });
 
   Future<void> pumpPick(WidgetTester tester, {required bool api}) async {
