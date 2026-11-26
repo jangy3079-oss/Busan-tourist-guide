@@ -36,6 +36,7 @@ safetrip:
     model: ${AI_MODEL:qwen3.5:4b}
     api-key: ${AI_API_KEY:}
     timeout-sec: 8
+    total-timeout-sec: 10     # 재시도를 포함한 총 시간(#150)
     max-retry: 1
     monthly-budget-krw: ${AI_MONTHLY_BUDGET_KRW:3000}      # 유료 provider 만 센다(NFR-C009)
     input-krw-per-m-tok: ${AI_INPUT_KRW_PER_MTOK:0}        # 100만 토큰당 원. 유료인데 0 이면 호출을 막는다
