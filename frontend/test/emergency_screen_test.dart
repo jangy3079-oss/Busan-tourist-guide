@@ -54,14 +54,6 @@ void main() {
   late List<String> links;
 
   Future<void> pumpApp(WidgetTester t, EmergencyRepository repo, {LocationResult loc = _here, String at = '/emergency'}) async {
-    // 공용 AppHead 의 알려진 디버그 assert(Container 에 color·decoration 동시 지정)만 넘긴다. 공용 담당에게 수정 요청함(T20 보고)
-    final onError = FlutterError.onError, builder = ErrorWidget.builder;
-    FlutterError.onError = (d) {
-      if ('${d.exception}'.contains('color == null || decoration == null') && '${d.stack}'.contains('AppHead.build')) return;
-      onError!(d);
-    };
-    ErrorWidget.builder = (_) => const SizedBox.shrink();
-    addTearDown(() { FlutterError.onError = onError; ErrorWidget.builder = builder; });
     t.view.physicalSize = const Size(800, 1800); // 테스트 글꼴(Ahem)은 실제보다 넓어 영어 제목이 넘친다
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
@@ -268,5 +260,22 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('문자 보내기'));
     expect(links.last, 'sms:112');
+  });
+
+  testWidgets('대사관 시트: 1330 전화가 맨 위, 외교부 목록은 보조 링크 (EMBASSY)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.lost, topContact: '1330', extra: EmExtra.embassy);
+    await pumpApp(t, repo);
+    await send(t, '여권을 잃어버렸어요');
+    await t.pumpAndSettle();
+    await t.tap(find.text(tr('embassy', Lang.ko)));
+    await t.pumpAndSettle();
+    final call = find.byKey(const ValueKey('embassy-1330'));
+    final list = find.byKey(const ValueKey('embassy-list'));
+    expect(find.text('자국 대사관 연락처를 1330에 물어보세요'), findsOneWidget);
+    expect(find.text('외교부 주한공관 목록(한국어)'), findsOneWidget);
+    expect(t.getTopLeft(call).dy, lessThan(t.getTopLeft(list).dy));
+    await t.tap(call);
+    await t.tap(list);
+    expect(links, ['tel:1330', kEmbassyListUrl]);
   });
 }

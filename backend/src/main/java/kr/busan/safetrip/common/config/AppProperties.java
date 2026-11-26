@@ -13,7 +13,14 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
  * application.yml 의 safetrip.* 설정을 한곳에서 받는다. 새 설정 키는 여기에 추가하고 README 에 적는다.
  */
 @ConfigurationProperties(prefix = "safetrip")
-public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors cors, Retention retention) {
+public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors cors, Retention retention, Emergency emergency) {
+    @ConstructorBinding
+    public AppProperties {}
+
+    /** emergency 가 생기기 전 모양(다른 모듈 테스트가 쓴다). 긴급 키는 없음(null) */
+    public AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors cors, Retention retention) {
+        this(ai, embedding, tourApi, cors, retention, null);
+    }
 
     /** NFR-C005: provider 값만 바꿔 Ollama <-> OpenAI <-> Claude 교체. timeoutSec = 한 번, totalTimeoutSec = 재시도까지 합친 한도 */
     public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int totalTimeoutSec, int maxRetry, long monthlyBudgetKrw,
@@ -42,4 +49,7 @@ public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors co
 
     /** NFR-C003/P003/E004: 로그 보존 일수(기본 30) */
     public record Retention(int logDays) {}
+
+    /** FR-E019·FR-E020·FR-E013·DATA-E11: 긴급 외부 API 인증키(국립중앙의료원·특일 정보, V-World) */
+    public record Emergency(String serviceKey, String vworldKey, String holidayKey) {}
 }
