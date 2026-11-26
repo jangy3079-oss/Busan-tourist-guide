@@ -98,7 +98,7 @@ class EmergencyServiceGuideTest {
                 FIXED_CLOCK);
 
         lenient().when(classifier.confidenceThreshold()).thenReturn(0.6);
-        lenient().when(classifier.classify(anyString()))
+        lenient().when(classifier.classifyOrFail(anyString()))
                 .thenThrow(new BusinessException(ErrorCode.AI_UNAVAILABLE, "AI offline"));
         lenient().when(erClient.fetch(anyString()))
                 .thenThrow(new NotImplementedYetException("긴급 담당", "ErRealtimeClient.fetch"));
@@ -347,7 +347,7 @@ class EmergencyServiceGuideTest {
     @Test
     void keepsKeywordUrgentOverLlmMildToPreventMisses() {
         doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.9, Map.of("symptom", "FEVER"))))
-                .when(classifier).classify(anyString());
+                .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
                 "친구가 쓰러졌어요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
@@ -362,7 +362,7 @@ class EmergencyServiceGuideTest {
     @Test
     void usesLlmUrgentWhenNoKeywordMatches() {
         doReturn(Optional.of(new Triage(EmType.URGENT, Urgency.URGENT, 0.9, Map.of("who", "FRIEND", "symptom", "INJURY"))))
-                .when(classifier).classify(anyString());
+                .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
                 "친구가 계단에서 굴러서 움직이질 못해요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
@@ -377,7 +377,7 @@ class EmergencyServiceGuideTest {
     @Test
     void promotesTopContactTo119WhenLlmMarksMildAsUrgent() {
         doReturn(Optional.of(new Triage(EmType.MILD, Urgency.URGENT, 0.85, Map.of("who", "CHILD", "symptom", "FEVER"))))
-                .when(classifier).classify(anyString());
+                .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
                 "아이가 열이 너무 높아요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
@@ -390,7 +390,7 @@ class EmergencyServiceGuideTest {
     @Test
     void routesLostStolenFromLlmHowSlotTo112AndStolenCard() {
         doReturn(Optional.of(new Triage(EmType.LOST, Urgency.NORMAL, 0.93, Map.of("how", "STOLEN", "item", "PASSPORT"))))
-                .when(classifier).classify(anyString());
+                .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
                 "누가 제 여권을 가져갔어요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
@@ -404,7 +404,7 @@ class EmergencyServiceGuideTest {
     @Test
     void routesMildInsectSlotToNeedsMedsFallbackErAndInsectCard() {
         doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.91, Map.of("who", "SELF", "symptom", "INSECT"))))
-                .when(classifier).classify(anyString());
+                .when(classifier).classifyOrFail(anyString());
 
         HelpPlaceEntity convenience = entity(
                 20L, "CONVENIENCE", "GS25 광안점", 35.1535, 129.1188,
@@ -427,7 +427,7 @@ class EmergencyServiceGuideTest {
     @Test
     void requestsTypeSelectionWhenLlmConfidenceBelowThresholdAndNoKeyword() {
         doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.4, Map.of())))
-                .when(classifier).classify(anyString());
+                .when(classifier).classifyOrFail(anyString());
 
         GuideResponse res = service.guide(new GuideRequest(
                 "도와주세요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
@@ -438,17 +438,16 @@ class EmergencyServiceGuideTest {
     }
 
     @Test
-    void usesLlmSlotsWhenUserSelectedTypeMatchesLlmType() {
-        doReturn(Optional.of(new Triage(EmType.THREAT, Urgency.URGENT, 0.75, Map.of("situation", "FOLLOWED"))))
-                .when(classifier).classify(anyString());
-
+    void userSelectedTypeSkipsClassifierLlmAndUsesCardDefaults() {
         GuideResponse res = service.guide(new GuideRequest(
                 "뒤에서 계속 걷는 사람이 무서워요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, EmType.THREAT));
 
+        org.mockito.Mockito.verify(classifier, org.mockito.Mockito.never()).classifyOrFail(anyString());
         assertThat(res.triage().type()).isEqualTo(EmType.THREAT);
         assertThat(res.triage().confidence()).isEqualTo(1.0);
+        assertThat(res.triage().slots()).isEmpty();
         assertThat(res.topContact()).isEqualTo("112");
-        assertThat(res.card().ko()).contains("따라오고");
+        assertThat(res.card().ko()).isEqualTo(new KoreanCardBuilder().build(EmType.THREAT, null, Map.of(), res.card().address(), Lang.KO).ko());
     }
 
     @Test
@@ -500,7 +499,7 @@ class EmergencyServiceGuideTest {
     @Test
     void passesGroupSlotsTopContactAndPlaceKindsToGuidanceAndKeepsKnowledgeBaseSteps() {
         GuidanceRetriever kb = mock(GuidanceRetriever.class);
-        when(kb.retrieve(any(), any(), any(), anyString(), any(), any(), any())).thenReturn(new GuidanceRetriever.Guidance(
+        when(kb.retrieve(any(), any(), any(), anyString(), any(), any(), any(), org.mockito.ArgumentMatchers.anyBoolean())).thenReturn(new GuidanceRetriever.Guidance(
                 List.of("가까운 약국에 증상을 보여 주세요.", "1330에 전화하세요."), false, List.of(new Source("mild-pharmacy", "약국에서"))));
         DecisionTable dt = new DecisionTable();
         EmergencyService kbService = new EmergencyService(
@@ -515,8 +514,9 @@ class EmergencyServiceGuideTest {
 
         GuideResponse res = kbService.guide(new GuideRequest("열이 나요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
 
+        // setUp 의 분류기는 AI_UNAVAILABLE → 같은 요청의 '할 일' LLM 은 생략(llmAllowed=false, T12b)
         verify(kb).retrieve(eq(EmType.MILD), any(), any(), eq("열이 나요"), eq(Lang.KO), eq("1330"),
-                argThat(places -> places.stream().anyMatch(p -> p.kind() == PlaceKind.PHARMACY)));
+                argThat(places -> places.stream().anyMatch(p -> p.kind() == PlaceKind.PHARMACY)), eq(false));
         assertThat(res.stepsFallback()).isFalse();
         assertThat(res.sources()).extracting(Source::id).containsExactly("mild-pharmacy");
         assertThat(res.steps()).hasSize(2);

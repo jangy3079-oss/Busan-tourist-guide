@@ -53,7 +53,12 @@ import kr.busan.safetrip.emergency.repository.KbDocumentRepository.KbDoc;
  */
 @Component
 public class GuidanceRetriever {
-    public record Guidance(List<String> steps, boolean fallback, List<EmergencyDtos.Source> sources) {}
+    /** fallback: 저장된 기본 문구(FallbackSteps). top1: 지식베이스 Top-1 문서 문장을 그대로 씀(LLM 생략·실패) */
+    public record Guidance(List<String> steps, boolean fallback, List<EmergencyDtos.Source> sources, boolean top1) {
+        public Guidance(List<String> steps, boolean fallback, List<EmergencyDtos.Source> sources) {
+            this(steps, fallback, sources, false);
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record RawDocCondition(
@@ -152,10 +157,6 @@ public class GuidanceRetriever {
         return retrieve(type, group, slots, text, lang, null, null);
     }
 
-    /**
-     * 전체 진입점: Top-3 검색 → LLM 생성·검증 → 실패 시 Top-1 steps / 후보 없으면 FallbackSteps.
-     * places에서는 종류(PlaceKind) 집합만 조건 판별에 사용하며, 이름·좌표·주소는 절대 사용하지 않는다(AI-REQ-E06).
-     */
     public Guidance retrieve(
             EmType type,
             String group,
@@ -164,6 +165,23 @@ public class GuidanceRetriever {
             Lang lang,
             String topContact,
             List<HelpPlace> places) {
+        return retrieve(type, group, slots, text, lang, topContact, places, true);
+    }
+
+    /**
+     * 전체 진입점: Top-3 검색 → LLM 생성·검증 → 실패 시 Top-1 steps / 후보 없으면 FallbackSteps.
+     * places에서는 종류(PlaceKind) 집합만 조건 판별에 사용하며, 이름·좌표·주소는 절대 사용하지 않는다(AI-REQ-E06).
+     * llmAllowed=false(같은 요청에서 분류 LLM이 시간 초과·사용 불가): 임베딩·LLM을 부르지 않고 고정 순위 Top-1(T12b, NFR-E002).
+     */
+    public Guidance retrieve(
+            EmType type,
+            String group,
+            Map<String, String> slots,
+            String text,
+            Lang lang,
+            String topContact,
+            List<HelpPlace> places,
+            boolean llmAllowed) {
         EmType safeType = type == null ? EmType.NON : type;
         Lang safeLang = lang == null ? Lang.KO : lang;
         if (kbRepo == null) {
@@ -175,12 +193,13 @@ public class GuidanceRetriever {
         String resolvedContact = resolveContact(safeType, group, topContact);
         Set<PlaceKind> availableKinds = extractPlaceKinds(places);
 
-        List<KbDoc> topDocs = selectTopDocs(safeType, group, slots, text, langCode, resolvedContact, availableKinds, cfg);
+        List<KbDoc> topDocs = selectTopDocs(
+                safeType, group, slots, llmAllowed ? text : null, langCode, resolvedContact, availableKinds, cfg);
         if (topDocs.isEmpty()) {
             return fallbackOrEmpty(safeType, safeLang);
         }
 
-        Optional<Guidance> generated = generateWithLlm(topDocs, text, langCode, cfg);
+        Optional<Guidance> generated = llmAllowed ? generateWithLlm(topDocs, text, langCode, cfg) : Optional.empty();
         if (generated.isPresent()) {
             return generated.get();
         }
@@ -188,7 +207,7 @@ public class GuidanceRetriever {
         // LLM 실패·검증 실패 시 Top-1 문서 steps 앞 2~3줄 사용(KB 근거 있으므로 stepsFallback=false)
         KbDoc top1 = topDocs.get(0);
         List<String> top1Steps = top1.steps().stream().limit(cfg.maxSteps()).toList();
-        return new Guidance(top1Steps, false, List.of(toSource(top1)));
+        return new Guidance(top1Steps, false, List.of(toSource(top1)), true);
     }
 
     /** guidance.json과 guidance-prompt.txt를 다시 읽는다. */

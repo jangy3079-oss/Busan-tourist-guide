@@ -8,9 +8,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 /**
  * [긴급 담당] COMP-E03 EmergencyService
  * 요구사항: FR-E001~E005, E007~E018, NFR-E001~E005, NFR-E008
- * 상태: 완료(T10 LLM 병합·T13 요청 기록은 후속 작업)
+ * 상태: 완료(T13 요청 기록은 후속 작업)
  * 수정 규칙: 긴급 담당만 수정. 코스·사진 담당은 수정 금지(필요하면 긴급 담당에게 요청).
  *
  * 흐름 조율(Facade).
@@ -148,12 +150,17 @@ public class EmergencyService {
 
     /** API-E02 상세 안내(FR-E001~E018, NFR-E003, NFR-E004, NFR-E008). */
     public GuideResponse guide(GuideRequest req) {
+        return guide(req, new LinkedHashSet<>());
+    }
+
+    /** fallback: 이 요청에서 일어난 대체 경로(LLM 장애·유형 직접 선택 등)를 모은다 */
+    private GuideResponse guide(GuideRequest req, Set<String> fallback) {
         // 1. 위치·지역 확인 (FR-E002, FR-E017)
         LocationContext loc = resolveLocation(req);
         Lang lang = Lang.parse(req.lang());
 
         // 2. 상황 분류 (FR-E005~E008)
-        ClassificationResult classified = classify(req);
+        ClassificationResult classified = classify(req, fallback);
         if (classified == null) {
             // FR-E008: 분류 불가 → 유형 직접 선택 응답 (E02_guide_need_type.json)
             return new GuideResponse(
@@ -182,14 +189,21 @@ public class EmergencyService {
         HelpPlaceFinder.FindResult foundPlaces = findPlacesSafely(
                 plan, loc.lat(), loc.lng(), now, todayIsHoliday, yesterdayWasHoliday, lang);
         List<HelpPlace> places = foundPlaces.places();
+        if (places.isEmpty() && !plan.noPlaces()) {
+            fallback.add("PLACES_NONE");
+        }
+        if (places.stream().anyMatch(p -> p.er() != null && p.er().fetchedAt() == null)) {
+            fallback.add("ER_DOWN"); // 응급실 실시간 조회 실패(HelpPlaceFinder 가 빈 ErInfo 로 대체)
+        }
 
         // 5. 한국어 카드 (FR-E015, AI-REQ-E07)
         Card card = buildCard(type, group, triage.slots(), loc, places, lang);
 
         // 6. 지금 할 일 (FR-E016, NFR-E003)
         //    위치·주소·장소 이름은 넘기지 않고, 도움처는 종류만 문서 조건에 쓴다(AI-REQ-E06)
+        //    같은 요청에서 분류 LLM이 시간 초과·사용 불가였으면 '할 일' LLM은 부르지 않는다(T12b, NFR-E002)
         GuidanceRetriever.Guidance stepGuidance = retrieveGuidanceSafely(
-                type, group, triage.slots(), req.text(), lang, topContact, places);
+                type, group, triage.slots(), req.text(), lang, topContact, places, !classified.llmDown(), fallback);
 
         // 7. 데이터 기준 시각·출처 (NFR-E008)
         DataAsOf dataAsOf = buildDataAsOf(places, foundPlaces.oldestUpdatedAt());
@@ -211,7 +225,8 @@ public class EmergencyService {
     private record LocationContext(
             double lat, double lng, boolean fromArea, String district, String areaLabel, boolean outOfArea) {}
 
-    private record ClassificationResult(Triage triage, String group) {}
+    /** llmDown: 분류 LLM이 시간 초과·사용 불가(스키마 위반·신뢰도 미달은 아님) */
+    private record ClassificationResult(Triage triage, String group, boolean llmDown) {}
 
     private LocationContext resolveLocation(GuideRequest req) {
         boolean hasLat = req.lat() != null;
@@ -232,32 +247,42 @@ public class EmergencyService {
         throw new BusinessException(ErrorCode.INVALID_INPUT, "위치 좌표(lat, lng) 또는 구역(area)이 필요합니다.");
     }
 
-    private ClassificationResult classify(GuideRequest req) {
+    private ClassificationResult classify(GuideRequest req, Set<String> fallback) {
         Optional<KeywordRuleEngineImpl.Match> kwMatch = keywords.match(req.text());
-        Optional<Triage> llmResult = classifyWithLlmSafely(req.text());
+        if (req.type() != null) {
+            // 사용자 직접 선택(FR-E008, T12b): 분류 LLM을 부르지 않는다. 그룹은 같은 유형의 키워드 그룹, 슬롯은 비움(카드는 defaults)
+            fallback.add("USER_TYPE");
+            EmType type = req.type();
+            boolean kwSameType = kwMatch.isPresent() && kwMatch.get().type() == type;
+            String group = kwSameType ? kwMatch.get().group() : null;
+            boolean kwUrgent = kwMatch.isPresent() && kwMatch.get().urgent();
+            Urgency urgency = (isUrgentType(type) || kwUrgent) ? Urgency.URGENT : Urgency.NORMAL;
+            return new ClassificationResult(new Triage(type, urgency, 1.0, Map.of()), group, false);
+        }
+
+        boolean llmDown = false;
+        Optional<Triage> llmResult;
+        try {
+            llmResult = classifyWithLlm(req.text());
+            if (llmResult.isEmpty() && classifier != null) {
+                fallback.add("LLM_SCHEMA");
+            }
+        } catch (BusinessException e) {
+            llmDown = true;
+            fallback.add(e.code() == ErrorCode.AI_TIMEOUT ? "LLM_TIMEOUT" : "LLM_UNAVAILABLE");
+            llmResult = Optional.empty();
+        }
         double threshold = classifier == null ? 0.6 : classifier.confidenceThreshold();
+        if (llmResult.isPresent() && (llmResult.get().type() == null || llmResult.get().confidence() < threshold)) {
+            fallback.add("LLM_LOW_CONF");
+        }
 
         EmType type;
         String group;
         double confidence;
         Map<String, String> slots;
 
-        if (req.type() != null) {
-            // 사용자 직접 선택(FR-E008): 같은 유형의 LLM 슬롯 우선, 없으면 같은 유형의 키워드 그룹 힌트
-            type = req.type();
-            boolean llmSameType = llmResult.isPresent() && llmResult.get().type() == type;
-            boolean kwSameType = kwMatch.isPresent() && kwMatch.get().type() == type;
-            if (llmSameType) {
-                Map<String, String> llmSlots = safeSlots(llmResult.get().slots());
-                String derivedGroup = cardBuilder.groupFromSlots(type, llmSlots);
-                group = derivedGroup != null ? derivedGroup : (kwSameType ? kwMatch.get().group() : null);
-                slots = llmSlots;
-            } else {
-                group = kwSameType ? kwMatch.get().group() : null;
-                slots = group == null ? Map.of() : cardBuilder.slotsFromGroup(type, group);
-            }
-            confidence = 1.0;
-        } else if (llmResult.isPresent() && llmResult.get().type() != null
+        if (llmResult.isPresent() && llmResult.get().type() != null
                 && llmResult.get().confidence() >= threshold) {
             Triage llm = llmResult.get();
             // ADR-E04 놓침 방지: 키워드가 위급 유형인데 LLM이 비위급 유형이면 키워드 유형·그룹 우선
@@ -283,11 +308,11 @@ public class EmergencyService {
             return null;
         }
 
-        // FR-E007 공통 최종 긴급도: 최종 type 위급 OR L.urgency=URGENT OR K.urgent
+        // FR-E007 최종 긴급도: 최종 type 위급 OR L.urgency=URGENT OR K.urgent
         boolean llmUrgent = llmResult.isPresent() && llmResult.get().urgency() == Urgency.URGENT;
         boolean kwUrgent = kwMatch.isPresent() && kwMatch.get().urgent();
         Urgency urgency = (isUrgentType(type) || llmUrgent || kwUrgent) ? Urgency.URGENT : Urgency.NORMAL;
-        return new ClassificationResult(new Triage(type, urgency, confidence, slots), group);
+        return new ClassificationResult(new Triage(type, urgency, confidence, slots), group, llmDown);
     }
 
     private static boolean isUrgentType(EmType type) {
@@ -305,16 +330,19 @@ public class EmergencyService {
         return slots == null || slots.isEmpty() ? Map.of() : Map.copyOf(slots);
     }
 
-    private Optional<Triage> classifyWithLlmSafely(String text) {
+    /** 분류 LLM. 시간 초과·사용 불가는 BusinessException(AI_TIMEOUT|AI_UNAVAILABLE), 빈 결과는 스키마 위반 */
+    private Optional<Triage> classifyWithLlm(String text) {
         if (classifier == null) {
             return Optional.empty();
         }
         try {
-            Optional<Triage> result = classifier.classify(text);
+            Optional<Triage> result = classifier.classifyOrFail(text);
             return result == null ? Optional.empty() : result;
+        } catch (BusinessException e) {
+            throw e;
         } catch (RuntimeException e) {
             log.warn("emergency.classify fallback: {}", e.getClass().getSimpleName());
-            return Optional.empty();
+            throw new BusinessException(ErrorCode.AI_UNAVAILABLE, "분류 LLM 실패");
         }
     }
 
@@ -380,17 +408,20 @@ public class EmergencyService {
     }
 
     private GuidanceRetriever.Guidance retrieveGuidanceSafely(EmType type, String group, Map<String, String> slots,
-            String text, Lang lang, String topContact, List<HelpPlace> places) {
+            String text, Lang lang, String topContact, List<HelpPlace> places, boolean llmAllowed, Set<String> fallback) {
         if (guidance != null) {
             try {
-                GuidanceRetriever.Guidance fetched = guidance.retrieve(type, group, slots, text, lang, topContact, places);
+                GuidanceRetriever.Guidance fetched = guidance.retrieve(type, group, slots, text, lang, topContact, places, llmAllowed);
                 if (fetched != null && fetched.steps() != null && !fetched.steps().isEmpty()) {
+                    if (fetched.fallback()) fallback.add("GUIDANCE_STORED");
+                    else if (fetched.top1()) fallback.add("GUIDANCE_TOP1");
                     return fetched;
                 }
             } catch (RuntimeException e) {
                 log.warn("emergency.guidance fallback: {}", e.getClass().getSimpleName());
             }
         }
+        fallback.add("GUIDANCE_STORED");
         return fallbackSteps.forType(type, lang);
     }
 

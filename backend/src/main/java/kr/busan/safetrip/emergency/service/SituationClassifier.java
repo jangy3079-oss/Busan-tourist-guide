@@ -25,6 +25,7 @@ import kr.busan.safetrip.common.ai.AIService;
 import kr.busan.safetrip.common.ai.AiRequest;
 import kr.busan.safetrip.common.api.EmType;
 import kr.busan.safetrip.common.exception.BusinessException;
+import kr.busan.safetrip.common.exception.ErrorCode;
 import kr.busan.safetrip.common.util.PiiMasker;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage;
@@ -81,6 +82,18 @@ public class SituationClassifier {
 
     /** 상황 문장을 LLM으로 분류한다. 호출 실패나 스키마·허용 코드 위반 시 empty를 돌려준다. */
     public Optional<Triage> classify(String text) {
+        try {
+            return classifyOrFail(text);
+        } catch (BusinessException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * classify 와 같지만 LLM 자체의 실패(시간 초과·사용 불가)는 BusinessException(AI_TIMEOUT|AI_UNAVAILABLE)으로 알린다.
+     * 빈 결과는 스키마 위반이다. 같은 요청에서 '할 일' LLM을 더 부를지 정하는 데 쓴다(T12b, NFR-E002).
+     */
+    public Optional<Triage> classifyOrFail(String text) {
         if (text == null || text.isBlank() || aiService == null) {
             return Optional.empty();
         }
@@ -98,10 +111,10 @@ public class SituationClassifier {
                     cfg.maxRetry()));
         } catch (BusinessException e) {
             log.warn("emergency.classify failed: {}", e.code());
-            return Optional.empty();
+            throw e.code() == ErrorCode.AI_TIMEOUT ? e : new BusinessException(ErrorCode.AI_UNAVAILABLE, "분류 LLM 실패");
         } catch (RuntimeException e) {
             log.warn("emergency.classify failed: {}", e.getClass().getSimpleName());
-            return Optional.empty();
+            throw new BusinessException(ErrorCode.AI_UNAVAILABLE, "분류 LLM 실패");
         }
         return parseAndValidate(rawResponse);
     }
