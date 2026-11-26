@@ -20,7 +20,7 @@ class _PhotoRepo implements PhotoRepository {
   Future<MatchResult> match(List<int>? imageBytes, Lang lang, {String fileName = 'photo.jpg', double? lat, double? lng, String? sample}) async =>
       const MatchResult(MatchDecision.confirmed, [PhotoCandidate(kPhotoPlace, 96)], matchId: 'm_1');
   @override
-  Future<String> narrate(String contentId, Lang lang, {String? matchId}) async => '설명';
+  Future<PhotoNarration> narrate(String contentId, Lang lang, {String? matchId}) async => const PhotoNarration('설명', template: true);
   @override
   Future<MatchResult> search(String q, Lang lang) async => const MatchResult(MatchDecision.notFound, []);
 }
@@ -39,7 +39,7 @@ class _CourseRepo implements CourseRepository {
   @override
   Future<List<PlacePin>> startCandidates(Area area) async => const [];
   @override
-  Future<Evidence> evidence(String contentId, Lang lang) async => const Evidence('', '', '', '');
+  Future<Evidence> evidence(String contentId, Lang lang) async => const Evidence('', '', '', '', overviewTr: '訳した概要');
 }
 
 void main() {
@@ -53,7 +53,7 @@ void main() {
   late List<String> opened;
   late ProviderContainer box;
 
-  Future<void> pumpResult(WidgetTester tester) async {
+  Future<void> pumpResult(WidgetTester tester, {Lang lang = Lang.ko}) async {
     course = _CourseRepo();
     opened = [];
     box = ProviderContainer(overrides: [
@@ -62,6 +62,7 @@ void main() {
       photoLinkProvider.overrideWithValue(opened.add),
     ]);
     addTearDown(box.dispose);
+    box.read(langProvider.notifier).set(lang);
     await box.read(photoProvider.notifier).identify(sample: 'ok');
     final router = GoRouter(initialLocation: '/photo/result', routes: [
       GoRoute(path: '/photo/result', builder: (_, _) => const PhotoResultScreen()),
@@ -88,6 +89,19 @@ void main() {
     expect(find.text('COURSE'), findsOneWidget);
     expect(course.startPlaceId, isNull); // 사용자가 입력하기 전에는 코스를 요청하지 않음
     expect(box.read(courseProvider).startPlace?.contentId, kPhotoPlace.contentId);
+  });
+
+  testWidgets('영·일: 개요 번역(참고)을 원문 위에, 템플릿 설명은 간략 설명으로 표시(#238)', (tester) async {
+    await pumpResult(tester, lang: Lang.ja);
+    expect(find.text('概要(AI翻訳・参考)'), findsOneWidget);
+    expect(find.text('訳した概要'), findsOneWidget);
+    expect(find.text('簡単な説明を表示しています'), findsOneWidget);
+  });
+
+  testWidgets('한국어는 번역을 부르지 않는다', (tester) async {
+    await pumpResult(tester);
+    expect(find.text('개요(AI 번역)'), findsNothing);
+    expect(find.text('간략 설명으로 표시 중이에요'), findsOneWidget);
   });
 
   Future<void> pumpPick(WidgetTester tester, {required bool api}) async {

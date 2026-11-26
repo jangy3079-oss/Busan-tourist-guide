@@ -20,9 +20,9 @@ class ApiPhotoRepository implements PhotoRepository {
   }
 
   @override
-  Future<String> narrate(String contentId, Lang lang, {String? matchId}) async {
+  Future<PhotoNarration> narrate(String contentId, Lang lang, {String? matchId}) async {
     final j = await api.post('/places/$contentId/narration', {'lang': langCode(lang), 'matchId': matchId});
-    return j['text'] as String? ?? '';
+    return PhotoNarration(j['text'] as String? ?? '', template: j['template'] == true);
   }
 
   @override

@@ -29,7 +29,7 @@ abstract class PhotoRepository {
   /// API-P01 POST /photo/match. 사진은 서버에 저장되지 않음. sample은 목업 시연용
   Future<MatchResult> match(List<int>? imageBytes, Lang lang, {String fileName = 'photo.jpg', double? lat, double? lng, String? sample});
   /// API-P02 POST /places/{contentId}/narration
-  Future<String> narrate(String contentId, Lang lang, {String? matchId});
+  Future<PhotoNarration> narrate(String contentId, Lang lang, {String? matchId});
   /// API-P03 GET /places/search
   Future<MatchResult> search(String q, Lang lang);
 }
