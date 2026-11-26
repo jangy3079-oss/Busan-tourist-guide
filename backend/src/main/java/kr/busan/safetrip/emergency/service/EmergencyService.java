@@ -143,11 +143,12 @@ public class EmergencyService {
         EmType type = triage.type();
         String group = classified.group();
         DecisionTable.RoutePlan plan = decisionTable.plan(type, group);
+        String topContact = resolveTopContact(plan.topContact(), triage.urgency());
 
         // 3. 대상 지역 밖(FR-E017, AC-E08): 연락처·1330 안내만
         if (loc.outOfArea()) {
             return new GuideResponse(
-                    triage, false, true, plan.topContact(),
+                    triage, false, true, topContact,
                     List.of(), null, List.of(), false, List.of(), List.of(), null);
         }
 
@@ -169,7 +170,7 @@ public class EmergencyService {
                 triage,
                 false,
                 false,
-                plan.topContact(),
+                topContact,
                 places,
                 card,
                 stepGuidance.steps(),
@@ -205,6 +206,8 @@ public class EmergencyService {
 
     private ClassificationResult classify(GuideRequest req) {
         Optional<KeywordRuleEngineImpl.Match> kwMatch = keywords.match(req.text());
+        Optional<Triage> llmResult = classifyWithLlmSafely(req.text());
+        double threshold = classifier == null ? 0.6 : classifier.confidenceThreshold();
 
         EmType type;
         String group;
@@ -212,34 +215,66 @@ public class EmergencyService {
         Map<String, String> slots;
 
         if (req.type() != null) {
+            // 사용자 직접 선택(FR-E008): 같은 유형의 LLM 슬롯 우선, 없으면 같은 유형의 키워드 그룹 힌트
             type = req.type();
-            group = (kwMatch.isPresent() && kwMatch.get().type() == type) ? kwMatch.get().group() : null;
+            boolean llmSameType = llmResult.isPresent() && llmResult.get().type() == type;
+            boolean kwSameType = kwMatch.isPresent() && kwMatch.get().type() == type;
+            if (llmSameType) {
+                Map<String, String> llmSlots = safeSlots(llmResult.get().slots());
+                String derivedGroup = cardBuilder.groupFromSlots(type, llmSlots);
+                group = derivedGroup != null ? derivedGroup : (kwSameType ? kwMatch.get().group() : null);
+                slots = llmSlots;
+            } else {
+                group = kwSameType ? kwMatch.get().group() : null;
+                slots = group == null ? Map.of() : cardBuilder.slotsFromGroup(type, group);
+            }
             confidence = 1.0;
-            slots = group == null ? Map.of() : cardBuilder.slotsFromGroup(type, group);
-        } else {
-            Optional<Triage> llmResult = classifyWithLlmSafely(req.text());
-            if (kwMatch.isPresent()) {
-                // T10에서 병합
+        } else if (llmResult.isPresent() && llmResult.get().type() != null
+                && llmResult.get().confidence() >= threshold) {
+            Triage llm = llmResult.get();
+            // ADR-E04 놓침 방지: 키워드가 위급 유형인데 LLM이 비위급 유형이면 키워드 유형·그룹 우선
+            if (kwMatch.isPresent() && isUrgentType(kwMatch.get().type()) && !isUrgentType(llm.type())) {
                 type = kwMatch.get().type();
                 group = kwMatch.get().group();
-                confidence = 1.0;
                 slots = cardBuilder.slotsFromGroup(type, group);
-            } else if (llmResult.isPresent() && llmResult.get().type() != null) {
-                // T10에서 병합
-                Triage llm = llmResult.get();
-                type = llm.type();
-                group = null;
-                confidence = llm.confidence();
-                slots = llm.slots() == null ? Map.of() : Map.copyOf(llm.slots());
+                confidence = 1.0;
             } else {
-                return null;
+                type = llm.type();
+                Map<String, String> llmSlots = safeSlots(llm.slots());
+                group = cardBuilder.groupFromSlots(type, llmSlots);
+                slots = llmSlots;
+                confidence = llm.confidence();
             }
+        } else if (kwMatch.isPresent()) {
+            // LLM 실패 또는 신뢰도 기준 미만 → 키워드 대체 경로
+            type = kwMatch.get().type();
+            group = kwMatch.get().group();
+            slots = cardBuilder.slotsFromGroup(type, group);
+            confidence = 1.0;
+        } else {
+            return null;
         }
 
-        boolean urgentType = type == EmType.URGENT || type == EmType.FIRE || type == EmType.THREAT;
-        boolean keywordUrgent = kwMatch.isPresent() && kwMatch.get().urgent();
-        Urgency urgency = (urgentType || keywordUrgent) ? Urgency.URGENT : Urgency.NORMAL;
+        // FR-E007 공통 최종 긴급도: 최종 type 위급 OR L.urgency=URGENT OR K.urgent
+        boolean llmUrgent = llmResult.isPresent() && llmResult.get().urgency() == Urgency.URGENT;
+        boolean kwUrgent = kwMatch.isPresent() && kwMatch.get().urgent();
+        Urgency urgency = (isUrgentType(type) || llmUrgent || kwUrgent) ? Urgency.URGENT : Urgency.NORMAL;
         return new ClassificationResult(new Triage(type, urgency, confidence, slots), group);
+    }
+
+    private static boolean isUrgentType(EmType type) {
+        return type == EmType.URGENT || type == EmType.FIRE || type == EmType.THREAT;
+    }
+
+    private static String resolveTopContact(String planTopContact, Urgency urgency) {
+        if (urgency == Urgency.URGENT && !"119".equals(planTopContact) && !"112".equals(planTopContact)) {
+            return "119";
+        }
+        return planTopContact;
+    }
+
+    private static Map<String, String> safeSlots(Map<String, String> slots) {
+        return slots == null || slots.isEmpty() ? Map.of() : Map.copyOf(slots);
     }
 
     private Optional<Triage> classifyWithLlmSafely(String text) {
