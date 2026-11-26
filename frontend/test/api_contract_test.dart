@@ -110,7 +110,7 @@ void main() {
     expect(jsonDecode(calls.last.body), jsonDecode(fx('REQ_E02_guide'))..removeWhere((_, v) => v == null));
     expect(g.type, EmType.urgent);
     expect(g.places.single.isEr, true);
-    expect(g.places.single.sub, contains('가용병상 3'));
+    expect(g.places.single.sub, contains('Free beds: 3')); // 요청 언어(en)로 표시(emergency_api.dart)
     expect(g.places.single.phone, '051-610-9000');
     expect(g.cardTranslated, startsWith('My friend'));
     expect(g.todo.length, 2);
