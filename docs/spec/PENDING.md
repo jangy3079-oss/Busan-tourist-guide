@@ -13,6 +13,16 @@
 | CHG-004 | SRS·SDD 표지·개요 | 서비스 이름 "부산 안심여행" | 팀 결정(11/13~25) | 팀 | 합의 |
 | CHG-005 | SDD 배포·개발 환경 | DB는 공용 Supabase(PostgreSQL) + 로컬 개발 Docker(pgvector). 형상 관리는 이슈·마일스톤 기반, 공용은 PR, 담당 영역은 브랜치 직접 병합 + CI(#163) | 팀 결정 | 팀 | 합의 |
 | CHG-006 | SDD 5~11장 | 중간고사 때 비워 둔 장 작성. 6장 API는 `docs/API.md`를 옮김 | — | 김희찬 | 합의 |
+| CHG-007 | SDD 8장 예외 처리 | 오류 ID는 `ERR-NNN` 번호를 따로 두지 않고 구현된 `ErrorCode` 이름(`INVALID_INPUT`, `UNSUPPORTED_MEDIA`, `PAYLOAD_TOO_LARGE`, `NOT_FOUND`, `AI_UNAVAILABLE`, `AI_TIMEOUT`, `UPSTREAM_UNAVAILABLE`, `NOT_IMPLEMENTED`, `INTERNAL`)을 그대로 씀 | `ErrorCode.java`, #19, #190 | 김희찬(문서) | 합의 |
+| CHG-008 | SDD 2.1·3.4·5장 | 표 이름을 실제 마이그레이션의 단수형(`place`, `help_place`, `kb_document`, `request_log`, `sync_log` 등)으로 통일 | V1~V35, #190 | 김희찬(문서) | 합의 |
+| CHG-009 | SDD 7.2·7.3 | `SpringAiService`는 제공사별 `response_format` 대신 시스템 지시문으로 JSON을 요구하고 응답에서 JSON을 꺼내 검증함 | #142, #171, #172 | 김희찬(문서) | 합의 |
+| CHG-010 | SRS FR-C013, API-C01·C03 | 코스 요청에 선택 필드 `notEmergency`: 긴급 확인 시트에서 '코스 계속'을 고르면 비위급 오탐만 우회(URGENT·FIRE·THREAT는 미적용) | #166 | 김동현 | 합의 |
+
+## 사진 (장연수 확인 필요)
+| ID | 대상 | 바꿀 내용 | 근거 | 제안 | 상태 |
+|---|---|---|---|---|---|
+| CHG-201 | SDD 7.2, SRS NFR-P005 | VLM을 쓰지 않고 로컬 `PaddleOcrEngine`(PP-OCRv5)을 기본 `OcrEngine`으로 확정. `CloudOcrEngine`은 미구현 자리(설정으로 교체) | #40, #41, #42 | 김희찬(문서) | 제안 |
+| CHG-202 | SRS FR-P002, API-P01 | 업로드 형식 `jpg/jpeg/png`(10MB 이하) 확정, HEIC 미지원 명시 | `docs/API.md` 열린 결정 1 | 김희찬(문서) | 제안 |
 
 ## 긴급
 | ID | 대상 | 바꿀 내용 | 근거 | 제안 | 상태 |
@@ -31,4 +41,9 @@
 | CHG-112 | SDD COMP-E07, DATA-E11 | 운영 중 판정은 공용 HoursParser 구조를 같이 씀. 공휴일은 한국천문연구원 특일 정보로 매년 적재 | 구현(#105 #120 #136) | 김희찬 | 합의 |
 | CHG-113 | API.md API-E05 | 재적재 검증 실패는 400 `INVALID_INPUT`, 이전 상태 유지 | 구현(#111) | 김희찬 | 합의 |
 | CHG-114 | SRS 확장 기능(FR 신설 여부) | 화면에 들어간 기능의 정식 FR 여부: 112 문자 신고(SILENT_REPORT), 대사관 안내(1330 우선 + 외교부 목록), 위치 복사, 관광불편신고(1330). 특보 배너·관광경찰 버튼은 화면에서 뺌 | 프론트 #180·#122 | 김희찬 | 제안 |
-| CHG-115 | SRS 2.4 안전, UI-E02·E03 | 결과·카드 화면에 면책 문구 한 줄("이 안내는 의료 판단이 아님. 위급하면 119") | #127 | 김희찬 | 제안 |
+| CHG-115 | SRS 2.4 안전, UI-E02·E03 | 결과·카드 화면에 면책 문구 한 줄(3개 국어, "이 안내는 의료 판단이 아님. 위급하면 바로 119"). 구현됨 | #127, feat/emergency-eval | 김희찬 | 합의 |
+| CHG-116 | SRS FR-E004, SDD 8장 | 백엔드 오류 응답에 연락처 필드를 넣지 않고, 프론트가 모든 긴급 화면·오류·시간 초과 상태에서 112·119·1330 버튼을 항상 표시해 FR-E004를 충족함 | #116, #158, #180 | 김희찬 | 합의 |
+| CHG-117 | SRS FR-E021, API-E04 | 적재는 검증 단계(dryRun) 없이 바로 upsert함. 파일에 없는 기존 행은 지우지 않음(응답에 `deleted` 없음) | #110 | 김희찬 | 합의 |
+| CHG-118 | SDD 6장, API.md | 상황판 구현에 따른 API: E02 응답 `eventId`, API-E08(전화 버튼 기록)·E09(집계)·E10(최근)·E11(SSE), `/admin/emergency/dashboard` 페이지 (CHG-101·102의 API 부분) | #189 | 김희찬 | 합의 |
+| CHG-119 | SRS DATA-E06, FR-E010 | 관광안내소 운영시간의 계절 연장(7~8월)은 보수적으로 빼고 기본 시간(`10:00~19:00`)으로 적재 | T09·T11 작업 | 김희찬 | 합의 |
+| CHG-120 | SRS AI-REQ-E01 | LLM 분류 답에서 슬롯 값만 목록 밖이면 그 슬롯만 버리고 유형·긴급도는 씀. 유형 값 오류 등 그 밖의 위반은 전체 폐기 | eval-60 E39, #102 | 김희찬 | 합의 |
