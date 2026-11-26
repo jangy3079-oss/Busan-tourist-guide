@@ -64,10 +64,21 @@ class ContractFixtureTest {
                 List.of("숨을 쉬는지 확인하세요", "119 안내에 따라 가슴압박을 하세요"), false,
                 List.of(new EmergencyDtos.Source("kb_cpr_01", "심폐소생술 안내(질병관리청)")),
                 List.of(EmergencyDtos.Extra.SILENT_REPORT),
-                new EmergencyDtos.DataAsOf("2026-11-11T04:00:00+09:00", "국립중앙의료원")));
+                new EmergencyDtos.DataAsOf("2026-11-11T04:00:00+09:00", "국립중앙의료원"),
+                "7c1e0000-0000-4000-8000-000000000001"));
         m.put("E02_guide_need_type", new EmergencyDtos.GuideResponse(null, true, false, null, List.of(), null, List.of(), false, List.of(), List.of(), null));
         m.put("REQ_C01_create", new CourseDtos.CreateRequest("광안리 3시간", "ko", "2789475", new CourseDtos.Overrides(null, "15:00", 180, Area.GWANGALLI)));
         m.put("REQ_C03_edit_chip", new CourseDtos.EditRequest(null, "ko", new CourseDtos.Overrides(null, null, 120, null), null));
+        m.put("REQ_E08_call_event", new EmergencyDtos.CallEventRequest("7c1e0000-0000-4000-8000-000000000001", "119", "en"));
+        m.put("E09_dashboard_summary", new EmergencyDtos.DashboardSummary(
+                new java.util.TreeMap<>(Map.of("URGENT", 3, "MILD", 5)), new java.util.TreeMap<>(Map.of("URGENT", 3, "NORMAL", 5)), new java.util.TreeMap<>(Map.of("수영구", 6, "해운대구", 2)), new java.util.TreeMap<>(Map.of("ko", 4, "en", 3, "ja", 1)),
+                List.of(new EmergencyDtos.HourCount("2026-11-26T14:00:00+09:00", 8)),
+                List.of(new EmergencyDtos.GridCount("r13018c39129", 35.1535, 129.1194, 4)),
+                new java.util.TreeMap<>(Map.of("112", 1, "119", 3, "1330", 2)), 0.125, 0.25));
+        m.put("E10_dashboard_recent", List.of(new EmergencyDtos.DashboardEvent(
+                "2026-11-26T14:07:00+09:00", "URGENT", "URGENT", "수영구", "광안동", "r13018c39129", "119")));
+        m.put("E11_dashboard_alert", new EmergencyDtos.DashboardAlert("urgent-cluster", "CRITICAL", "GRID", "r13018c39129", 3, 1800,
+                "2026-11-26T14:07:00+09:00"));
         m.put("REQ_E02_guide", new EmergencyDtos.GuideRequest("아파요", "en", null, null, Area.HAEUNDAE, EmType.MILD));
         return m;
     }

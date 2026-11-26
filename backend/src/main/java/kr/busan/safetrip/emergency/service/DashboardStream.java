@@ -49,11 +49,11 @@ public class DashboardStream {
     }
 
     public void publishEvent(EventSummary summaryOfEvent) {
-        broadcast("event", summaryOfEvent);
+        broadcast("emergency", DashboardViews.event(summaryOfEvent)); // API-E11 event: emergency
     }
 
     public void publishAlert(AlertRuleEngine.Alert alert) {
-        broadcast("alert", alert);
+        broadcast("alert", DashboardViews.alert(alert)); // API-E11 event: alert
     }
 
     int subscriberCount() {

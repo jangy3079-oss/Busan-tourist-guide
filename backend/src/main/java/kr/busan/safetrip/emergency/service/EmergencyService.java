@@ -61,6 +61,7 @@ public class EmergencyService {
     private final Clock clock;
     private final RequestLogRecorder recorder;
     private final ElapsedTimer timer;
+    private final DashboardEventWriter events;
 
     /** 기존 계약 테스트(ApiContractTest 등) 호환용 6인자 생성자(공휴일 없음 기본값). */
     public EmergencyService(
@@ -104,9 +105,10 @@ public class EmergencyService {
             EmergencyMessages messages,
             HolidayCalendar holidayCalendar,
             RequestLogRecorder recorder,
-            ElapsedTimer timer) {
+            ElapsedTimer timer,
+            DashboardEventWriter events) {
         this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
-                regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, Clock.system(SEOUL), recorder, timer);
+                regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, Clock.system(SEOUL), recorder, timer, events);
     }
 
     /** 테스트용 생성자(공휴일 달력 미지정 → 공휴일 아님). */
@@ -160,6 +162,27 @@ public class EmergencyService {
             Clock clock,
             RequestLogRecorder recorder,
             ElapsedTimer timer) {
+        this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
+                regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, clock, recorder, timer, null);
+    }
+
+    /** 테스트용 생성자: 상황판 이벤트 기록기까지 주입한다(T17b). events 가 null 이면 기록하지 않고 eventId 도 null */
+    EmergencyService(
+            KeywordRuleEngineImpl keywords,
+            SituationClassifier classifier,
+            DecisionTable decisionTable,
+            HelpPlaceFinder finder,
+            KoreanCardBuilder cardBuilder,
+            GuidanceRetriever guidance,
+            RegionResolver regionResolver,
+            ReverseGeocoder reverseGeocoder,
+            FallbackSteps fallbackSteps,
+            EmergencyMessages messages,
+            HolidayCalendar holidayCalendar,
+            Clock clock,
+            RequestLogRecorder recorder,
+            ElapsedTimer timer,
+            DashboardEventWriter events) {
         this.keywords = keywords;
         this.classifier = classifier;
         this.decisionTable = decisionTable;
@@ -174,6 +197,7 @@ public class EmergencyService {
         this.clock = clock;
         this.recorder = recorder;
         this.timer = timer == null ? new ElapsedTimer() : timer;
+        this.events = events;
     }
 
     /** API-E01 즉시 응답(FR-E003, E005, NFR-E001): 키워드 사전·결정표만 사용해 1초 이내 응답. LLM·DB·외부 API 호출 금지. */
@@ -242,9 +266,10 @@ public class EmergencyService {
 
         // 3. 대상 지역 밖(FR-E017, AC-E08): 연락처·1330 안내만
         if (loc.outOfArea()) {
-            return new GuideResponse(
+            GuideResponse out = new GuideResponse(
                     triage, false, true, topContact,
                     List.of(), null, List.of(), false, List.of(), List.of(), null);
+            return out.withEventId(recordEvent(triage, lang, loc, null, topContact, false, fallback));
         }
 
         // 4. 도움처 검색 (FR-E009~E012, NFR-E003)
@@ -274,7 +299,7 @@ public class EmergencyService {
         // 7. 데이터 기준 시각·출처 (NFR-E008)
         DataAsOf dataAsOf = buildDataAsOf(places, foundPlaces.oldestUpdatedAt());
 
-        return new GuideResponse(
+        GuideResponse res = new GuideResponse(
                 triage,
                 false,
                 false,
@@ -286,6 +311,23 @@ public class EmergencyService {
                 stepGuidance.sources(),
                 plan.extras(),
                 dataAsOf);
+
+        // 8. 상황판 이벤트(T17b): 구·동·약 300m 격자·유형·긴급도·플래그만. 문장·좌표·주소는 남기지 않음(NFR-E004)
+        String vworldAddress = reverseGeocoder != null && card != null && !fallback.contains("GEOCODE_FAIL") ? card.address() : null;
+        return res.withEventId(recordEvent(triage, lang, loc, vworldAddress, topContact, stepGuidance.fallback(), fallback));
+    }
+
+    /** 상황판 이벤트 한 건. 비긴급·대상 지역 밖은 위치 단서 없이, 지역 선택이면 격자·동 없이. 실패하면 null */
+    private String recordEvent(Triage triage, Lang lang, LocationContext loc, String vworldAddress, String topContact,
+                               boolean stepsFallback, Set<String> fallback) {
+        if (events == null || triage.type() == EmType.NON) {
+            return null;
+        }
+        boolean exact = !loc.fromArea() && !loc.outOfArea();
+        boolean llmFailed = fallback.contains("LLM_TIMEOUT") || fallback.contains("LLM_UNAVAILABLE") || fallback.contains("LLM_SCHEMA");
+        return events.write(triage, lang, loc.outOfArea() ? null : loc.district(),
+                exact ? loc.lat() : null, exact ? loc.lng() : null, exact ? vworldAddress : null,
+                topContact, fallback.contains("USER_TYPE"), llmFailed, stepsFallback);
     }
 
     private record LocationContext(

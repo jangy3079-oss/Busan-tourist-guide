@@ -1,0 +1,36 @@
+{
+  "byType" : {
+    "MILD" : 5,
+    "URGENT" : 3
+  },
+  "byUrgency" : {
+    "NORMAL" : 5,
+    "URGENT" : 3
+  },
+  "byDistrict" : {
+    "수영구" : 6,
+    "해운대구" : 2
+  },
+  "byLang" : {
+    "en" : 3,
+    "ja" : 1,
+    "ko" : 4
+  },
+  "byHour" : [ {
+    "hour" : "2026-11-26T14:00:00+09:00",
+    "count" : 8
+  } ],
+  "grids" : [ {
+    "gridId" : "r13018c39129",
+    "lat" : 35.1535,
+    "lng" : 129.1194,
+    "count" : 4
+  } ],
+  "calls" : {
+    "112" : 1,
+    "119" : 3,
+    "1330" : 2
+  },
+  "llmFailRate" : 0.125,
+  "fallbackRate" : 0.25
+}
