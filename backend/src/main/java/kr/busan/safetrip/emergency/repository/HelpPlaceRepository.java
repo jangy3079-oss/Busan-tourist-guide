@@ -23,4 +23,10 @@ public interface HelpPlaceRepository extends JpaRepository<HelpPlaceEntity, Long
             double maxLng);
 
     Optional<HelpPlaceEntity> findBySourceAndExtId(String source, String extId);
+
+    List<HelpPlaceEntity> findByKindAndSource(String kind, String source);
+
+    long countByKindAndSource(String kind, String source);
+
+    void deleteByKindAndSource(String kind, String source);
 }

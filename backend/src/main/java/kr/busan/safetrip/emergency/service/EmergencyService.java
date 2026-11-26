@@ -2,6 +2,7 @@ package kr.busan.safetrip.emergency.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -54,9 +55,10 @@ public class EmergencyService {
     private final ReverseGeocoder reverseGeocoder;
     private final FallbackSteps fallbackSteps;
     private final EmergencyMessages messages;
+    private final HolidayCalendar holidayCalendar;
     private final Clock clock;
 
-    /** 기존 계약 테스트(ApiContractTest 등) 호환용 6인자 생성자. */
+    /** 기존 계약 테스트(ApiContractTest 등) 호환용 6인자 생성자(공휴일 없음 기본값). */
     public EmergencyService(
             KeywordRuleEngineImpl keywords,
             SituationClassifier classifier,
@@ -65,7 +67,7 @@ public class EmergencyService {
             KoreanCardBuilder cardBuilder,
             GuidanceRetriever guidance) {
         this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
-                null, null, null, null, Clock.system(SEOUL));
+                null, null, null, null, null, Clock.system(SEOUL));
     }
 
     @Autowired
@@ -79,12 +81,13 @@ public class EmergencyService {
             RegionResolver regionResolver,
             ReverseGeocoder reverseGeocoder,
             FallbackSteps fallbackSteps,
-            EmergencyMessages messages) {
+            EmergencyMessages messages,
+            HolidayCalendar holidayCalendar) {
         this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
-                regionResolver, reverseGeocoder, fallbackSteps, messages, Clock.system(SEOUL));
+                regionResolver, reverseGeocoder, fallbackSteps, messages, holidayCalendar, Clock.system(SEOUL));
     }
 
-    /** 테스트용 생성자: 결정적 시각 검증을 위해 고정 Clock을 주입한다. */
+    /** 테스트용 생성자(공휴일 달력 미지정 → 공휴일 아님). */
     EmergencyService(
             KeywordRuleEngineImpl keywords,
             SituationClassifier classifier,
@@ -97,6 +100,24 @@ public class EmergencyService {
             FallbackSteps fallbackSteps,
             EmergencyMessages messages,
             Clock clock) {
+        this(keywords, classifier, decisionTable, finder, cardBuilder, guidance,
+                regionResolver, reverseGeocoder, fallbackSteps, messages, null, clock);
+    }
+
+    /** 테스트용 생성자: 고정 Clock과 공휴일 달력을 주입한다. */
+    EmergencyService(
+            KeywordRuleEngineImpl keywords,
+            SituationClassifier classifier,
+            DecisionTable decisionTable,
+            HelpPlaceFinder finder,
+            KoreanCardBuilder cardBuilder,
+            GuidanceRetriever guidance,
+            RegionResolver regionResolver,
+            ReverseGeocoder reverseGeocoder,
+            FallbackSteps fallbackSteps,
+            EmergencyMessages messages,
+            HolidayCalendar holidayCalendar,
+            Clock clock) {
         this.keywords = keywords;
         this.classifier = classifier;
         this.decisionTable = decisionTable;
@@ -107,6 +128,7 @@ public class EmergencyService {
         this.reverseGeocoder = reverseGeocoder;
         this.fallbackSteps = fallbackSteps;
         this.messages = messages;
+        this.holidayCalendar = holidayCalendar;
         this.clock = clock;
     }
 
@@ -154,7 +176,11 @@ public class EmergencyService {
 
         // 4. 도움처 검색 (FR-E009~E012, NFR-E003)
         ZonedDateTime now = ZonedDateTime.now(clock).withZoneSameInstant(SEOUL);
-        HelpPlaceFinder.FindResult foundPlaces = findPlacesSafely(plan, loc.lat(), loc.lng(), now, lang);
+        LocalDate today = now.toLocalDate();
+        boolean todayIsHoliday = holidayCalendar != null && holidayCalendar.isHoliday(today);
+        boolean yesterdayWasHoliday = holidayCalendar != null && holidayCalendar.isHoliday(today.minusDays(1));
+        HelpPlaceFinder.FindResult foundPlaces = findPlacesSafely(
+                plan, loc.lat(), loc.lng(), now, todayIsHoliday, yesterdayWasHoliday, lang);
         List<HelpPlace> places = foundPlaces.places();
 
         // 5. 한국어 카드 (FR-E015, AI-REQ-E07)
@@ -291,12 +317,19 @@ public class EmergencyService {
     }
 
     private HelpPlaceFinder.FindResult findPlacesSafely(
-            DecisionTable.RoutePlan plan, double lat, double lng, ZonedDateTime now, Lang lang) {
+            DecisionTable.RoutePlan plan,
+            double lat,
+            double lng,
+            ZonedDateTime now,
+            boolean todayIsHoliday,
+            boolean yesterdayWasHoliday,
+            Lang lang) {
         if (finder == null || plan.noPlaces()) {
             return new HelpPlaceFinder.FindResult(List.of(), 0, false, null);
         }
         try {
-            HelpPlaceFinder.FindResult result = finder.find(plan, lat, lng, now, false, false, lang);
+            HelpPlaceFinder.FindResult result = finder.find(
+                    plan, lat, lng, now, todayIsHoliday, yesterdayWasHoliday, lang);
             return result == null ? new HelpPlaceFinder.FindResult(List.of(), 0, false, null) : result;
         } catch (RuntimeException e) {
             log.warn("emergency.places fallback: {}", e.getClass().getSimpleName());

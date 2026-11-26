@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -440,6 +442,35 @@ class EmergencyServiceGuideTest {
         assertThat(res.triage().confidence()).isEqualTo(1.0);
         assertThat(res.topContact()).isEqualTo("112");
         assertThat(res.card().ko()).contains("따라오고");
+    }
+
+    @Test
+    void appliesHolidayRuleKey8WhenClockDateIsInHolidayCalendar() {
+        // 2026-10-09(금, 한글날) 13:00 — 평일(5)은 09:00-18:00이지만 공휴일(8)은 10:00-12:00 / 12:00-16:00으로 구분
+        Clock holidayClock = Clock.fixed(ZonedDateTime.of(2026, 10, 9, 13, 0, 0, 0, SEOUL).toInstant(), SEOUL);
+        HolidayCalendar holidayCal = new HolidayCalendar(Set.of(LocalDate.of(2026, 10, 9)));
+        DecisionTable dt = new DecisionTable();
+        HelpPlaceFinder finder = new HelpPlaceFinder(placeRepo, dt, new OpenNowEvaluator(), erClient);
+        EmergencyService holidayService = new EmergencyService(
+                new KeywordRuleEngineImpl(), classifier, dt, finder, new KoreanCardBuilder(),
+                new GuidanceRetriever(), new RegionResolver(), new ReverseGeocoder(),
+                new FallbackSteps(), new EmergencyMessages(), holidayCal, holidayClock);
+
+        HelpPlaceEntity closedOnHoliday = entity(
+                30L, "PHARMACY", "평일만약국", 35.1535, 129.1187,
+                "{\"5\":\"0900-1800\",\"8\":\"1000-1200\"}", false, Instant.parse("2026-10-09T00:00:00Z"), "C30");
+        HelpPlaceEntity openOnHoliday = entity(
+                31L, "PHARMACY", "공휴일영업약국", 35.1540, 129.1188,
+                "{\"5\":\"0900-1200\",\"8\":\"1200-1600\"}", false, Instant.parse("2026-10-09T00:00:00Z"), "C31");
+        when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
+                anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(closedOnHoliday, openOnHoliday));
+
+        GuideResponse res = holidayService.guide(new GuideRequest(
+                "열이 나요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.places()).extracting(HelpPlace::name).containsExactly("공휴일영업약국");
+        assertThat(res.places().get(0).todayHours()).isEqualTo("12:00\u201316:00");
     }
 
     private static HelpPlaceEntity entity(
