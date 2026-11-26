@@ -115,7 +115,7 @@ class EmergencyEval60Test {
         GuidanceRetriever guidance = new GuidanceRetriever(
                 kbRepo, embeddingService, aiService, decisionTable, fallbackSteps);
         HelpPlaceFinder finder = new HelpPlaceFinder(
-                stubGwangalliPlaceRepo(), decisionTable, new OpenNowEvaluator(), new ErRealtimeClient());
+                stubGwangalliPlaceRepo(), decisionTable, new OpenNowEvaluator(), new ErRealtimeClient("", java.time.Clock.systemUTC())); // 키 없음 → 실시간 조회 없이 대체
 
         AtomicReference<Set<String>> lastFallback = new AtomicReference<>(Set.of());
         RequestLogRecorder spyRecorder = new RequestLogRecorder(null) {
