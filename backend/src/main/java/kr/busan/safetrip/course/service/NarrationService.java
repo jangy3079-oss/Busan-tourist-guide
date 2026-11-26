@@ -111,13 +111,18 @@ public class NarrationService {
         return null;
     }
 
-    /** AI-REQ-C02 대체: 첫 장소 이름 제목 + "장소명 (유형)" */
+    /** AI-REQ-C02 대체: 첫 장소 이름 제목 + "장소명 (유형)". 영·일은 읽는 법(#220)이 있으면 그걸로(#240) */
     CourseDtos.NarrationResponse template(String courseId, List<CourseDtos.Stop> stops, Lang lang) {
-        String title = settings.msg(lang, "narration.title", stops.isEmpty() ? "" : stops.get(0).name());
+        String title = settings.msg(lang, "narration.title", stops.isEmpty() ? "" : nameIn(stops.get(0), lang));
         List<CourseDtos.NarrationItem> items = stops.stream()
-                .map(s -> new CourseDtos.NarrationItem(s.contentId(), s.name() + " (" + settings.msg(lang, "cat." + s.category()) + ")"))
+                .map(s -> new CourseDtos.NarrationItem(s.contentId(), nameIn(s, lang) + " (" + settings.msg(lang, "cat." + s.category()) + ")"))
                 .toList();
         return new CourseDtos.NarrationResponse(courseId, title, items, true);
+    }
+
+    static String nameIn(CourseDtos.Stop s, Lang lang) {
+        String r = switch (lang) { case EN -> s.nameEn(); case JA -> s.nameJa(); default -> null; };
+        return r == null || r.isBlank() ? s.name() : r;
     }
 
     private static String languageName(Lang lang) {

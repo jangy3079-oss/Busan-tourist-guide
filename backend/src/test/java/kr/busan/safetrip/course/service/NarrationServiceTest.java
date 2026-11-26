@@ -46,6 +46,21 @@ class NarrationServiceTest {
         assertTrue(sent.user().contains("30文字") && sent.user().contains("45文字"), sent.user());
     }
 
+    /** 템플릿도 영·일은 읽는 법으로, 없으면 원문(#240) */
+    @Test
+    void templateUsesReading() {
+        NarrationService s = new NarrationService(req -> "", null, null, new OutputValidator(), new CourseSettings());
+        List<CourseDtos.Stop> stops = List.of(
+                new CourseDtos.Stop(1, "1", "민락수변공원", "관광지", 0, 0, "14:00", "15:00", null, false, false, false, "Millak Waterside Park", "民楽水辺公園"),
+                new CourseDtos.Stop(2, "2", "윤희횟집", "음식점", 0, 0, "15:10", "16:10", null, false, false, false, null, null));
+        CourseDtos.NarrationResponse ja = s.template("c_1", stops, Lang.JA);
+        assertEquals("民楽水辺公園から始まるコース", ja.title());
+        assertTrue(ja.items().get(0).text().startsWith("民楽水辺公園 ("), ja.items().get(0).text());
+        assertTrue(ja.items().get(1).text().startsWith("윤희횟집 ("), ja.items().get(1).text()); // 읽는 법이 없으면 원문
+        assertEquals("Course starting at Millak Waterside Park", s.template("c_1", stops, Lang.EN).title());
+        assertEquals("민락수변공원에서 시작하는 코스", s.template("c_1", stops, Lang.KO).title());
+    }
+
     @Test
     void koreanAnswerFallsBackToTemplate() {
         assertTrue(narrate("{\"title\":\"해변 산책\",\"items\":[{\"contentId\":\"1\",\"text\":\"백사장을 걸어요\"}]}").template());
