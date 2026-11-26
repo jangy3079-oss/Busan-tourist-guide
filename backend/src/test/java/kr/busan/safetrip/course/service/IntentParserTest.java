@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import kr.busan.safetrip.common.api.Area;
 import kr.busan.safetrip.common.api.EmType;
-import kr.busan.safetrip.common.exception.NotImplementedYetException;
 import kr.busan.safetrip.course.dto.CourseDtos;
 import org.junit.jupiter.api.Test;
 
@@ -115,13 +114,24 @@ class IntentParserTest {
         assertEquals(List.of(new IntentParser.EditOp(IntentParser.Op.REPLACE, 1, "카페", null)), ops);
     }
 
-    /** 긴급 담당 미구현일 때만 건너뛴다. 다른 오류를 삼키면 긴급 문장을 놓칠 수 있다(#136) */
+    /** 긴급 판정이 실패하면 삼키지 않는다. 긴급 문장을 놓칠 수 있다(#136) */
     @Test
-    void skipsEmergencyOnlyWhenNotImplemented() {
-        IntentParser skip = new IntentParser(t -> { throw new NotImplementedYetException("긴급 담당", "detect"); }, req -> { throw new RuntimeException(); }, settings);
-        assertTrue(skip.parse("광안리 3시간", TODAY).emergency().isEmpty());
+    void emergencyFailureIsNotSwallowed() {
         IntentParser broken = new IntentParser(t -> { throw new IllegalStateException(); }, req -> { throw new RuntimeException(); }, settings);
         assertThrows(IllegalStateException.class, () -> broken.parse("광안리 3시간", TODAY));
+        assertThrows(IllegalStateException.class, () -> broken.parseEdit("카페로 바꿔", STOPS));
+    }
+
+    /** 확인 시트에서 "코스 계속"을 고르면 가벼운 유형은 코스로 보고, 위급은 그래도 막는다 */
+    @Test
+    void notEmergencySkipsOnlyNonUrgent() {
+        for (EmType t : EmType.values()) {
+            IntentParser p = new IntentParser(x -> Optional.of(t), req -> { throw new RuntimeException(); }, settings);
+            boolean urgent = t == EmType.URGENT || t == EmType.FIRE || t == EmType.THREAT;
+            assertEquals(urgent, p.parse("광안리 3시간", TODAY, true).emergency().isPresent(), t.name());
+            assertEquals(urgent, p.parseEdit("2번 빼줘", STOPS, true).emergency().isPresent(), t.name());
+            assertTrue(p.parse("광안리 3시간", TODAY).emergency().isPresent(), t.name());
+        }
     }
 
     @Test

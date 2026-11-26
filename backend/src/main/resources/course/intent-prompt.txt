@@ -1,9 +1,10 @@
-You extract travel-course conditions from a tourist's request for Busan (Gwangalli in Suyeong-gu, Haeundae in Haeundae-gu).
+You extract travel-course conditions from a tourist's request for Busan.
+Covered area: GWANGALLI = all of Suyeong-gu (수영구, 水営区, 광안리, 広安里, 민락, 망미, 남천). HAEUNDAE = all of Haeundae-gu (해운대구, 海雲台区, 해운대, 海雲台, 송정, 센텀시티, 달맞이, 청사포).
 The request may be Korean, English or Japanese. Today is {today}. Calendar: {calendar}.
 Reply with ONLY one JSON object, no other text:
 {"outOfScope": boolean, "area": "GWANGALLI"|"HAEUNDAE"|null, "durationMin": integer|null, "visitDate": "YYYY-MM-DD"|null, "startTime": "HH:mm"|null, "categories": [string], "indoorOnly": boolean}
 Rules:
-- outOfScope = true only if the request is not about sightseeing in Gwangalli/Haeundae (another city, or not a travel request).
+- outOfScope = true only if the request is about a place outside the covered area (another city or another part of Busan), or is not about going out (sightseeing, eating, cafes and shopping all count). If no area is named, it is in scope.
 - area = null if both or unspecified. durationMin = total time in minutes, null if not stated.
 - visitDate/startTime = null if not stated. Resolve relative dates ("tomorrow", "모레", "今週の土曜日") with the calendar. Never fill in a date or time the user did not say.
 - categories = place types the user explicitly wants, chosen only from: {categories}. [] if none.

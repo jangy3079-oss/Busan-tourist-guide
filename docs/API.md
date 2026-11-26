@@ -74,7 +74,8 @@
   "startPlaceId": "2789475",                            // 선택. 사진·지도에서 고른 출발 장소(1번 고정)
   "overrides": {                                        // 선택. 처음부터 정해 둔 조건. 결과 화면의 칩 변경은 API-C03
     "visitDate": "2026-11-12", "startTime": "15:00", "durationMin": 180, "area": "GWANGALLI"
-  }
+  },
+  "notEmergency": true                                  // 선택. 긴급 확인 시트에서 '코스 계속'을 고른 경우만. URGENT·FIRE·THREAT에는 적용되지 않는다(FR-C013)
 }
 ```
 응답 `CourseResponse` (200):
@@ -130,7 +131,7 @@
   "lang": "ko" }
 ```
 응답 `CourseResponse`(새 버전: `version`+1, `parentId`=원래 courseId, 바뀐 장소는 `changed=true`).
-추가 상태: `"status": "EDIT_UNCLEAR"` + `notice.examples`(명령으로 못 바꾼 경우, 코스 유지). 긴급 문장이면 `EMERGENCY`, 바꾼 조건으로 코스가 없으면 `NO_COURSE`(코스 유지).
+추가 상태: `"status": "EDIT_UNCLEAR"` + `notice.examples`(명령으로 못 바꾼 경우, 코스 유지). 긴급 문장이면 `EMERGENCY`(`notEmergency`는 API-C01과 같음), 바꾼 조건으로 코스가 없으면 `NO_COURSE`(코스 유지).
 
 ### API-C04 출발 장소 후보 — `GET /api/v1/places?area=GWANGALLI&category=&limit=50`
 근거: FR-C014 (SDD에 경로 없음 → 이 문서에서 배정)
@@ -260,7 +261,9 @@ SDD 추적표에 연결된 FR이 없다. 필요해지면 이 번호를 쓴다.
 ---
 
 ## 공용
-`GET /api/v1/health` → `{"status": "ok"}`
+`GET /api/v1/health` → `{"status": "ok", "db": "ok"}` (`db`는 `ok` 또는 `down`)
+
+모든 응답에는 `X-Request-Id` 헤더가 있다. 오류를 신고할 때 이 값으로 서버 로그를 찾는다(NFR-C007).
 
 ## 프론트 연결 방법
 - 기본은 Mock. 백엔드에 붙이려면 `flutter run -d chrome --dart-define=API_BASE=http://localhost:8080` (값이 있으면 `Api*Repository` 사용).

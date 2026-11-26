@@ -29,7 +29,7 @@ import kr.busan.safetrip.common.exception.ErrorCode;
  * 수정 규칙: 3인 합의 후 수정(PR 리뷰 3명 모두 승인). 혼자 고치지 말 것.
  *
  * Ollama·OpenAI·Claude 가 같이 지원하는 /v1/chat/completions 로 호출한다. 교체는 설정값(AI_PROVIDER·AI_BASE_URL·AI_MODEL·AI_API_KEY)만.
- * provider=claude 면 JSON 모드를 response_format 대신 지시문으로 요구한다(#142).
+ * JSON 모드는 response_format 대신 지시문으로 요구한다. Claude 는 400(#142), Ollama MLX 모델은 501(#171)로 거부한다.
  * 로그에는 용도·모델·지연·성공·토큰만 남긴다(프롬프트·사용자 문장·응답·키 금지).
  */
 @Service
@@ -38,6 +38,8 @@ public class SpringAiService implements AIService {
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final String JSON_ONLY = "Respond with a single JSON object only. No prose, no code fences.";
     private static final int CLAUDE_MAX_TOKENS = 4096;
+    /** 남은 시간이 이보다 짧으면 재시도해도 답이 오기 전에 끊긴다 */
+    private static final Duration MIN_RETRY = Duration.ofMillis(500);
 
     private final AppProperties.Ai cfg;
     private final AiBudget budget;
@@ -52,23 +54,25 @@ public class SpringAiService implements AIService {
     public String complete(AiRequest request) {
         if (!ollama() && !hasKey()) throw unavailable("AI 키가 설정되지 않았습니다.");
         int retries = request.maxRetry() != null ? request.maxRetry() : cfg.maxRetry();
+        long end = System.nanoTime() + Duration.ofSeconds(cfg.totalTimeoutSec()).toNanos();
         for (int attempt = 0; ; attempt++) {
             if (!allowed()) {
                 log.warn("ai purpose={} result=blockedByBudget", request.purpose());
                 throw unavailable("AI 사용 한도를 넘었거나 단가가 설정되지 않았습니다.");
             }
             try {
-                return call(request);
+                return call(request, Duration.ofNanos(end - System.nanoTime()));
             } catch (Failure e) {
-                if (!e.retryable || attempt >= retries) {
+                if (!e.retryable || attempt >= retries || end - System.nanoTime() < MIN_RETRY.toNanos()) {
                     throw e.timeout ? new BusinessException(ErrorCode.AI_TIMEOUT, "AI 응답이 늦습니다.") : unavailable("AI 를 사용할 수 없습니다.");
                 }
             }
         }
     }
 
-    private String call(AiRequest request) {
+    private String call(AiRequest request, Duration left) {
         Duration timeout = request.timeout() != null ? request.timeout() : Duration.ofSeconds(cfg.timeoutSec());
+        if (timeout.compareTo(left) > 0) timeout = left;
         HttpRequest http1 = httpRequest(request);
         long start = System.nanoTime();
         long in = 0;
@@ -115,11 +119,10 @@ public class SpringAiService implements AIService {
     private HttpRequest httpRequest(AiRequest request) {
         ObjectNode body = JSON.createObjectNode().put("model", cfg.model()).put("stream", false);
         ArrayNode messages = body.putArray("messages");
-        // Claude 의 OpenAI 호환 주소는 response_format json_object 를 400 으로 거부한다(#142). JSON 은 지시문으로 요구하고 응답은 jsonObject() 로 확인한다
-        String system = request.jsonMode() && claude() ? join(request.system(), JSON_ONLY) : request.system();
+        // response_format 은 제공사·런타임마다 거부한다(#142, #171). JSON 은 지시문으로 요구하고 응답은 jsonObject() 로 확인한다
+        String system = request.jsonMode() ? join(request.system(), JSON_ONLY) : request.system();
         if (system != null) messages.addObject().put("role", "system").put("content", system);
         messages.addObject().put("role", "user").put("content", request.user());
-        if (request.jsonMode() && !claude()) body.putObject("response_format").put("type", "json_object");
         if (claude()) {
             body.put("max_tokens", CLAUDE_MAX_TOKENS); // 기본값이 문서에 없어 명시한다
             String off = thinkingOff(cfg.model());

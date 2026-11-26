@@ -12,13 +12,13 @@ class CourseOverrides {
 }
 
 abstract class CourseRepository {
-  /// API-C01 POST /courses
-  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides});
+  /// API-C01 POST /courses. notEmergency: 확인 시트에서 "코스 계속"을 고른 경우
+  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides, bool notEmergency = false});
   /// API-C02 POST /courses/{id}/narration (코스와 분리)
   Future<CourseNarration> narrate(String courseId, Lang lang);
   /// API-C03 POST /courses/{id}/edits — 지금 버전에 대한 수정 → 새 버전(이전 수정 유지).
   /// text: 대화형 수정(FR-C015), overrides: 바꾼 가정 칩 값만(FR-C003), startPlaceId: 출발 장소 고정(FR-C014)
-  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId});
+  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId, bool notEmergency = false});
   /// API-C04 GET /places (출발 장소 고르기용 핀)
   Future<List<PlacePin>> startCandidates(Area area);
   /// API-C05 GET /places/{contentId}

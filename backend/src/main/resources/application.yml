@@ -5,6 +5,8 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/safetrip}
     username: ${DB_USER:safetrip}
     password: ${DB_PASSWORD:safetrip}
+    hikari:
+      connection-timeout: 5000   # DB 가 끊겼을 때 30초 기다리지 않는다
   jpa:
     hibernate:
       ddl-auto: none        # 스키마는 Flyway 로만 바꾼다
@@ -18,6 +20,10 @@ spring:
       max-request-size: 11MB
       file-size-threshold: 11MB
 
+logging:
+  pattern:
+    correlation: "[%X{requestId:-}] "   # 요청 ID(NFR-C007)
+
 server:
   servlet:
     encoding:
@@ -30,6 +36,7 @@ safetrip:
     model: ${AI_MODEL:qwen3.5:4b}
     api-key: ${AI_API_KEY:}
     timeout-sec: 8
+    total-timeout-sec: 10     # 재시도를 포함한 총 시간(#150)
     max-retry: 1
     monthly-budget-krw: ${AI_MONTHLY_BUDGET_KRW:3000}      # 유료 provider 만 센다(NFR-C009)
     input-krw-per-m-tok: ${AI_INPUT_KRW_PER_MTOK:0}        # 100만 토큰당 원. 유료인데 0 이면 호출을 막는다

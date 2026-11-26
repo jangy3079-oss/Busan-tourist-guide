@@ -6,10 +6,12 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -21,7 +23,6 @@ import kr.busan.safetrip.common.ai.AIService;
 import kr.busan.safetrip.common.ai.AiRequest;
 import kr.busan.safetrip.common.api.Area;
 import kr.busan.safetrip.common.api.EmType;
-import kr.busan.safetrip.common.exception.NotImplementedYetException;
 import kr.busan.safetrip.common.keyword.KeywordRuleEngine;
 import kr.busan.safetrip.course.dto.CourseDtos;
 
@@ -73,6 +74,7 @@ public class IntentParser {
     /** emergency 가 있으면 ops 는 비어 있다 */
     public record Edit(List<EditOp> ops, Optional<EmType> emergency) {}
 
+    private static final Set<EmType> URGENT = EnumSet.of(EmType.URGENT, EmType.FIRE, EmType.THREAT);
     private static final Logger log = LoggerFactory.getLogger(IntentParser.class);
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Pattern HOURS = Pattern.compile("(\\d+(?:\\.\\d+)?)\\s*(시간|hours?|hrs?|h\\b|時間)", Pattern.CASE_INSENSITIVE);
@@ -93,7 +95,11 @@ public class IntentParser {
     }
 
     public Intent parse(String text, LocalDate today) {
-        Optional<EmType> em = detectEmergency(text);
+        return parse(text, today, false);
+    }
+
+    public Intent parse(String text, LocalDate today, boolean notEmergency) {
+        Optional<EmType> em = emergency(text, notEmergency);
         if (em.isPresent()) return new Intent(null, null, null, null, List.of(), null, false, em);
         try {
             String prompt = settings.intentPrompt().replace("{today}", today.toString()).replace("{calendar}", calendar(today))
@@ -110,19 +116,18 @@ public class IntentParser {
         return IntStream.range(0, 14).mapToObj(today::plusDays).map(d -> d + "=" + d.getDayOfWeek()).collect(Collectors.joining(", "));
     }
 
-    /** 긴급 키워드 판정. ponytail: 긴급 담당 KeywordRuleEngine 미구현이면 긴급 아님으로 진행(로컬 시험용), 구현되면 이 catch 는 안 탄다 */
-    private Optional<EmType> detectEmergency(String text) {
-        try {
-            return keywords.detect(text);
-        } catch (NotImplementedYetException e) {
-            log.warn("KeywordRuleEngine 미구현 → 긴급 판정 건너뜀");
-            return Optional.empty();
-        }
+    /** 위급·화재·위협은 사용자가 아니라고 해도 넘어가지 않는다. 나머지는 확인 시트에서 "코스 계속"을 고르면 코스로 본다 */
+    private Optional<EmType> emergency(String text, boolean notEmergency) {
+        return keywords.detect(text).filter(t -> !notEmergency || URGENT.contains(t));
     }
 
     /** FR-C015 수정 문장 → 명령. 긴급 먼저, LLM, 실패하면 규칙. 명령이 없으면 ops = [] (EDIT_UNCLEAR) */
     public Edit parseEdit(String text, List<CourseDtos.Stop> current) {
-        Optional<EmType> em = detectEmergency(text);
+        return parseEdit(text, current, false);
+    }
+
+    public Edit parseEdit(String text, List<CourseDtos.Stop> current, boolean notEmergency) {
+        Optional<EmType> em = emergency(text, notEmergency);
         if (em.isPresent()) return new Edit(List.of(), em);
         try {
             StringBuilder list = new StringBuilder();

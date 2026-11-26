@@ -93,7 +93,7 @@ public class CourseService {
     public CourseDtos.CourseResponse create(CourseDtos.CreateRequest req) {
         Lang lang = Lang.parse(req.lang());
         LocalDate today = LocalDate.now(clock);
-        IntentParser.Intent parsed = intentParser.parse(req.query(), today);
+        IntentParser.Intent parsed = intentParser.parse(req.query(), today, Boolean.TRUE.equals(req.notEmergency()));
 
         if (parsed.emergency().isPresent()) return emergency(lang, parsed.emergency().get());
         if (parsed.outOfScope()) {
@@ -132,7 +132,7 @@ public class CourseService {
 
         List<IntentParser.EditOp> ops = List.of();
         if (req.text() != null && !req.text().isBlank()) {
-            IntentParser.Edit e = intentParser.parseEdit(req.text(), prev.stops());
+            IntentParser.Edit e = intentParser.parseEdit(req.text(), prev.stops(), Boolean.TRUE.equals(req.notEmergency()));
             if (e.emergency().isPresent()) return emergency(lang, e.emergency().get());
             ops = e.ops();
             if (ops.isEmpty() && req.overrides() == null && req.startPlaceId() == null) {

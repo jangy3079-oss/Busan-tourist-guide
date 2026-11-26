@@ -221,18 +221,17 @@ class LangSwitch extends ConsumerWidget {
 }
 
 /// 상단 헤더. 뒤로가기 목적지는 화면마다 명시 (프로토타입 backH)
-class AppHead extends StatelessWidget {
+class AppHead extends ConsumerWidget {
   final String title, sub;
   final String? backTo;
   final VoidCallback? onBack;
   const AppHead(this.title, this.sub, {super.key, this.backTo, this.onBack});
   @override
-  Widget build(BuildContext context) => Container(
-        color: Colors.white,
+  Widget build(BuildContext context, WidgetRef ref) => Container(
         padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
         decoration: const BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: C.line))),
         child: Row(children: [
-          IconButton(onPressed: onBack ?? () => context.go(backTo ?? '/'), icon: const Ic('left', size: 24), tooltip: '뒤로'),
+          IconButton(onPressed: onBack ?? () => context.go(backTo ?? '/'), icon: const Ic('left', size: 24), tooltip: tr('back', ref.watch(langProvider))),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             Text(sub, style: const TextStyle(fontSize: 12, color: C.text3)),
@@ -264,16 +263,16 @@ class ScreenFrame extends StatelessWidget {
 }
 
 /// 하단 도크: 입력창 + 카메라 + 보내기 + SOS. 홈·코스 입력·코스 결과에만 둔다 (사진 화면 제외)
-class Dock extends StatefulWidget {
+class Dock extends ConsumerStatefulWidget {
   final String hint;
   final void Function(String) onSend;
   final VoidCallback onSos, onCamera;
   const Dock({super.key, required this.hint, required this.onSend, required this.onSos, required this.onCamera});
   @override
-  State<Dock> createState() => _DockState();
+  ConsumerState<Dock> createState() => _DockState();
 }
 
-class _DockState extends State<Dock> {
+class _DockState extends ConsumerState<Dock> {
   final _c = TextEditingController();
   void _send() {
     final v = _c.text.trim();
@@ -289,16 +288,24 @@ class _DockState extends State<Dock> {
   }
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) {
+    final l = ref.watch(langProvider);
+    return Container(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: C.line))),
-        child: Row(children: [
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // 500자에 닿으면 더 입력되지 않으므로 이유를 알린다(FR-C001)
+          ValueListenableBuilder(valueListenable: _c, builder: (_, v, _) => v.text.characters.length < 500 ? const SizedBox() : Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(tr('limit', l), style: const TextStyle(fontSize: 12, color: C.amber, fontWeight: FontWeight.w600)),
+          )),
+          Row(children: [
           Expanded(
             child: Container(
               height: 48,
               decoration: BoxDecoration(color: C.subtle, borderRadius: BorderRadius.circular(99), border: Border.all(color: C.line)),
               child: Row(children: [
-                IconButton(onPressed: widget.onCamera, icon: const Ic('camera', color: C.text2), tooltip: '사진'),
+                IconButton(onPressed: widget.onCamera, icon: const Ic('camera', color: C.text2), tooltip: tr('photo', l)),
                 Expanded(
                   child: TextField(
                     controller: _c, maxLength: 500, onSubmitted: (_) => _send(),
@@ -308,7 +315,7 @@ class _DockState extends State<Dock> {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: IconButton.filled(onPressed: _send, style: IconButton.styleFrom(backgroundColor: C.blue, minimumSize: const Size(38, 38)), icon: const Ic('send', size: 18, color: Colors.white), tooltip: '보내기'),
+                  child: IconButton.filled(onPressed: _send, style: IconButton.styleFrom(backgroundColor: C.blue, minimumSize: const Size(38, 38)), icon: const Ic('send', size: 18, color: Colors.white), tooltip: tr('send', l)),
                 ),
               ]),
             ),
@@ -321,8 +328,10 @@ class _DockState extends State<Dock> {
               child: const SizedBox(width: 62, height: 48, child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Ic('alert', size: 17, color: Colors.white), SizedBox(width: 3), Text('SOS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))])),
             ),
           ),
+          ]),
         ]),
       );
+  }
 }
 
 /// 바텀시트 공통 껍데기 (손잡이 + 내용). 시트 종류: 근거 카드·특보·유형 선택·소리 없이 신고·대사관·긴급 확인

@@ -6,7 +6,8 @@ import 'repositories.dart';
 
 Future<void> _wait(int ms) => Future<void>.delayed(Duration(milliseconds: ms));
 
-bool _isEmergency(EmType? t) => t != null && t != EmType.non;
+bool _isEmergency(EmType? t, [bool notEmergency = false]) =>
+    t != null && t != EmType.non && (!notEmergency || t == EmType.urgent || t == EmType.fire || t == EmType.threat);
 
 class MockCourseRepository implements CourseRepository {
   final _store = <String, Course>{}; // courseId → 코스 (서버의 course_plan 버전 저장을 흉내)
@@ -15,9 +16,9 @@ class MockCourseRepository implements CourseRepository {
   Course _save(Course c) => _store[c.id] = c;
 
   @override
-  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides}) async {
+  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides, bool notEmergency = false}) async {
     final ty = mockClassify(query);
-    if (_isEmergency(ty)) return CourseResult(emergency: ty);
+    if (_isEmergency(ty, notEmergency)) return CourseResult(emergency: ty);
     await _wait(1100);
     if (ty == EmType.non && RegExp('예약|reservation|予約').hasMatch(query)) {
       return const CourseResult(notice: CourseNotice('광안리·해운대 관광 코스만 도와드려요.', examples: ['광안리에서 바다 보면서 3시간']));
@@ -32,10 +33,10 @@ class MockCourseRepository implements CourseRepository {
 
   /// 지금 버전 위에 수정을 쌓아 새 버전을 만든다 (서버의 API-C03 흉내)
   @override
-  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId}) async {
+  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId, bool notEmergency = false}) async {
     if (text != null) {
       final ty = mockClassify(text);
-      if (_isEmergency(ty)) return CourseResult(emergency: ty);
+      if (_isEmergency(ty, notEmergency)) return CourseResult(emergency: ty);
     }
     await _wait(text != null ? 300 : 900);
     final cur = _store[courseId] ?? kCourses['v1']!;
@@ -163,6 +164,7 @@ class MockEmergencyRepository implements EmergencyRepository {
       type: ty, topContact: kTypes[ty]!.top, places: _places(ty, a), extra: kTypes[ty]!.extra,
       todo: [for (final t in kTodo[ty] ?? const <List<String>>[]) t[lang.i]], todoSource: kTodoSrc[ty] ?? '',
       cardKo: card[0], cardTranslated: card[lang == Lang.ja ? 2 : 1], address: kAreas[a]!.addr,
+      dataAsOf: '2026-10-12 04:00 · 국립중앙의료원 (예시)',
     );
   }
 }

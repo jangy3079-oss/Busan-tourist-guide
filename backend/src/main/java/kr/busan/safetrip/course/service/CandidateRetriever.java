@@ -3,7 +3,9 @@ package kr.busan.safetrip.course.service;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +21,7 @@ import kr.busan.safetrip.course.repository.CoursePlaceRepository;
  * 상태: 완료
  * 수정 규칙: 코스 담당만 수정. 사진·긴급 담당은 수정 금지(필요하면 코스 담당에게 요청).
  *
- * SQL 필터(권역·방문 요일 휴무)와 실내 조건 → 취향 문장과 뜻이 가까운 순으로 상위 topK. 요청 유형은 유형마다 wantedPerCategory 곳을 꼭 넣는다.
+ * SQL 필터(권역·방문 요일 휴무)와 실내 조건, 사후면세점 조정 → 취향 문장과 뜻이 가까운 순으로 상위 topK. 요청 유형은 유형마다 wantedPerCategory 곳을 꼭 넣는다.
  * 임베딩이 실패하면 contentId 순으로 대체한다(NFR-C002). 고정 출발지는 항상 후보에 넣는다.
  */
 @Component
@@ -43,7 +45,7 @@ public class CandidateRetriever {
     public List<Place> retrieve(IntentParser.Intent intent) {
         String addr = intent.area() == null ? null : settings.intent().areaAddress().get(intent.area());
         List<String> wanted = intent.categories() == null ? List.of() : intent.categories();
-        List<Place> ranked = new ArrayList<>(pick(indoor(intent, coursePlaces.candidates(addr, intent.visitDate().getDayOfWeek().getValue(), vector(intent))), wanted,
+        List<Place> ranked = new ArrayList<>(pick(demote(intent, indoor(intent, coursePlaces.candidates(addr, intent.visitDate().getDayOfWeek().getValue(), vector(intent)))), wanted,
                 settings.intent().topK(), settings.intent().wantedPerCategory()));
         if (intent.startPlaceId() != null && ranked.stream().noneMatch(p -> p.getContentId().equals(intent.startPlaceId()))) {
             places.findByContentId(intent.startPlaceId()).ifPresent(p -> ranked.add(0, p));
@@ -56,6 +58,17 @@ public class CandidateRetriever {
         if (!intent.indoorOnly()) return all;
         List<String> codes = settings.intent().indoorCodes();
         return all.stream().filter(p -> p.getLclsCode() != null && codes.stream().anyMatch(p.getLclsCode()::startsWith)).toList();
+    }
+
+    /** 사후면세점(#151): 쇼핑을 요청하지 않았으면 빼고, 요청했으면 백화점·시장·기념품점 뒤로 보낸다. 장소 데이터는 그대로다 */
+    private List<Place> demote(IntentParser.Intent intent, List<Place> all) {
+        CourseSettings.Demoted d = settings.intent().demoted();
+        String text = intent.preference() == null ? "" : intent.preference().toLowerCase(Locale.ROOT);
+        if (d.keywords().stream().anyMatch(text::contains)) return all;
+        Predicate<Place> low = p -> p.getLclsCode() != null && d.codes().stream().anyMatch(p.getLclsCode()::startsWith);
+        List<Place> r = new ArrayList<>(all.stream().filter(low.negate()).toList());
+        if (intent.categories() != null && intent.categories().contains(d.category())) all.stream().filter(low).forEach(r::add);
+        return r;
     }
 
     /** 순위 목록에서 topK 곳. 요청 유형을 먼저 채우고 나머지를 순위대로 채운다. 결과는 원래 순위 순 */

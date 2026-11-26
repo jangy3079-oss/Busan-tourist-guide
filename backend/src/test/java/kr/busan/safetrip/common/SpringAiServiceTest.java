@@ -41,6 +41,7 @@ class SpringAiServiceTest {
     private String[] contents = {"안녕"};
     private String finish = "stop";
     private String model = "m";
+    private int total = 10;
     private long delayMs = 0;
 
     @BeforeEach
@@ -72,7 +73,7 @@ class SpringAiServiceTest {
     }
 
     private AppProperties props(String provider, String url, String key, double price) {
-        return new AppProperties(new AppProperties.Ai(provider, url, model, key, 8, 1, 1000, price, price), null, null, null, null, null);
+        return new AppProperties(new AppProperties.Ai(provider, url, model, key, 8, total, 1, 1000, price, price), null, null, null, null);
     }
 
     private SpringAiService ai(String provider, String key) {
@@ -132,7 +133,8 @@ class SpringAiServiceTest {
     void jsonModeStripsFenceAndRetriesGarbage() {
         contents = new String[]{"모르겠어요", "```json {\"a\":1} ```"};
         assertEquals("{\"a\":1}", ai("ollama", "").complete(req(true, null)));
-        assertTrue(bodies.get(0).contains("json_object"));
+        assertFalse(bodies.get(0).contains("response_format"), bodies.get(0)); // Ollama MLX 는 501 (#171)
+        assertTrue(bodies.get(0).contains("JSON object only"), bodies.get(0));
         assertEquals(2, bodies.size());
     }
 
@@ -164,6 +166,19 @@ class SpringAiServiceTest {
         assertFalse(bodies.get(2).contains("thinking"), bodies.get(2));
         ai("openai", "k").complete(req(false, 0));
         assertFalse(bodies.get(3).contains("thinking"), bodies.get(3));
+    }
+
+    /** 재시도까지 합쳐 총 시간을 넘지 않는다(#150) */
+    @Test
+    void totalTimeIncludesRetry() {
+        total = 2;
+        delayMs = 4000;
+        AiRequest r = new AiRequest("test", "sys", "사용자", false, Duration.ofMillis(1300), 3);
+        long t = System.nanoTime();
+        assertEquals(ErrorCode.AI_TIMEOUT, fail(ai("openai", "k"), r));
+        long ms = (System.nanoTime() - t) / 1_000_000;
+        assertTrue(ms < 2600, "ms=" + ms);      // 1.3초 + 남은 0.7초
+        assertEquals(2, bodies.size());          // 남은 시간이 없으면 더 부르지 않는다
     }
 
     @Test
