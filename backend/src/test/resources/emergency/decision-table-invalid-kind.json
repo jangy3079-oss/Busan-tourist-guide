@@ -1,0 +1,7 @@
+{
+  "rows": [
+    { "type": "URGENT", "topContact": "119", "primary": ["UNKNOWN_KIND"], "fallback": [], "alsoShow": [], "noPlaces": false, "extras": [] }
+  ],
+  "maxPlaces": 3,
+  "radiusStepsM": [1000, 3000]
+}

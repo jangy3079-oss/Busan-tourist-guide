@@ -3,6 +3,7 @@ package kr.busan.safetrip.common.config;
 import java.util.List;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 /**
  * [공용] AppProperties
@@ -16,7 +17,16 @@ public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors co
 
     /** NFR-C005: provider 값만 바꿔 Ollama <-> OpenAI <-> Claude 교체. timeoutSec = 한 번, totalTimeoutSec = 재시도까지 합친 한도 */
     public record Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int totalTimeoutSec, int maxRetry, long monthlyBudgetKrw,
-                     double inputKrwPerMTok, double outputKrwPerMTok) {}
+                     double inputKrwPerMTok, double outputKrwPerMTok) {
+        @ConstructorBinding
+        public Ai {}
+
+        /** totalTimeoutSec 가 생기기 전 모양(다른 모듈 테스트가 쓴다). 총 한도는 기본값 10초 */
+        public Ai(String provider, String baseUrl, String model, String apiKey, int timeoutSec, int maxRetry, long monthlyBudgetKrw,
+                  double inputKrwPerMTok, double outputKrwPerMTok) {
+            this(provider, baseUrl, model, apiKey, timeoutSec, 10, maxRetry, monthlyBudgetKrw, inputKrwPerMTok, outputKrwPerMTok);
+        }
+    }
 
     /** ADR-C05: 임베딩 모델. dimension 은 place_embedding 의 vector 차원과 같아야 한다. LLM 설정과 따로 둔다 */
     public record Embedding(String baseUrl, String model, int dimension, int timeoutSec) {}

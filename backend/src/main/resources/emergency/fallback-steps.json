@@ -1,0 +1,123 @@
+{
+  "_comment": "긴급 상황별 '지금 할 일' 기본 대체 문구(FR-E016, NFR-E003, AI-REQ-E04, NFR-E009). 지식베이스 검색 실패·근거 없음 시 stepsFallback=true로 사용. 약 이름·용량·진단·보장 표현 금지.",
+  "entries": {
+    "URGENT": {
+      "sourceId": "fb_urgent",
+      "sourceTitle": "질병관리청 심폐소생술 안내",
+      "ko": [
+        "바로 119에 전화하세요. 통화가 어려우면 통역 연결을 요청하세요.",
+        "의식과 호흡을 확인하고, 호흡이 없으면 가슴 압박을 시작하세요.",
+        "주변 사람에게 자동심장충격기(AED)를 가져와 달라고 하세요."
+      ],
+      "en": [
+        "Call 119 immediately. If speaking is difficult, ask for an interpreter.",
+        "Check consciousness and breathing; if there is no breathing, begin chest compressions.",
+        "Ask someone nearby to bring an automated external defibrillator (AED)."
+      ],
+      "ja": [
+        "すぐに119番に通報してください。通話が難しい場合は通訳の接続を依頼してください。",
+        "意識と呼吸を確認し、呼吸がなければ胸骨圧迫を始めてください。",
+        "近くの人に自動体外式除細動器（AED）を持ってくるよう頼んでください。"
+      ]
+    },
+    "MILD": {
+      "sourceId": "fb_mild",
+      "sourceTitle": "보건복지부 안전상비의약품 안내",
+      "ko": [
+        "상비약은 24시간 편의점에서도 살 수 있어요.",
+        "숨쉬기 어렵거나 의식이 흐려지면 바로 119에 전화하세요."
+      ],
+      "en": [
+        "Basic over-the-counter medicines can also be purchased at 24-hour convenience stores.",
+        "If breathing becomes difficult or consciousness fades, call 119 immediately."
+      ],
+      "ja": [
+        "常備薬は24時間営業のコンビニでも購入できます。",
+        "息苦しくなったり意識がぼんやりしてきたら、すぐに119番に通報してください。"
+      ]
+    },
+    "LOST": {
+      "sourceId": "fb_lost",
+      "sourceTitle": "경찰청 유실물 안내·외교부 재외공관 안내",
+      "ko": [
+        "도난이면 112, 분실이면 가까운 지구대에 신고하세요.",
+        "여권은 대사관·영사관에서 재발급이나 여행증명서를 받아야 해요.",
+        "카드는 카드사에 바로 사용 정지를 요청하세요."
+      ],
+      "en": [
+        "Call 112 for theft, or report a lost item at the nearest police box.",
+        "For a lost passport, contact your embassy or consulate for reissue or an emergency travel document.",
+        "Contact your card issuer right away to freeze or cancel your cards."
+      ],
+      "ja": [
+        "盗難の場合は112番、紛失の場合は近くの交番・派出所へ届け出てください。",
+        "パスポートは大使館・領事館で再発給または帰国のための渡航書を申請してください。",
+        "カードはすぐにカード会社へ利用停止を連絡してください。"
+      ]
+    },
+    "THREAT": {
+      "sourceId": "fb_threat",
+      "sourceTitle": "경찰청 112 신고 안내",
+      "ko": [
+        "사람이 많고 밝은 곳(24시간 편의점 등)으로 바로 이동하세요.",
+        "112에 전화하고, 말하기 어려우면 문자로 신고하세요."
+      ],
+      "en": [
+        "Move immediately to a bright, crowded place such as a 24-hour convenience store.",
+        "Call 112, or send an SMS report to 112 if you cannot speak."
+      ],
+      "ja": [
+        "人通りの多い明るい場所（24時間営業のコンビニなど）へすぐ移動してください。",
+        "112番に通報し、話すのが難しい場合はSMSで通報してください。"
+      ]
+    },
+    "FIRE": {
+      "sourceId": "fb_fire",
+      "sourceTitle": "행정안전부 국민재난안전포털 행동요령",
+      "ko": [
+        "119에 신고하고 바로 건물 밖으로 대피하세요.",
+        "엘리베이터 대신 계단을 이용하세요.",
+        "연기가 있으면 젖은 천으로 코와 입을 막고 낮은 자세로 이동하세요."
+      ],
+      "en": [
+        "Call 119 and evacuate the building immediately.",
+        "Use the stairs instead of the elevator.",
+        "If there is smoke, cover your nose and mouth with a wet cloth and stay low while moving."
+      ],
+      "ja": [
+        "119番に通報し、すぐに建物の外へ避難してください。",
+        "エレベーターではなく階段を使ってください。",
+        "煙がある場合は濡れた布で鼻と口を覆い、低い姿勢で移動してください。"
+      ]
+    },
+    "WAY": {
+      "sourceId": "fb_way",
+      "sourceTitle": "한국관광공사 1330 관광통역안내",
+      "ko": [
+        "숙소 주소를 한국어 카드로 보여 주세요.",
+        "1330에 전화하면 통역과 길 안내를 받을 수 있어요."
+      ],
+      "en": [
+        "Show your accommodation address using the Korean card.",
+        "Call 1330 for 24-hour interpretation and directions."
+      ],
+      "ja": [
+        "宿泊先の住所を韓国語カードで見せてください。",
+        "1330に電話すると通訳と道案内を受けられます。"
+      ]
+    },
+    "NON": {
+      "sourceId": "fb_non",
+      "sourceTitle": "한국관광공사 1330 관광통역안내",
+      "ko": [
+        "관광 문의는 1330이 24시간 통역과 함께 도와드려요."
+      ],
+      "en": [
+        "For travel inquiries, call 1330 for 24-hour assistance with interpretation."
+      ],
+      "ja": [
+        "観光に関するお問い合わせは、1330が24時間通訳付きでご案内します。"
+      ]
+    }
+  }
+}
