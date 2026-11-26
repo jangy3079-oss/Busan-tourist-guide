@@ -309,6 +309,14 @@ class EmergencyResultScreen extends ConsumerWidget {
         // NFR-E008 기준 시각·출처 (#109)
         if (places.isNotEmpty) Src([if (g.dataAsOf.isNotEmpty) g.dataAsOf, et('callFirst', l)].join(' · ')),
       ],
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          et('disclaimer', l),
+          key: const ValueKey('em-disclaimer'),
+          style: const TextStyle(fontSize: 12, color: C.text3, height: 1.45),
+        ),
+      ),
     ]));
   }
 }
@@ -513,6 +521,13 @@ Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
                     ]),
                     const SizedBox(height: 10),
                     ClipRRect(borderRadius: BorderRadius.circular(rMd), child: ContactBar(top: st.top)), // FR-E004
+                    const SizedBox(height: 8),
+                    Text(
+                      et('disclaimer', l),
+                      key: const ValueKey('card-disclaimer'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white60, fontSize: 11.5, height: 1.4),
+                    ),
                   ]),
                 ),
               ),
