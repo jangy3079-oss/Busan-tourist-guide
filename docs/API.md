@@ -260,7 +260,9 @@ SDD 추적표에 연결된 FR이 없다. 필요해지면 이 번호를 쓴다.
 ---
 
 ## 공용
-`GET /api/v1/health` → `{"status": "ok"}`
+`GET /api/v1/health` → `{"status": "ok", "db": "ok"}` (`db`는 `ok` 또는 `down`)
+
+모든 응답에는 `X-Request-Id` 헤더가 있다. 오류를 신고할 때 이 값으로 서버 로그를 찾는다(NFR-C007).
 
 ## 프론트 연결 방법
 - 기본은 Mock. 백엔드에 붙이려면 `flutter run -d chrome --dart-define=API_BASE=http://localhost:8080` (값이 있으면 `Api*Repository` 사용).
