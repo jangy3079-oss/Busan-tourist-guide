@@ -2,7 +2,7 @@
 # 요구사항: FR-P004, NFR-P002, NFR-P005 / ADR-P05(로컬 OCR), #40 PoC 결과(server 검출 + 한국어 인식)
 # 수정 규칙: 사진 담당만 수정.
 #
-# 실행: python3 paddle_ocr_server.py [--port 8866]
+# 실행: python3 paddle_ocr_server.py [--port 8866] [--device gpu:0]
 #   POST /ocr    본문 = 이미지 바이트(jpg/png) → {"blocks":[{"text","conf","x","y","w","h"}], "ms"}
 #   GET  /health → {"ok": true}
 # 사진은 메모리에서만 다루고 파일·로그에 남기지 않는다(NFR-P002). 로그에는 상태 코드와 처리 시간만 쓴다.
@@ -90,13 +90,14 @@ def main():
     p.add_argument("--port", type=int, default=8866)
     p.add_argument("--det", default="PP-OCRv5_server_det")  # PoC: mobile 검출은 간판을 거의 못 잡았다(#40)
     p.add_argument("--rec", default="korean_PP-OCRv5_mobile_rec")
+    p.add_argument("--device", default="cpu")  # NVIDIA GPU 가 있으면 gpu:0 (paddlepaddle-gpu 필요, README). #199: CPU 11초 → GPU 0.08초
     a = p.parse_args()
     t0 = time.time()
     ocr = PaddleOCR(text_detection_model_name=a.det, text_recognition_model_name=a.rec,
                     use_doc_orientation_classify=False, use_doc_unwarping=False,
-                    use_textline_orientation=False, enable_mkldnn=False)
+                    use_textline_orientation=False, enable_mkldnn=False, device=a.device)
     ocr.predict(np.full((64, 64, 3), 255, np.uint8))  # 첫 요청이 느리지 않게 미리 한 번 돌린다
-    print(f"PaddleOCR 준비 완료 {time.time() - t0:.1f}s → http://{a.host}:{a.port}", flush=True)
+    print(f"PaddleOCR 준비 완료({a.device}) {time.time() - t0:.1f}s → http://{a.host}:{a.port}", flush=True)
     Server((a.host, a.port), Handler).serve_forever()  # 한 번에 한 요청(PaddleOCR 는 스레드 안전하지 않음)
 
 

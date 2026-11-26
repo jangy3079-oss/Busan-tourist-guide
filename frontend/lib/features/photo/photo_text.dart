@@ -9,7 +9,7 @@ const Map<String, List<String>> kPhotoText = {
   'front': ['정면으로', 'Face it', '正面から'],
   'bright': ['밝게', 'Good light', '明るく'],
   'shoot': ['촬영하기', 'Take photo', '撮影する'],
-  'album': ['앨범에서 고르기', 'Choose from album', 'アルバムから選ぶ'],
+  'album': ['앨범에서 고르기', 'Choose from album', 'アルバム'], // ja: 360px에서 'アルバムから選ぶ'가 한 글자만 줄바꿈됨(#198)
   'samples': ['샘플 사진으로 해 보기', 'Try a sample photo', 'サンプル写真で試す'],
   'demo': ['시연용', 'demo', 'デモ用'],
   'sOk': ['확정', 'Found', '確定'],
@@ -37,6 +37,8 @@ const Map<String, List<String>> kPhotoText = {
   'generated': ['생성된 안내문 · 근거: 한국관광공사 관광정보 원문', 'Generated guide · based on Korea Tourism Organization data', '生成された案内文・根拠:韓国観光公社の観光情報'],
   'noDesc': ['설명을 만들지 못했어요. 위 정보와 지도는 그대로 볼 수 있어요.', 'We could not write a description. The info and map above are still available.', '説明を作成できませんでした。上の情報と地図はそのままご覧いただけます。'],
   'overview': ['개요 원문', 'Overview (original)', '概要(原文)'],
+  'kakaoMap': ['카카오맵에서 열기', 'Open in Kakao Map', 'カカオマップで開く'],
+  'kakaoMapSub': ['지도앱에서 위치를 보고 길찾기를 해요', 'See the location and get directions in the map app', '地図アプリで場所の確認・道案内ができます'],
   'toCourse': ['여기서 출발하는 코스', 'Start a course here', 'ここから出発するコース'],
   'toCourseSub': ['이 가게를 1번으로 고정해 코스를 만들어요', 'This shop becomes stop 1 of your course', 'このお店を1番目に固定してコースを作ります'],
   'similar': ['비슷한 가게', 'Similar shops', '似ているお店'],
