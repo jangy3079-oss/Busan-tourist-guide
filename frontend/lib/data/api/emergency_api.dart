@@ -38,7 +38,13 @@ class ApiEmergencyRepository implements EmergencyRepository {
       todoSource: [if (fallback) et('stepsFallback', lang), if (src.isNotEmpty) et('stepsSrc', lang, [src])].join(' · '),
       cardKo: card['ko'] ?? '', cardTranslated: card['translated'] ?? '', address: card['address'] ?? '',
       dataAsOf: _asOf(j['dataAsOf'] as Map<String, dynamic>?, lang),
+      eventId: j['eventId'] as String?,
     );
+  }
+
+  @override
+  Future<void> callEvent(String? eventId, String number, Lang lang) async {
+    await api.post('/emergency/call-event', {'eventId': eventId, 'number': number, 'lang': langCode(lang)});
   }
 
   HelpPlace _place(Map<String, dynamic> p, Lang lang) {

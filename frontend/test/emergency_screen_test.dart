@@ -37,6 +37,14 @@ class _Repo implements EmergencyRepository {
     if (guideError != null) throw guideError!;
     return guideC?.future ?? guideR;
   }
+
+  final callEvents = <List<Object?>>[];
+  Object? callError;
+  @override
+  Future<void> callEvent(String? eventId, String number, Lang lang) async {
+    callEvents.add([eventId, number, lang]);
+    if (callError != null) throw callError!;
+  }
 }
 
 /// 계약 견본(docs/contract)을 돌려주는 실제 Api 저장소
@@ -268,5 +276,26 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('문자 보내기'));
     expect(links.last, 'sms:112');
+  });
+
+  testWidgets('연락 버튼: tel 을 연 뒤 기록 요청을 1번 보낸다(eventId 포함, API-E08)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.urgent, topContact: '119', eventId: 'ev-1');
+    await pumpApp(t, repo);
+    await send(t, '친구가 쓰러졌어요');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('call-119')));
+    await t.pump();
+    expect(links, ['tel:119']);
+    expect(repo.callEvents, [['ev-1', '119', Lang.ko]]);
+  });
+
+  testWidgets('기록 요청이 실패해도 tel 은 열린다', (t) async {
+    final repo = _Repo()..callError = Exception('server down');
+    await pumpApp(t, repo);
+    await t.tap(find.byKey(const ValueKey('call-112')));
+    await t.pump();
+    expect(links, ['tel:112']);
+    expect(repo.callEvents.single, [null, '112', Lang.ko]); // E02 전이면 eventId 없음
+    expect(t.takeException(), isNull);
   });
 }

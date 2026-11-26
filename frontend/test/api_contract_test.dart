@@ -115,6 +115,12 @@ void main() {
     expect(g.cardTranslated, startsWith('My friend'));
     expect(g.todo.length, 2);
     expect(g.extra, EmExtra.silent);
+    expect(g.eventId, '7c1e0000-0000-4000-8000-000000000001');
+    // API-E08 요청 모양이 계약 견본과 같다
+    final callRepo = ApiEmergencyRepository(client({'POST /api/v1/emergency/call-event': 'E01_quick'}, calls));
+    await callRepo.callEvent('7c1e0000-0000-4000-8000-000000000001', '119', Lang.en);
+    expect(calls.last.url.path, '/api/v1/emergency/call-event');
+    expect(jsonDecode(calls.last.body), jsonDecode(fx('REQ_E08_call_event')));
     final need = ApiEmergencyRepository(client({'POST /api/v1/emergency/guide': 'E02_guide_need_type'}, []));
     expect((await need.guide('???', Lang.ko, area: Area.gwangalli)).needTypeSelection, true);
   });

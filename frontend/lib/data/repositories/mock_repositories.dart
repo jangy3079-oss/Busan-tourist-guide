@@ -164,7 +164,10 @@ class MockEmergencyRepository implements EmergencyRepository {
       type: ty, topContact: kTypes[ty]!.top, places: _places(ty, a), extra: kTypes[ty]!.extra,
       todo: [for (final t in kTodo[ty] ?? const <List<String>>[]) t[lang.i]], todoSource: kTodoSrc[ty] ?? '',
       cardKo: card[0], cardTranslated: card[lang == Lang.ja ? 2 : 1], address: kAreas[a]!.addr,
-      dataAsOf: '2026-10-12 04:00 · 국립중앙의료원 (예시)',
+      dataAsOf: '2026-10-12 04:00 · 국립중앙의료원 (예시)', eventId: 'mock-event',
     );
   }
+
+  @override
+  Future<void> callEvent(String? eventId, String number, Lang lang) async {}
 }
