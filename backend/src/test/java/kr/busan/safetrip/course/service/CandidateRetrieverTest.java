@@ -77,6 +77,22 @@ class CandidateRetrieverTest {
         assertEquals(List.of("FD010100", "VE070600"), ids(retriever.retrieve(intent(List.of(), null, null).withIndoor(true))));
     }
 
+    /** 사후면세점(SH04)은 쇼핑을 요청하지 않으면 빠지고, 요청하면 뒤로 간다. 직접 말하면 그대로(#151) */
+    @Test
+    void taxRefundShops() {
+        List<Place> all = new java.util.ArrayList<>();
+        for (String[] x : new String[][]{{"약국", "SH040300", "쇼핑"}, {"해변", "NA020900", "관광지"}, {"시장", "SH060200", "쇼핑"}, {"모름", null, "관광지"}}) {
+            Place p = place(x[0], x[2]);
+            when(p.getLclsCode()).thenReturn(x[1]);
+            all.add(p);
+        }
+        when(repo.candidates(any(), anyInt(), any())).thenReturn(all);
+        assertEquals(List.of("해변", "시장", "모름"), ids(retriever.retrieve(intent(List.of("관광지"), null, null))));
+        assertEquals(List.of("해변", "시장", "모름", "약국"), ids(retriever.retrieve(intent(List.of("쇼핑"), null, null))));
+        assertEquals(List.of("약국", "해변", "시장", "모름"), ids(retriever.retrieve(intent(List.of("쇼핑"), null, "화장품 쇼핑"))));
+        assertEquals(List.of("약국", "해변", "시장", "모름"), ids(retriever.retrieve(intent(List.of(), null, "Olive Young please"))));
+    }
+
     @Test
     void fallsBackWithoutVector() {
         when(embeddings.embed(anyString())).thenThrow(new IllegalStateException());
