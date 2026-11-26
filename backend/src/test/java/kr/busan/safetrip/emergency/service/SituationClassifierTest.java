@@ -132,6 +132,33 @@ class SituationClassifierTest {
         assertEmpty("   ");
     }
 
+    @Test
+    void rejectsAllMalformedJsonAndSchemaValidationEdgeCases() {
+        assertEmpty("{not-valid-json}");
+        assertEmpty("{\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":{}}"); // type 누락
+        assertEmpty("{\"type\":123,\"urgency\":\"URGENT\",\"confidence\":0.9}"); // type 비문자
+        assertEmpty("{\"type\":\"URGENT\",\"confidence\":0.9}"); // urgency 누락
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":true,\"confidence\":0.9}"); // urgency 비문자
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":\"high\"}"); // confidence 비숫자
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":[\"UNCONSCIOUS\"]}"); // slots 배열
+        assertEmpty("{\"type\":\"URGENT\",\"urgency\":\"URGENT\",\"confidence\":0.9,\"slots\":{\"symptom\":123}}"); // slot 비문자
+
+        // null 슬롯 값은 무시하고 정상 통과
+        SituationClassifier withNullSlot = new SituationClassifier(
+                req -> "{\"type\":\"MILD\",\"urgency\":\"NORMAL\",\"confidence\":0.85,\"slots\":{\"who\":null,\"symptom\":\"FEVER\"}}",
+                cardBuilder);
+        Optional<Triage> parsed = withNullSlot.classify("열이 나요");
+        assertThat(parsed).isPresent();
+        assertThat(parsed.get().slots()).containsExactlyEntriesOf(Map.of("symptom", "FEVER"));
+
+        // 빈 입력·비정상 런타임 예외 처리
+        SituationClassifier failing = new SituationClassifier(req -> {
+            throw new IllegalStateException("unexpected");
+        }, cardBuilder);
+        assertThat(failing.classify("   ")).isEmpty();
+        assertThat(failing.classify("열이 나요")).isEmpty();
+    }
+
     private void assertType(String rawResponse, EmType expectedType) {
         SituationClassifier classifier = new SituationClassifier(req -> rawResponse, cardBuilder);
         Optional<Triage> res = classifier.classify("sample");
