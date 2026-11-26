@@ -1,0 +1,9 @@
+{
+  "ruleId" : "urgent-cluster",
+  "level" : "CRITICAL",
+  "scope" : "GRID",
+  "scopeValue" : "r13018c39129",
+  "count" : 3,
+  "windowSec" : 1800,
+  "at" : "2026-11-26T14:07:00+09:00"
+}

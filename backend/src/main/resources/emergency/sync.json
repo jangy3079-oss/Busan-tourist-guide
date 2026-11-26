@@ -1,0 +1,16 @@
+{
+  "_comment": "약국·응급실·공휴일 동기화 설정(FR-E019, DATA-E11, NFR-E007, NFR-E009). 인증키는 safetrip.emergency.service-key 사용. 응급실 목록 URL은 실호출로 검증된 ErmctInfoInqireService/getEgytListInfoInqire 사용.",
+  "nmc": {
+    "pharmacyUrl": "https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire",
+    "erUrl": "https://apis.data.go.kr/B552657/ErmctInfoInqireService/getEgytListInfoInqire",
+    "q0": "부산광역시",
+    "districts": ["수영구", "해운대구"],
+    "numOfRows": 500,
+    "timeoutSec": 10
+  },
+  "kasi": {
+    "url": "https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo",
+    "timeoutSec": 10
+  },
+  "minKeepRatio": 0.5
+}

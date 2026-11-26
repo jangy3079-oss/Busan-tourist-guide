@@ -12,6 +12,7 @@ import '../../widgets/error_card.dart';
 import '../../widgets/map_view.dart';
 import '../bridge.dart';
 import 'photo_controller.dart';
+import 'photo_link.dart';
 import 'photo_text.dart';
 
 // SRS FR-P002: JPG·PNG, 10MB 이하. HEIC 는 미지원(#39 결정 전까지 SRS 대로)
@@ -81,12 +82,15 @@ class PhotoPickScreen extends ConsumerWidget {
           const SizedBox(width: 8),
           Expanded(child: Btn(pt('album', l), icon: 'image', onTap: () => _pick(context, ref, ImageSource.gallery))),
         ]),
-        SecTitle(pt('samples', l), sub: pt('demo', l)),
-        Row(children: [
-          sample('해운대암소갈비집', pt('sOk', l), const Color(0xFF8E1C1C), 'ok'), const SizedBox(width: 8),
-          sample('…소갈비', pt('sCand', l), const Color(0xFF5A4A3A), 'cand'), const SizedBox(width: 8),
-          sample('■■■', pt('sFail', l), const Color(0xFF3B4048), 'fail'),
-        ]),
+        // 샘플은 이미지가 없는 Mock 전용 시연이다. 실제 서버 모드에서는 항상 실패 화면이 나와서 숨긴다(#199)
+        if (ref.watch(apiClientProvider) == null) ...[
+          SecTitle(pt('samples', l), sub: pt('demo', l)),
+          Row(children: [
+            sample('해운대암소갈비집', pt('sOk', l), const Color(0xFF8E1C1C), 'ok'), const SizedBox(width: 8),
+            sample('…소갈비', pt('sCand', l), const Color(0xFF5A4A3A), 'cand'), const SizedBox(width: 8),
+            sample('■■■', pt('sFail', l), const Color(0xFF3B4048), 'fail'),
+          ]),
+        ],
         const SizedBox(height: 14),
         // FR-P003: 찍을 때마다 위치를 한 번 묻는다. 거부되면 위치 없이 2개 구 전체에서 찾는다
         Container(padding: const EdgeInsets.all(12), decoration: cardDeco(), child: Row(children: [Ic('pin', size: 18, color: loc == PhotoLoc.off ? C.amber : C.sea), const SizedBox(width: 8), Expanded(child: Text(pt(switch (loc) { PhotoLoc.idle => 'locIdle', PhotoLoc.on => 'locOn', PhotoLoc.off => 'locOff' }, l), style: const TextStyle(fontSize: 13)))])),
@@ -169,6 +173,8 @@ class PhotoResultScreen extends ConsumerWidget {
                   : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(pt('writing', l), style: const TextStyle(fontSize: 12.5, color: C.text3)), const Skel(.9), const Skel(.66)]),
         ),
         XBtn(icon: 'route', title: pt('toCourse', l), sub: pt('toCourseSub', l), iconBg: C.blueT, iconFg: C.blue, onTap: () => photoToCourse(context, ref, p)),
+        // FR-P018: 좌표로 카카오맵 열기. 좌표는 링크에만 쓰고 저장하지 않는다
+        XBtn(icon: 'map', title: pt('kakaoMap', l), sub: pt('kakaoMapSub', l), iconBg: C.seaT, iconFg: C.sea, onTap: () => ref.read(photoLinkProvider)(kakaoMapUrl(p.name, p.lat, p.lng))),
       ]),
     );
   }

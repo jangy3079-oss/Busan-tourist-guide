@@ -1,0 +1,70 @@
+{
+  "_comment": "'지금 할 일' 생성 설정(FR-E016, AI-REQ-E03~E06, NFR-E009, #114 #127). 시간·개수·허용 번호·금지 표현·문서 선택 조건을 코드에 하드코딩하지 않는다.",
+  "timeoutSec": 5,
+  "maxRetry": 0,
+  "topK": 3,
+  "minSteps": 2,
+  "maxSteps": 3,
+  "maxStepChars": 200,
+  "contactPrefix": "contact-",
+  "allowedNumbers": ["112", "119", "1330", "1345"],
+  "minNumberDigits": 3,
+  "_languageCheck": "출력 언어 비율 검증 기준(NFR-E009, #208). 숫자·공백·문장부호를 제외한 글자 수가 minLetters 이상이면 대상 언어 문자 비율이 minRatio 이상이어야 하고, 비한국어 응답의 한글 비율이 maxHangulInNonKo를 넘으면 거부한다.",
+  "languageCheck": {
+    "minLetters": 4,
+    "minRatio": {
+      "ko": 0.5,
+      "en": 0.6,
+      "ja": 0.4
+    },
+    "maxHangulInNonKo": 0.15
+  },
+  "_slotGroups": "LLM 슬롯 코드 → 지식베이스 groups 값(키워드 그룹이 없을 때 문서 우선순위에 사용)",
+  "slotGroups": {
+    "URGENT": { "symptom": { "DROWNING": "DROWNING" } },
+    "FIRE": { "situation": { "FIRE": "FIRE", "SMOKE": "SMOKE", "GAS": "GAS", "EARTHQUAKE": "EARTHQUAKE", "TSUNAMI": "TSUNAMI" } },
+    "LOST": { "how": { "STOLEN": "STOLEN", "LOST": "LOST" } }
+  },
+  "_docConditions": "문서별 사용 조건. requirePlaceKinds: 도움처 결과에 그 종류가 있어야 함 / excludePlaceKinds: 있으면 제외 / requireSlots·excludeSlots: 슬롯 코드 조건",
+  "docConditions": {
+    "mild-pharmacy": { "requirePlaceKinds": ["PHARMACY"] },
+    "mild-night": { "excludePlaceKinds": ["PHARMACY"] },
+    "lost-passport": { "requireSlots": { "item": ["PASSPORT"] } },
+    "lost-items": { "excludeSlots": { "item": ["PASSPORT"] } }
+  },
+  "_forbidden": "AI-REQ-E04 금지 표현(정규식, 대소문자 무시). 진단 단정·약 이름/용량·보장 표현. 언어와 상관없이 모두 검사한다.",
+  "forbidden": {
+    "ko": [
+      "(?:증|염|병|암|질환)입니다",
+      "(?:으로|로)\\s*보입니다",
+      "진단",
+      "\\d+\\s*(?:mg|밀리그램|ml|정|알|캡슐|포)\\b",
+      "(?:한|두|세)\\s*(?:알|정)씩",
+      "정씩",
+      "타이레놀|아세트아미노펜|이부프로펜|아스피린|부루펜|게보린|펜잘|항생제|해열제를|진통제를",
+      "복용하세요|드세요|먹으세요|바르세요",
+      "안전합니다|괜찮습니다|괜찮아요|문제\\s*없습니다|걱정\\s*(?:하지\\s*마|마세요)|위험하지\\s*않"
+    ],
+    "en": [
+      "\\byou (?:have|may have|probably have|likely have)\\b",
+      "\\b(?:it|this) (?:is|looks like|sounds like) (?:a |an )?(?:\\w+ )?(?:infection|disease|fracture|stroke|heart attack|allergy|poisoning)\\b",
+      "\\bdiagnos",
+      "\\b\\d+\\s*(?:mg|ml|milligrams?|tablets?|pills?|capsules?)\\b",
+      "\\b(?:tylenol|acetaminophen|paracetamol|ibuprofen|aspirin|advil|antibiotics?|painkillers?)\\b",
+      "\\btake (?:a |one |two )?(?:pill|tablet|medicine|dose)\\b",
+      "\\byou (?:are|will be) (?:safe|fine|okay|ok)\\b",
+      "\\b(?:it'?s|it is|everything is) (?:safe|fine|okay|ok)\\b",
+      "\\bno need to worry\\b|\\bdon'?t worry\\b|\\bnothing to worry\\b"
+    ],
+    "ja": [
+      "(?:症|炎|病|がん|疾患)です",
+      "(?:の|と)?(?:可能性|疑い)が(?:あります|高い)",
+      "診断",
+      "\\d+\\s*(?:mg|ミリグラム|ml|錠|粒|カプセル|包)",
+      "錠ずつ|錠飲",
+      "タイレノール|アセトアミノフェン|イブプロフェン|アスピリン|ロキソニン|バファリン|抗生物質|解熱剤を|鎮痛剤を",
+      "服用してください|飲んでください|塗ってください",
+      "大丈夫です|安全です|心配(?:は)?(?:いりません|ありません|しないで)|問題ありません"
+    ]
+  }
+}

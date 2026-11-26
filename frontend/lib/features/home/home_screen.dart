@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../state/providers.dart';
-import '../../widgets/alert_sheet.dart';
 import '../../widgets/common.dart';
 import '../bridge.dart';
 import '../course/course_controller.dart';
@@ -69,7 +68,6 @@ class HomeScreen extends ConsumerWidget {
         ]),
       ),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        AlertBanner(boldPart: tr('hAlert', l), text: tr('hAlertSub', l)),
         Padding(
           padding: const EdgeInsets.fromLTRB(2, 22, 2, 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -25,6 +25,7 @@ import kr.busan.safetrip.common.ai.AIService;
 import kr.busan.safetrip.common.ai.AiRequest;
 import kr.busan.safetrip.common.api.EmType;
 import kr.busan.safetrip.common.exception.BusinessException;
+import kr.busan.safetrip.common.exception.ErrorCode;
 import kr.busan.safetrip.common.util.PiiMasker;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage;
@@ -38,10 +39,12 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
  *
  * 공용 AIService로 상황 문장을 7개 유형·긴급도·신뢰도·슬롯 코드로 분류한다(5초 타임아웃, 재시도 0회).
  * 호출 전 PiiMasker.mask()로 전화번호·이메일을 가리고 위치·주소는 보내지 않는다(AI-REQ-E06).
- * 스키마·허용 목록 위반이 하나라도 있으면 결과 전체를 버리고 empty를 돌려준다(AI-REQ-E01).
+ * 유형·긴급도·신뢰도 검증에 실패하면 결과 전체를 버리고, 허용되지 않은 슬롯만 제외한다(AI-REQ-E01).
  */
 @Component
 public class SituationClassifier {
+    public record ClassificationResult(Triage triage, boolean slotsDropped) {}
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     record RawConfig(Integer timeoutSec, Integer maxRetry, Double confidenceThreshold) {}
 
@@ -81,6 +84,18 @@ public class SituationClassifier {
 
     /** 상황 문장을 LLM으로 분류한다. 호출 실패나 스키마·허용 코드 위반 시 empty를 돌려준다. */
     public Optional<Triage> classify(String text) {
+        try {
+            return classifyOrFail(text).map(ClassificationResult::triage);
+        } catch (BusinessException e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * classify 와 같지만 LLM 자체의 실패(시간 초과·사용 불가)는 BusinessException(AI_TIMEOUT|AI_UNAVAILABLE)으로 알린다.
+     * 빈 결과는 스키마 위반이다. 같은 요청에서 '할 일' LLM을 더 부를지 정하는 데 쓴다(T12b, NFR-E002).
+     */
+    public Optional<ClassificationResult> classifyOrFail(String text) {
         if (text == null || text.isBlank() || aiService == null) {
             return Optional.empty();
         }
@@ -98,10 +113,10 @@ public class SituationClassifier {
                     cfg.maxRetry()));
         } catch (BusinessException e) {
             log.warn("emergency.classify failed: {}", e.code());
-            return Optional.empty();
+            throw e.code() == ErrorCode.AI_TIMEOUT ? e : new BusinessException(ErrorCode.AI_UNAVAILABLE, "분류 LLM 실패");
         } catch (RuntimeException e) {
             log.warn("emergency.classify failed: {}", e.getClass().getSimpleName());
-            return Optional.empty();
+            throw new BusinessException(ErrorCode.AI_UNAVAILABLE, "분류 LLM 실패");
         }
         return parseAndValidate(rawResponse);
     }
@@ -118,6 +133,11 @@ public class SituationClassifier {
 
     /** classify.json과 classify-prompt.txt를 다시 읽는다. */
     public void reload() {
+        prepareReload().run();
+    }
+
+    /** classify.json과 프롬프트를 읽고 검증만 한다. 돌려준 함수를 실행해야 바뀐다(API-E05). */
+    Runnable prepareReload() {
         RawConfig raw = readJson(configResourcePath, RawConfig.class);
         if (raw == null || raw.timeoutSec() == null || raw.timeoutSec() <= 0) {
             throw new IllegalStateException("classify.json timeoutSec가 올바르지 않습니다: " + configResourcePath);
@@ -135,7 +155,8 @@ public class SituationClassifier {
         if (template.isBlank() || !template.contains(SLOT_SCHEMA_PLACEHOLDER)) {
             throw new IllegalStateException("classify-prompt.txt에 {SLOT_SCHEMA}가 없습니다: " + promptResourcePath);
         }
-        this.config = new Config(raw.timeoutSec(), raw.maxRetry(), raw.confidenceThreshold(), template);
+        Config next = new Config(raw.timeoutSec(), raw.maxRetry(), raw.confidenceThreshold(), template);
+        return () -> this.config = next;
     }
 
     private String buildSystemPrompt(String template) {
@@ -194,7 +215,7 @@ public class SituationClassifier {
         return null;
     }
 
-    private Optional<Triage> parseAndValidate(String rawResponse) {
+    private Optional<ClassificationResult> parseAndValidate(String rawResponse) {
         String extracted = extractFirstJsonObject(rawResponse);
         if (extracted == null) {
             log.warn("emergency.classify invalid: noJsonObject");
@@ -252,8 +273,9 @@ public class SituationClassifier {
             return Optional.empty();
         }
 
-        // 4) slots 검증 (허용되지 않은 키·목록 밖 코드가 하나라도 있으면 결과 전체 폐기 — AI-REQ-E01)
+        // 4) slots 검증 (허용되지 않은 키·목록 밖 코드는 해당 슬롯만 제외 — AI-REQ-E01)
         Map<String, String> validatedSlots = new LinkedHashMap<>();
+        boolean slotsDropped = false;
         JsonNode slotsNode = root.get("slots");
         if (slotsNode != null && !slotsNode.isNull()) {
             if (!slotsNode.isObject()) {
@@ -268,8 +290,9 @@ public class SituationClassifier {
                 JsonNode val = entry.getValue();
                 Set<String> allowedValues = allowed.get(key);
                 if (allowedValues == null) {
-                    log.warn("emergency.classify invalid: disallowedSlotKey");
-                    return Optional.empty();
+                    log.warn("emergency.classify slot dropped: disallowedSlotKey");
+                    slotsDropped = true;
+                    continue;
                 }
                 if (val == null || val.isNull()) {
                     continue;
@@ -280,14 +303,17 @@ public class SituationClassifier {
                 }
                 String code = val.asText().trim();
                 if (!allowedValues.contains(code)) {
-                    log.warn("emergency.classify invalid: unknownSlotCode");
-                    return Optional.empty();
+                    log.warn("emergency.classify slot dropped: unknownSlotCode");
+                    slotsDropped = true;
+                    continue;
                 }
                 validatedSlots.put(key, code);
             }
         }
 
-        return Optional.of(new EmergencyDtos.Triage(type, urgency, confidence, Map.copyOf(validatedSlots)));
+        return Optional.of(new ClassificationResult(
+                new EmergencyDtos.Triage(type, urgency, confidence, Map.copyOf(validatedSlots)),
+                slotsDropped));
     }
 
     private static <T> T readJson(String path, Class<T> type) {

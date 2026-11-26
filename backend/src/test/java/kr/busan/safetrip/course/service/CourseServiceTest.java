@@ -2,6 +2,7 @@ package kr.busan.safetrip.course.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -25,6 +26,8 @@ import kr.busan.safetrip.common.api.Lang;
 import kr.busan.safetrip.common.api.PlaceDetail;
 import kr.busan.safetrip.common.domain.Place;
 import kr.busan.safetrip.common.domain.PlaceRepository;
+import kr.busan.safetrip.common.exception.BusinessException;
+import kr.busan.safetrip.common.exception.ErrorCode;
 import kr.busan.safetrip.course.dto.CourseDtos;
 import kr.busan.safetrip.course.entity.CoursePlan;
 import kr.busan.safetrip.course.repository.CoursePlaceRepository;
@@ -98,6 +101,19 @@ class CourseServiceTest {
         assertEquals(CourseDtos.Status.EDIT_UNCLEAR, r.status());
         assertTrue(r.notice().message().contains("지원하지"), r.notice().message());
         assertEquals(before, saved.size());
+    }
+
+    /** 칩 소요 시간이 범위(60~720분) 밖이면 400 INVALID_INPUT. 생성·수정 모두 (#19) */
+    @Test
+    void durationOverrideOutOfRangeIsInvalid() {
+        for (int bad : new int[] {-5, 0, 59, 721, 100000}) {
+            BusinessException e = assertThrows(BusinessException.class, () -> service.create(new CourseDtos.CreateRequest("광안리", "ko", null,
+                    new CourseDtos.Overrides(null, null, bad, null))), String.valueOf(bad));
+            assertEquals(ErrorCode.INVALID_INPUT, e.code());
+        }
+        String id = create().courseId();
+        assertThrows(BusinessException.class, () -> service.edit(id, new CourseDtos.EditRequest(null, "ko", new CourseDtos.Overrides(null, null, 0, null), null)));
+        assertEquals(CourseDtos.Status.OK, service.create(new CourseDtos.CreateRequest("광안리", "ko", null, new CourseDtos.Overrides(null, null, 120, null))).status());
     }
 
     @Test

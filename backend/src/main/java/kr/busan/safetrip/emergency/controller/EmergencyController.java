@@ -1,5 +1,11 @@
 package kr.busan.safetrip.emergency.controller;
 
+import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import kr.busan.safetrip.common.api.Lang;
+import kr.busan.safetrip.emergency.service.CallEventRecorder;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,9 +30,17 @@ import kr.busan.safetrip.emergency.service.EmergencyService;
 @RequestMapping("/api/v1/emergency")
 public class EmergencyController {
     private final EmergencyService service;
+    private final CallEventRecorder calls;
 
+    /** 공용 계약 테스트(ApiContractTest) 호환용 1-인자 생성자. */
     public EmergencyController(EmergencyService service) {
+        this(service, null);
+    }
+
+    @Autowired
+    public EmergencyController(EmergencyService service, CallEventRecorder calls) {
         this.service = service;
+        this.calls = calls;
     }
 
     /** API-E01 즉시 응답(키워드만, 1초 이내 — NFR-E001) */
@@ -39,5 +53,12 @@ public class EmergencyController {
     @PostMapping("/guide")
     public EmergencyDtos.GuideResponse guide(@Valid @RequestBody EmergencyDtos.GuideRequest req) {
         return service.guide(req);
+    }
+
+    /** API-E08 전화 버튼 기록. 번호·분 단위 시각·언어·eventId 만 저장한다. 저장 실패해도 204 */
+    @PostMapping("/call-event")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void callEvent(@Valid @RequestBody EmergencyDtos.CallEventRequest req) {
+        calls.record(req.eventId() == null ? null : UUID.fromString(req.eventId()), req.number(), Lang.parse(req.lang()));
     }
 }

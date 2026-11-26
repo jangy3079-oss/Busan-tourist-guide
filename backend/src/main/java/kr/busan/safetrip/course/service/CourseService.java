@@ -104,7 +104,7 @@ public class CourseService {
         CourseDtos.Overrides o = req.overrides();
         LocalDate date = o != null && o.visitDate() != null ? parseDate(o.visitDate()) : parsed.visitDate();
         LocalTime time = o != null && o.startTime() != null ? parseTime(o.startTime()) : parsed.startTime();
-        Integer dur = o != null && o.durationMin() != null ? o.durationMin() : parsed.durationMin();
+        Integer dur = o != null && o.durationMin() != null ? checkDuration(o.durationMin()) : parsed.durationMin();
         Area area = o != null && o.area() != null ? o.area() : parsed.area();
 
         IntentParser.Intent intent = parsed.with(
@@ -155,7 +155,7 @@ public class CourseService {
         LocalDate date = o != null && o.visitDate() != null ? parseDate(o.visitDate()) : LocalDate.parse(a.get("visitDate").value());
         boolean tDef = (o == null || o.startTime() == null) && a.get("startTime").isDefault();
         LocalTime time = o != null && o.startTime() != null ? parseTime(o.startTime()) : LocalTime.parse(a.get("startTime").value());
-        Integer newDur = o != null && o.durationMin() != null ? o.durationMin() : opDur;
+        Integer newDur = o != null && o.durationMin() != null ? checkDuration(o.durationMin()) : opDur;
         boolean mDef = newDur == null && a.get("durationMin").isDefault();
         int dur = newDur != null ? newDur : Integer.parseInt(a.get("durationMin").value());
         boolean aDef = (o == null || o.area() == null) && a.get("area").isDefault();
@@ -352,6 +352,15 @@ public class CourseService {
         String t = text.toLowerCase(java.util.Locale.ROOT);
         if (u.priceWords().stream().anyMatch(t::contains)) return true;
         return u.mealWords().stream().anyMatch(t::contains) && java.util.regex.Pattern.compile(u.timePattern()).matcher(t).find();
+    }
+
+    /** 칩으로 받은 소요 시간도 문장에서 뽑은 값과 같은 범위(intent.json min~maxDurationMin)여야 한다 */
+    private Integer checkDuration(int min) {
+        CourseSettings.Intent s = settings.intent();
+        if (min < s.minDurationMin() || min > s.maxDurationMin()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT, "durationMin 범위는 " + s.minDurationMin() + "~" + s.maxDurationMin());
+        }
+        return min;
     }
 
     private static LocalDate parseDate(String s) {

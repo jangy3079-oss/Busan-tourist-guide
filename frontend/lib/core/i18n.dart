@@ -78,8 +78,6 @@ const Map<String, List<String>> L = {
   // ---- 홈
   'app': ['부산 안심여행', 'Busan Safe Trip', '釜山あんしん旅'],
   'appSub': ['광안리·해운대 관광 안내', 'Gwangalli & Haeundae guide', '広安里・海雲台の観光案内'],
-  'hAlert': ['풍랑주의보(예시)', 'High-wave advisory (sample)', '波浪注意報(例)'],
-  'hAlertSub': [' · 광안리·해운대 해수욕장 입수 통제 중', ' · No swimming at Gwangalli and Haeundae', ' ・広安里・海雲台海水浴場は遊泳禁止'],
   'hAsk1': ['광안리·해운대에서', 'In Gwangalli & Haeundae', '広安里・海雲台で'],
   'hAsk2': ['무엇을 도와드릴까요?', 'how can we help?', '何をお手伝いしましょうか?'],
   'hAskSub': ['공식 관광 데이터를 근거로 한국어·English·日本語로 안내해요.', 'Based on official tourism data, in 한국어 · English · 日本語.', '公式観光データをもとに、한국어・English・日本語でご案内します。'],

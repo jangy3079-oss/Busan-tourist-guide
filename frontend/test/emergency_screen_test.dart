@@ -14,6 +14,7 @@ import 'package:busan_safetrip/features/emergency/emergency_controller.dart';
 import 'package:busan_safetrip/features/emergency/emergency_link.dart';
 import 'package:busan_safetrip/features/emergency/emergency_screens.dart';
 import 'package:busan_safetrip/state/providers.dart';
+import 'package:busan_safetrip/widgets/map_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,6 +37,14 @@ class _Repo implements EmergencyRepository {
     calls.add({'lat': lat, 'lng': lng, 'area': area, 'type': type, 'lang': lang});
     if (guideError != null) throw guideError!;
     return guideC?.future ?? guideR;
+  }
+
+  final callEvents = <List<Object?>>[];
+  Object? callError;
+  @override
+  Future<void> callEvent(String? eventId, String number, Lang lang) async {
+    callEvents.add([eventId, number, lang]);
+    if (callError != null) throw callError!;
   }
 }
 
@@ -262,6 +271,50 @@ void main() {
     expect(links.last, 'sms:112');
   });
 
+  testWidgets('연락 버튼: tel 을 연 뒤 기록 요청을 1번 보낸다(eventId 포함, API-E08)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.urgent, topContact: '119', eventId: 'ev-1');
+    await pumpApp(t, repo);
+    await send(t, '친구가 쓰러졌어요');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('call-119')));
+    await t.pump();
+    expect(links, ['tel:119']);
+    expect(repo.callEvents, [['ev-1', '119', Lang.ko]]);
+  });
+
+  testWidgets('기록 요청이 실패해도 tel 은 열린다', (t) async {
+    final repo = _Repo()..callError = Exception('server down');
+    await pumpApp(t, repo);
+    await t.tap(find.byKey(const ValueKey('call-112')));
+    await t.pump();
+    expect(links, ['tel:112']);
+    expect(repo.callEvents.single, [null, '112', Lang.ko]); // E02 전이면 eventId 없음
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('결과 화면과 카드 전체 화면에 3개 국어 면책 문구가 표시된다 (#127)', (t) async {
+    final sent = <http.Request>[];
+    await pumpApp(t, _contractRepo(sent));
+    await send(t, '친구가 쓰러졌어요');
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('em-disclaimer')), findsOneWidget);
+    expect(find.text('이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.'), findsOneWidget);
+
+    await t.tap(find.text(tr('full', Lang.ko)));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('card-disclaimer')), findsOneWidget);
+    expect(find.text('이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.'), findsWidgets);
+
+    // 영어·일본어 전환 확인
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('This guide is not medical advice. In an emergency, call 119 immediately.'), findsWidgets);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('この案内は医療判断ではありません。緊急時はすぐ119に電話してください。'), findsWidgets);
+  });
+
   testWidgets('대사관 시트: 1330 전화가 맨 위, 외교부 목록은 보조 링크 (EMBASSY)', (t) async {
     final repo = _Repo()..guideR = const EmGuideResult(type: EmType.lost, topContact: '1330', extra: EmExtra.embassy);
     await pumpApp(t, repo);
@@ -277,5 +330,74 @@ void main() {
     await t.tap(call);
     await t.tap(list);
     expect(links, ['tel:1330', kEmbassyListUrl]);
+  });
+
+  testWidgets('위치를 허용하면 결과 지도에 내 좌표를 넘긴다 (#184 #185)', (t) async {
+    final repo = _Repo()..guideR = const EmGuideResult(type: EmType.mild, topContact: '1330', places: [HelpPlace('p1', '광안약국', '약국', 35.15, 129.11, 300, '운영 중', '')]);
+    await pumpApp(t, repo);
+    await send(t, '벌레에 물렸어요');
+    await t.pumpAndSettle();
+    final map = t.widget<MapView>(find.byType(MapView));
+    expect(map.showMe, isTrue);
+    expect([map.me?.lat, map.me?.lng], [35.1532, 129.1186]);
+  });
+
+  testWidgets('360px 영어 화면에서 카드 Full screen 버튼이 한 줄로 표시된다 (#208)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        cardKo: '외국인 관광객입니다. 저는 배가 아픕니다. 약을 사고 싶습니다. 도와주세요.',
+        cardTranslated: 'I am a foreign tourist. I: stomach pain. I want to buy medicine. Please help.',
+        address: '부산 해운대구 해운대해변로 264',
+      );
+    await pumpApp(t, repo);
+    t.view.physicalSize = const Size(360, 800);
+    t.view.devicePixelRatio = 1;
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+
+    await send(t, 'I have stomach pain');
+    await t.pumpAndSettle();
+
+    final btnFinder = find.byKey(const ValueKey('full-screen-btn'));
+    final labelFinder = find.byKey(const ValueKey('full-screen-label'));
+    expect(btnFinder, findsOneWidget);
+    expect(labelFinder, findsOneWidget);
+    final label = t.widget<Text>(labelFinder);
+    expect(label.data, 'Full screen');
+    expect(label.maxLines, 1);
+    expect(label.softWrap, isFalse);
+    // 두 줄로 줄바꿈되면 높이가 60px 이상으로 커진다 — 한 줄 버튼 높이(48px 전후) 확인
+    expect(t.getSize(btnFinder).height, lessThanOrEqualTo(52));
+    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('언어 전환 시 일반 분류 결과는 type 없이 재요청해 슬롯을 유지하고, 수동 선택은 type을 유지한다 (#208)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        cardKo: '외국인 관광객입니다. 저는 배가 아픕니다. 약을 사고 싶습니다. 도와주세요.',
+      );
+    await pumpApp(t, repo);
+    await send(t, '배가 너무 아파요 약이 필요해요');
+    await t.pumpAndSettle();
+    expect(repo.calls.last['type'], isNull);
+
+    // 일반 분류 상태에서 일본어로 전환 → type=null 유지 (서버가 슬롯을 다시 추출)
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(repo.calls.last['lang'], Lang.ja);
+    expect(repo.calls.last['type'], isNull);
+
+    // 유형을 수동 선택한 뒤 언어를 바꾸면 선택한 type 을 유지
+    repo.guideR = const EmGuideResult(type: EmType.lost, topContact: '1330');
+    await box.read(emergencyProvider.notifier).chooseType(EmType.lost);
+    await t.pumpAndSettle();
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(repo.calls.last['lang'], Lang.en);
+    expect(repo.calls.last['type'], EmType.lost);
   });
 }

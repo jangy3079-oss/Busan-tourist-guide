@@ -61,7 +61,13 @@ class CourseRequestScreen extends ConsumerWidget {
         if (st.chat.isEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 36, top: 14),
-            child: Wrap(spacing: 8, runSpacing: 8, children: [for (final x in [ct('ex1', l), ct('ex2', l), ct('ex3', l)]) ActionChip(label: Text(x, style: const TextStyle(fontSize: 13)), onPressed: () => ctrl.start(x), backgroundColor: Colors.white, side: const BorderSide(color: C.line2))]),
+            child: Wrap(spacing: 8, runSpacing: 8, children: [for (final x in [ct('ex1', l), ct('ex2', l), ct('ex3', l)]) Material(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: C.line2)),
+                clipBehavior: Clip.antiAlias,
+                // 칩은 한 줄로 잘려 360px에서 영·일 예시가 끊긴다(#28). 폭이 모자라면 줄을 바꾼다
+                child: InkWell(onTap: () => ctrl.start(x), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Text(x, style: const TextStyle(fontSize: 13)))),
+              )]),
           ),
         for (final m in st.chat) bubble(m),
         if (st.error != null) Padding(padding: const EdgeInsets.only(top: 12), child: ErrorCard(st.error!, onRetry: ctrl.retry)),
@@ -350,12 +356,15 @@ Future<PlacePin?> showStartPlaceSheet(BuildContext context, WidgetRef ref, {Plac
                 showMe: false, area: ar, height: 180, caption: ct('startTap', l),
                 onPinTap: (i) => set(() => sel = pins[i]),
               ),
+              // #214 확정 버튼은 지도 바로 아래(목록 위)에 둔다. 목록 행은 누르면 바로 확정
+              const SizedBox(height: 10),
+              Btn(sel == null ? ct('startNone', l) : ct('startGo', l, [sel!.name]), kind: sel == null ? BtnKind.secondary : BtnKind.primary, onTap: sel == null ? null : () => Navigator.of(ctx).pop(sel)),
               const SizedBox(height: 10),
               for (var i = 0; i < pins.length; i++)
                 Material(
                   color: pins[i].contentId == sel?.contentId ? C.seaT : Colors.transparent, borderRadius: BorderRadius.circular(rMd),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(rMd), onTap: () => set(() => sel = pins[i]),
+                    borderRadius: BorderRadius.circular(rMd), onTap: () => Navigator.of(ctx).pop(pins[i]),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
                       child: Row(children: [
@@ -370,7 +379,5 @@ Future<PlacePin?> showStartPlaceSheet(BuildContext context, WidgetRef ref, {Plac
             ]);
           },
         ),
-        const SizedBox(height: 12),
-        Btn(sel == null ? ct('startNone', l) : ct('startGo', l, [sel!.name]), kind: sel == null ? BtnKind.secondary : BtnKind.primary, onTap: sel == null ? null : () => Navigator.of(ctx).pop(sel)),
       ])));
 }

@@ -185,15 +185,23 @@ public class KoreanCardBuilder {
 
     /** slots.json과 card-templates.json을 다시 읽고 검증한 뒤 메모리를 교체한다. 로드된 템플릿 개수를 돌려준다(API-E05). */
     public int reload() {
+        StagedReload staged = prepareReload();
+        staged.commit().run();
+        return staged.count();
+    }
+
+    /** slots.json과 card-templates.json을 읽고 검증만 한다. commit 전에는 메모리를 바꾸지 않는다(API-E05). */
+    StagedReload prepareReload() {
         if (slotsResourcePath == null || templatesResourcePath == null) {
             throw new IllegalStateException("리소스 경로가 지정되지 않았습니다.");
         }
         RawSlots rawSlots = readResource(slotsResourcePath, RawSlots.class, "슬롯 사전");
         RawTemplates rawTemplates = readResource(templatesResourcePath, RawTemplates.class, "카드 템플릿");
         CompiledData compiled = compileAndValidate(rawSlots, rawTemplates);
-        this.data = compiled;
-        log.info("emergency card templates loaded: {} templates", compiled.templateCount());
-        return compiled.templateCount();
+        return new StagedReload(compiled.templateCount(), () -> {
+            this.data = compiled;
+            log.info("emergency card templates loaded: {} templates", compiled.templateCount());
+        });
     }
 
     /** T10 등 긴급 패키지 내부에서 유형별 허용 슬롯·코드 목록을 참조할 때 사용한다. */

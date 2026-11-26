@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <hpid>E_TEST_01</hpid>
+        <dutyName>테스트응급의료센터</dutyName>
+        <dutyAddr>부산광역시 해운대구 테스트대로 10</dutyAddr>
+        <dutyTel1>051-333-0000</dutyTel1>
+        <dutyTel3>051-333-9999</dutyTel3>
+        <wgs84Lat>35.1610</wgs84Lat>
+        <wgs84Lon>129.1550</wgs84Lon>
+      </item>
+      <item>
+        <hpid>E_TEST_02</hpid>
+        <dutyName>테스트병원응급실</dutyName>
+        <dutyAddr>부산광역시 수영구 테스트대로 20</dutyAddr>
+        <dutyTel1>051-444-0000</dutyTel1>
+        <wgs84Lat>35.1510</wgs84Lat>
+        <wgs84Lon>129.1110</wgs84Lon>
+      </item>
+    </items>
+    <numOfRows>500</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>2</totalCount>
+  </body>
+</response>

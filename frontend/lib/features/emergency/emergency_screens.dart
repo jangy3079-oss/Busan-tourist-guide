@@ -17,6 +17,13 @@ import 'emergency_controller.dart';
 import 'emergency_link.dart';
 import 'emergency_text.dart';
 
+/// 112·119·1330 전화: tel: 을 먼저 열고, 그 뒤에 기록(API-E08)을 비동기로 보낸다. 기록 실패는 무시(전화가 우선)
+void dial(WidgetRef ref, String number) {
+  ref.read(emLinkProvider)('tel:$number');
+  final eventId = ref.read(emergencyProvider).guide?.eventId;
+  ref.read(emergencyRepoProvider).callEvent(eventId, number, ref.read(langProvider)).catchError((Object _) {});
+}
+
 const _typeOrder = [EmType.urgent, EmType.mild, EmType.lost, EmType.threat, EmType.fire, EmType.way, EmType.non];
 
 /// 상단 119·112·1330 연락 바. topContact 를 맨 앞·강조 (E01 키워드로 먼저, E02 최종 긴급도로 다시 정해짐)
@@ -42,7 +49,7 @@ class ContactBar extends ConsumerWidget {
                   child: InkWell(
                     key: ValueKey('call-$n'),
                     borderRadius: BorderRadius.circular(rMd),
-                    onTap: () => ref.read(emLinkProvider)('tel:$n'),
+                    onTap: () => dial(ref, n),
                     child: Container(
                       constraints: const BoxConstraints(minHeight: 52, minWidth: 48), // NFR-E010 최소 48×48
                       padding: const EdgeInsets.symmetric(vertical: 7),
@@ -271,7 +278,7 @@ class EmergencyResultScreen extends ConsumerWidget {
           XBtn(icon: 'bank', title: tr('embassy', l), sub: tr('embassySub', l), iconBg: C.seaT, iconFg: C.sea, onTap: () => showEmbassySheet(context, ref)),
         if (places.isNotEmpty) ...[
           SecTitle(tr('helpNow', l), sub: tr('helpSub', l)),
-          MapView(pins: [for (final p in places) p.point], area: st.area, showMe: !st.hasCoords, height: 170,
+          MapView(pins: [for (final p in places) p.point], area: st.area, me: st.hasCoords ? MapPoint(st.lat!, st.lng!) : null, height: 170,
               caption: st.hasCoords ? et('hereMe', l) : et('hereArea', l, [area.nameOf(l)])),
           const SizedBox(height: 8),
           for (var i = 0; i < places.length; i++) PlaceRow(i, places[i]),
@@ -291,7 +298,11 @@ class EmergencyResultScreen extends ConsumerWidget {
                 Text(g.cardTranslated, style: const TextStyle(fontSize: 13, color: C.text3, height: 1.5)),
               ],
               const SizedBox(height: 10),
-              Row(children: [Expanded(child: Text(tr('cardHint', l), style: const TextStyle(fontSize: 12.5, color: C.text3))), SizedBox(width: 132, child: Btn(tr('full', l), icon: 'move', kind: BtnKind.dark, onTap: () => showKoreanCard(context)))]),
+              Row(children: [
+                Expanded(child: Text(tr('cardHint', l), style: const TextStyle(fontSize: 12.5, color: C.text3))),
+                const SizedBox(width: 8),
+                _FullScreenBtn(label: tr('full', l), onTap: () => showKoreanCard(context)),
+              ]),
             ]),
           ),
           const SizedBox(height: 10),
@@ -309,6 +320,14 @@ class EmergencyResultScreen extends ConsumerWidget {
         // NFR-E008 기준 시각·출처 (#109)
         if (places.isNotEmpty) Src([if (g.dataAsOf.isNotEmpty) g.dataAsOf, et('callFirst', l)].join(' · ')),
       ],
+      Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Text(
+          et('disclaimer', l),
+          key: const ValueKey('em-disclaimer'),
+          style: const TextStyle(fontSize: 12, color: C.text3, height: 1.45),
+        ),
+      ),
     ]));
   }
 }
@@ -316,6 +335,43 @@ class EmergencyResultScreen extends ConsumerWidget {
 void _pickType(BuildContext context, WidgetRef ref, EmType t) {
   ref.read(emergencyProvider.notifier).chooseType(t);
   context.go(t == EmType.non ? '/emergency/non' : '/emergency/result');
+}
+
+/// 한국어 카드 '전체 화면' 버튼: 360px 영어("Full screen")에서도 한 줄로 유지한다(#208).
+class _FullScreenBtn extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _FullScreenBtn({required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) => ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48, maxWidth: 152),
+        child: Material(
+          color: C.text,
+          borderRadius: BorderRadius.circular(rMd),
+          child: InkWell(
+            key: const ValueKey('full-screen-btn'),
+            borderRadius: BorderRadius.circular(rMd),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Ic('move', size: 16, color: Colors.white),
+                  const SizedBox(width: 5),
+                  Text(
+                    label,
+                    key: const ValueKey('full-screen-label'),
+                    maxLines: 1,
+                    softWrap: false,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+        ),
+      );
 }
 
 /// 도움처 한 줄 (FR-E011·E012·E014): 이름·종류·거리·운영 상태와 오늘 운영시간·응급실 병상/경고·전화·길찾기
@@ -365,7 +421,6 @@ class EmergencyNonScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = ref.watch(langProvider);
-    final call = ref.read(emLinkProvider);
     return ScreenFrame(
       head: _head(ref), bar: const ContactBar(top: '1330'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -375,8 +430,8 @@ class EmergencyNonScreen extends ConsumerWidget {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(tr('nonT', l), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)), Text(tr('nonS', l), style: const TextStyle(fontSize: 12.5, color: C.text3, height: 1.45))])),
         ]),
         const SizedBox(height: 6),
-        XBtn(icon: 'phone', title: '1330 · ${tr('c1330', l)}', sub: '한국어 · English · 日本語 · 中文', iconBg: C.blue, iconFg: Colors.white, onTap: () => call('tel:1330')),
-        XBtn(icon: 'megaphone', title: tr('complain', l), sub: tr('complainSub', l), iconBg: C.amberT, iconFg: C.amber, onTap: () => call('tel:1330')),
+        XBtn(icon: 'phone', title: '1330 · ${tr('c1330', l)}', sub: '한국어 · English · 日本語 · 中文', iconBg: C.blue, iconFg: Colors.white, onTap: () => dial(ref, '1330')),
+        XBtn(icon: 'megaphone', title: tr('complain', l), sub: tr('complainSub', l), iconBg: C.amberT, iconFg: C.amber, onTap: () => dial(ref, '1330')),
         // FR-E018, AC-X03: 코스 요청 화면을 빈 입력창으로 연다(입력 문장을 넘기지 않음)
         XBtn(key: const ValueKey('find-course'), icon: 'route', title: tr('findCourse', l), sub: tr('findCourseSub', l), iconBg: C.blueT, iconFg: C.blue, onTap: () => emergencyToCourse(context, ref)),
       ]),
@@ -466,7 +521,7 @@ Future<void> showEmbassySheet(BuildContext context, WidgetRef ref) {
       const SizedBox(height: 6),
       Text(et('embassyHow', l), style: const TextStyle(fontSize: 14, color: C.text2, height: 1.5)),
       const SizedBox(height: 14),
-      Btn(et('embassyAsk1330', l), key: const ValueKey('embassy-1330'), icon: 'phone', kind: BtnKind.primary, onTap: () => open('tel:1330')),
+      Btn(et('embassyAsk1330', l), key: const ValueKey('embassy-1330'), icon: 'phone', kind: BtnKind.primary, onTap: () => dial(ref, '1330')),
       const SizedBox(height: 6),
       Align(
         alignment: Alignment.centerLeft,
@@ -523,6 +578,13 @@ Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
                     ]),
                     const SizedBox(height: 10),
                     ClipRRect(borderRadius: BorderRadius.circular(rMd), child: ContactBar(top: st.top)), // FR-E004
+                    const SizedBox(height: 8),
+                    Text(
+                      et('disclaimer', l),
+                      key: const ValueKey('card-disclaimer'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white60, fontSize: 11.5, height: 1.4),
+                    ),
                   ]),
                 ),
               ),

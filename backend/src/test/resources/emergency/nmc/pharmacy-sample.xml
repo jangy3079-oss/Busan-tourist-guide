@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <header>
+    <resultCode>00</resultCode>
+    <resultMsg>NORMAL SERVICE.</resultMsg>
+  </header>
+  <body>
+    <items>
+      <item>
+        <hpid>P_TEST_01</hpid>
+        <dutyName>테스트심야약국</dutyName>
+        <dutyAddr>부산광역시 수영구 테스트로 1</dutyAddr>
+        <dutyTel1>051-111-1111</dutyTel1>
+        <wgs84Lat>35.1548</wgs84Lat>
+        <wgs84Lon>129.1177</wgs84Lon>
+        <dutyTime1s>0900</dutyTime1s>
+        <dutyTime1c>1800</dutyTime1c>
+        <dutyTime2s>2100</dutyTime2s>
+        <dutyTime2c>0100</dutyTime2c>
+        <dutyTime3s>0000</dutyTime3s>
+        <dutyTime3c>2400</dutyTime3c>
+        <dutyTime4s>0900</dutyTime4s>
+        <dutyTime5s>09:00</dutyTime5s>
+        <dutyTime5c>18:00</dutyTime5c>
+        <dutyTime6s>0965</dutyTime6s>
+        <dutyTime6c>1800</dutyTime6c>
+        <dutyTime8s>1000</dutyTime8s>
+        <dutyTime8c>1500</dutyTime8c>
+      </item>
+      <item>
+        <hpid>P_TEST_NO_COORD</hpid>
+        <dutyName>좌표없는약국</dutyName>
+        <dutyAddr>부산광역시 수영구 테스트로 2</dutyAddr>
+        <dutyTel1>051-222-2222</dutyTel1>
+        <dutyTime1s>0900</dutyTime1s>
+        <dutyTime1c>1900</dutyTime1c>
+      </item>
+    </items>
+    <numOfRows>500</numOfRows>
+    <pageNo>1</pageNo>
+    <totalCount>2</totalCount>
+  </body>
+</response>

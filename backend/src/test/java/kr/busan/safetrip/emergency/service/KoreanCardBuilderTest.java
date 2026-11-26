@@ -135,6 +135,7 @@ class KoreanCardBuilderTest {
     @Test
     void derivesDecisionGroupFromLlmSlots() {
         assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "STOMACH"))).isEqualTo("NEEDS_MEDS");
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "DIARRHEA"))).isEqualTo("NEEDS_MEDS");
         assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "MINOR_CUT"))).isEqualTo("NEEDS_MEDS");
         assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "RASH"))).isEqualTo("NEEDS_MEDS");
         assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "INSECT"))).isEqualTo("NEEDS_MEDS");
@@ -149,6 +150,37 @@ class KoreanCardBuilderTest {
         assertThat(builder.groupFromSlots(EmType.NON, Map.of())).isNull();
         assertThat(builder.allowedCodes(EmType.LOST)).containsKeys("item", "how");
         assertThat(builder.allowedCodes(EmType.LOST).get("how")).containsExactlyInAnyOrder("STOLEN", "LOST");
+        assertThat(builder.allowedCodes(EmType.MILD).get("symptom")).contains("STOMACH", "DIARRHEA");
+    }
+
+    @Test
+    void slotPhrasesStayWithinCodeScopeWithoutUnmentionedSymptoms() {
+        EmergencyDtos.Card stomachEn = builder.build(EmType.MILD, "NEEDS_MEDS", Map.of("who", "SELF", "symptom", "STOMACH"), null, Lang.EN);
+        assertThat(stomachEn.ko()).contains("배가 아픕니다.").doesNotContain("설사");
+        assertThat(stomachEn.translated()).contains("stomach pain").doesNotContain("diarrhea");
+
+        EmergencyDtos.Card stomachJa = builder.build(EmType.MILD, "NEEDS_MEDS", Map.of("who", "SELF", "symptom", "STOMACH"), null, Lang.JA);
+        assertThat(stomachJa.translated()).contains("お腹が痛いです").doesNotContain("下痢");
+
+        EmergencyDtos.Card diarrheaJa = builder.build(EmType.MILD, "NEEDS_MEDS", Map.of("who", "SELF", "symptom", "DIARRHEA"), null, Lang.JA);
+        assertThat(diarrheaJa.ko()).contains("설사를 합니다.").doesNotContain("배가 아");
+        assertThat(diarrheaJa.translated()).contains("下痢をしています");
+
+        EmergencyDtos.Card allergyEn = builder.build(EmType.URGENT, "ANAPHYLAXIS", Map.of("who", "SELF", "symptom", "ALLERGY"), null, Lang.EN);
+        assertThat(allergyEn.ko()).contains("심한 알레르기 반응이 있습니다.").doesNotContain("숨쉬기");
+        assertThat(allergyEn.translated()).contains("severe allergic reaction").doesNotContain("breathe");
+
+        EmergencyDtos.Card unconscious = builder.build(EmType.URGENT, "UNCONSCIOUS", Map.of("who", "FRIEND", "symptom", "UNCONSCIOUS"), null, Lang.EN);
+        assertThat(unconscious.ko()).contains("의식이 없습니다.").doesNotContain("쓰러져서");
+        assertThat(unconscious.translated()).contains("unconscious").doesNotContain("collapsed");
+
+        EmergencyDtos.Card rash = builder.build(EmType.MILD, "NEEDS_MEDS", Map.of("who", "SELF", "symptom", "RASH"), null, Lang.EN);
+        assertThat(rash.ko()).contains("피부에 발진이 났습니다.");
+        assertThat(rash.translated()).contains("skin rash");
+
+        // SituationClassifier 시스템 프롬프트 {SLOT_SCHEMA}에 DIARRHEA 자동 반영 확인(#208)
+        SituationClassifier classifier = new SituationClassifier(null, builder);
+        assertThat(classifier.buildSystemPrompt()).contains("DIARRHEA").contains("STOMACH");
     }
 
     @Test
