@@ -7,7 +7,7 @@
   "categories": ["관광지", "문화시설", "쇼핑", "음식점", "카페"],
   "areaAddress": { "GWANGALLI": "수영구", "HAEUNDAE": "해운대구" },
   "areaKeywords": {
-    "GWANGALLI": ["광안리", "광안", "민락", "수영", "gwangalli", "gwangan", "広安里"],
+    "GWANGALLI": ["광안리", "광안", "민락", "수영", "gwangalli", "gwangan", "suyeong", "広安里", "水営"],
     "HAEUNDAE": ["해운대", "동백섬", "달맞이", "청사포", "haeundae", "海雲台"]
   },
   "categoryKeywords": {

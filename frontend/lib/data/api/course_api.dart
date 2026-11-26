@@ -9,12 +9,12 @@ class ApiCourseRepository implements CourseRepository {
   ApiCourseRepository(this.api);
 
   @override
-  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides}) async =>
-      _result(await api.post('/courses', {'query': query, 'lang': langCode(lang), 'startPlaceId': startPlaceId, 'overrides': _overrides(overrides)}));
+  Future<CourseResult> create(String query, Lang lang, {String? startPlaceId, CourseOverrides? overrides, bool notEmergency = false}) async =>
+      _result(await api.post('/courses', {'query': query, 'lang': langCode(lang), 'startPlaceId': startPlaceId, 'overrides': _overrides(overrides), if (notEmergency) 'notEmergency': true}));
 
   @override
-  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId}) async =>
-      _result(await api.post('/courses/$courseId/edits', {'text': text, 'lang': langCode(lang), 'overrides': _overrides(overrides), 'startPlaceId': startPlaceId}));
+  Future<CourseResult> edit(String courseId, Lang lang, {String? text, CourseOverrides? overrides, String? startPlaceId, bool notEmergency = false}) async =>
+      _result(await api.post('/courses/$courseId/edits', {'text': text, 'lang': langCode(lang), 'overrides': _overrides(overrides), 'startPlaceId': startPlaceId, if (notEmergency) 'notEmergency': true}));
 
   Map<String, dynamic>? _overrides(CourseOverrides? o) => o == null
       ? null
@@ -38,8 +38,7 @@ class ApiCourseRepository implements CourseRepository {
   @override
   Future<Evidence> evidence(String contentId, Lang lang) async {
     final j = await api.get('/places/$contentId', {'lang': langCode(lang)});
-    final collected = (j['collectedAt'] as String?)?.split('T').first;
-    return Evidence(j['name'] ?? '', j['overview'] ?? '', j['hoursText'] ?? '', [j['source'] ?? 'ⓒ한국관광공사', if (collected != null) '수집일 $collected'].join(' · '), imageUrl: j['imageUrl'] as String?);
+    return Evidence(j['name'] ?? '', j['overview'] ?? '', j['hoursText'] ?? '', sourceLine(j['source'] as String?, j['collectedAt'] as String?, lang), imageUrl: j['imageUrl'] as String?);
   }
 
   CourseResult _result(Map<String, dynamic> j) {

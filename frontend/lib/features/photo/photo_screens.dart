@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/i18n.dart';
 import '../../core/theme.dart';
 import '../../data/models/models.dart';
+import '../../state/providers.dart';
 import '../../widgets/common.dart';
+import '../../widgets/error_card.dart';
 import '../../widgets/map_view.dart';
 import '../bridge.dart';
 import 'photo_controller.dart';
+import 'photo_text.dart';
 
-// SRS FR-P002: JPG·PNG, 10MB 이하. (프로토타입 문구는 "HEIC도 가능" → SRS와 불일치, 팀 확인 필요)
+// SRS FR-P002: JPG·PNG, 10MB 이하. HEIC 는 미지원(#39 결정 전까지 SRS 대로)
 const kAllowedExt = ['jpg', 'jpeg', 'png'];
 const kMaxBytes = 10 * 1024 * 1024;
 
@@ -34,8 +38,9 @@ class PhotoPickScreen extends ConsumerWidget {
     final ext = f.name.split('.').last.toLowerCase();
     final bytes = await f.readAsBytes();
     if (!context.mounted) return;
-    if (!kAllowedExt.contains(ext)) { toast(context, 'JPG 또는 PNG 사진만 올릴 수 있어요'); return; }
-    if (bytes.length > kMaxBytes) { toast(context, '사진은 10MB 이하만 올릴 수 있어요'); return; }
+    final l = ref.read(langProvider);
+    if (!kAllowedExt.contains(ext)) { toast(context, pt('badExt', l)); return; }
+    if (bytes.length > kMaxBytes) { toast(context, pt('tooBig', l)); return; }
     // 개발 중 Mock은 사진 내용과 상관없이 "확정"을 돌려준다(sample 'ok'). Api 모드에서는 sample을 무시하고 실제로 전송.
     ref.read(photoProvider.notifier).identify(bytes: bytes, fileName: f.name, sample: 'ok');
     context.go('/photo/scan');
@@ -48,6 +53,8 @@ class PhotoPickScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = ref.watch(langProvider);
+    final loc = ref.watch(photoProvider.select((s) => s.loc));
     Widget sample(String label, String sub, Color bg, String kind) => Expanded(
           child: GestureDetector(
             onTap: () => _sample(context, ref, kind),
@@ -59,31 +66,32 @@ class PhotoPickScreen extends ConsumerWidget {
         );
     Widget guide(String icon, String t) => Expanded(child: Column(children: [Ic(icon, color: C.sea), const SizedBox(height: 4), Text(t, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600))]));
     return ScreenFrame(
-      head: const AppHead('간판 사진으로 찾기', '사진 기반 안내', backTo: '/'),
+      head: AppHead(pt('title', l), pt('sub', l), backTo: '/'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           height: 190, width: double.infinity, alignment: Alignment.center,
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(rLg), gradient: const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF2C3138), Color(0xFF1B1E22)])),
-          child: const Column(mainAxisSize: MainAxisSize.min, children: [Ic('focus', size: 44, color: Colors.white70), SizedBox(height: 6), Text('간판이 화면 가운데 오도록 찍어 주세요', style: TextStyle(color: Colors.white70, fontSize: 13.5))]),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [const Ic('focus', size: 44, color: Colors.white70), const SizedBox(height: 6), Text(pt('frame', l), style: const TextStyle(color: Colors.white70, fontSize: 13.5))]),
         ),
         const SizedBox(height: 12),
-        Row(children: [guide('move', '가까이'), guide('focus', '정면으로'), guide('sun', '밝게')]),
+        Row(children: [guide('move', pt('near', l)), guide('focus', pt('front', l)), guide('sun', pt('bright', l))]),
         const SizedBox(height: 14),
         Row(children: [
-          Expanded(child: Btn('촬영하기', icon: 'camera', kind: BtnKind.primary, onTap: () => _pick(context, ref, ImageSource.camera))),
+          Expanded(child: Btn(pt('shoot', l), icon: 'camera', kind: BtnKind.primary, onTap: () => _pick(context, ref, ImageSource.camera))),
           const SizedBox(width: 8),
-          Expanded(child: Btn('앨범에서 고르기', icon: 'image', onTap: () => _pick(context, ref, ImageSource.gallery))),
+          Expanded(child: Btn(pt('album', l), icon: 'image', onTap: () => _pick(context, ref, ImageSource.gallery))),
         ]),
-        const SecTitle('샘플 사진으로 해 보기', sub: '시연용'),
+        SecTitle(pt('samples', l), sub: pt('demo', l)),
         Row(children: [
-          sample('해운대암소갈비집', '확정', const Color(0xFF8E1C1C), 'ok'), const SizedBox(width: 8),
-          sample('…소갈비', '후보 여러 곳', const Color(0xFF5A4A3A), 'cand'), const SizedBox(width: 8),
-          sample('■■■', '인식 실패', const Color(0xFF3B4048), 'fail'),
+          sample('해운대암소갈비집', pt('sOk', l), const Color(0xFF8E1C1C), 'ok'), const SizedBox(width: 8),
+          sample('…소갈비', pt('sCand', l), const Color(0xFF5A4A3A), 'cand'), const SizedBox(width: 8),
+          sample('■■■', pt('sFail', l), const Color(0xFF3B4048), 'fail'),
         ]),
         const SizedBox(height: 14),
-        Container(padding: const EdgeInsets.all(12), decoration: cardDeco(), child: const Row(children: [Ic('pin', size: 18, color: C.sea), SizedBox(width: 8), Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: '위치를 쓰면 가까운 가게부터 찾아요 · '), TextSpan(text: '허용됨', style: TextStyle(fontWeight: FontWeight.w700))]), style: TextStyle(fontSize: 13)))])),
+        // FR-P003: 찍을 때마다 위치를 한 번 묻는다. 거부되면 위치 없이 2개 구 전체에서 찾는다
+        Container(padding: const EdgeInsets.all(12), decoration: cardDeco(), child: Row(children: [Ic('pin', size: 18, color: loc == PhotoLoc.off ? C.amber : C.sea), const SizedBox(width: 8), Expanded(child: Text(pt(switch (loc) { PhotoLoc.idle => 'locIdle', PhotoLoc.on => 'locOn', PhotoLoc.off => 'locOff' }, l), style: const TextStyle(fontSize: 13)))])),
         const SizedBox(height: 10),
-        const PrivNote('사진은 분석 후 바로 지우고 저장하지 않아요. 최대 10MB, JPG·PNG만 올릴 수 있어요.'),
+        PrivNote(pt('priv', l)),
       ]),
     );
   }
@@ -94,17 +102,23 @@ class PhotoScanScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final st = ref.watch(photoProvider);
+    final l = ref.watch(langProvider);
     ref.listen<PhotoState>(photoProvider, (prev, next) {
       if (next.phase == PhotoPhase.done && next.result != null) {
         context.go(switch (next.result!.decision) { MatchDecision.confirmed => '/photo/result', MatchDecision.candidates => '/photo/candidates', MatchDecision.notFound || MatchDecision.ocrFail => '/photo/fail' });
       }
     });
     return ScreenFrame(
-      head: const AppHead('간판 사진으로 찾기', '사진 기반 안내', backTo: '/photo'),
+      head: AppHead(pt('title', l), pt('sub', l), backTo: '/photo'),
       body: Column(children: [
         _signBox(st.sample == 'cand' ? '…소갈비' : '해운대암소갈비집', blur: st.sample == 'fail'),
         const SizedBox(height: 14),
-        const WaitRow('간판 글자를 읽고 공식 관광정보와 맞춰 보는 중…', spinColor: C.blue),
+        if (st.error != null) ...[
+          ErrorCard(st.error!, onRetry: () => ref.read(photoProvider.notifier).retry()),
+          const SizedBox(height: 10),
+          Btn(pt('retake', l), icon: 'camera', onTap: () => context.go('/photo')),
+        ] else
+          WaitRow(pt('scanning', l), spinColor: C.blue),
       ]),
     );
   }
@@ -115,41 +129,46 @@ class PhotoResultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final st = ref.watch(photoProvider);
+    final l = ref.watch(langProvider);
     final p = st.selected;
     if (p == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) { if (context.mounted) context.go('/photo'); });
       return const ScreenFrame(body: SizedBox());
     }
     return ScreenFrame(
-      head: const AppHead('찾은 가게', '사진 기반 안내', backTo: '/photo'),
+      head: AppHead(pt('found', l), pt('sub', l), backTo: '/photo'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _signBox(p.name, h: 110),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(14), decoration: cardDeco(),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            TagC.green('확정 · 일치도 높음', icon: 'check'),
+            if (st.result?.decision == MatchDecision.confirmed) TagC.green(pt('confirmed', l), icon: 'check'),
             const SizedBox(height: 8),
             Text(p.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-            if (p.romanized?.isNotEmpty ?? false) Text('${p.romanized} · 한글 원문 상호', style: const TextStyle(fontSize: 12.5, color: C.text3)),
+            if (l != Lang.ko) Text(pt('origName', l), style: const TextStyle(fontSize: 12.5, color: C.text3)), // FR-P010: 상호는 원문 그대로
             const SizedBox(height: 8),
             KV([
-              ('업종', Text(p.category)),
-              ('위치', Text([p.address, if (p.distM != null) '내 위치에서 ${p.distM}m', if (st.result?.lowAccuracy ?? false) '정확도가 낮을 수 있음'].join(' · '))), // FR-P003
-              ('운영', Row(children: [p.openNow ? TagC.green('영업 중') : TagC.amber('방문 전 확인'), const SizedBox(width: 6), Flexible(child: Text(p.hours))])),
+              (pt('kCategory', l), Text(p.category)),
+              (pt('kWhere', l), Text([p.address, if (p.distM != null) pt('fromYou', l, [p.distM!]), if (st.result?.lowAccuracy ?? false) pt('lowAcc', l)].join(' · '))), // FR-P003
+              (pt('kHours', l), Row(children: [p.openNow ? TagC.green(pt('open', l)) : TagC.amber(pt('check', l)), const SizedBox(width: 6), Flexible(child: Text(p.hours))])),
+              if (p.overview?.isNotEmpty ?? false) (pt('overview', l), Text(p.overview!, maxLines: 4, overflow: TextOverflow.ellipsis)),
             ]),
           ]),
         ),
         const SizedBox(height: 10),
-        MapView(pins: [MapPoint(p.lat, p.lng, label: '★', isFixed: true)], area: Area.haeundae, height: 150),
+        MapView(pins: [MapPoint(p.lat, p.lng, label: '★', name: p.name, isFixed: true)], area: Area.haeundae, height: 150),
         const SizedBox(height: 10),
         Container(
           width: double.infinity, padding: const EdgeInsets.all(14), decoration: cardDeco(),
-          child: st.narration != null
-              ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(st.narration!, style: const TextStyle(fontSize: 14, height: 1.6, color: C.text2)), Src('근거: 한국관광공사 관광정보 원문 · ${p.source ?? 'ⓒ한국관광공사'}')])
-              : const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('가게 설명을 쓰는 중… (정보·지도 먼저 표시)', style: TextStyle(fontSize: 12.5, color: C.text3)), Skel(.9), Skel(.66)]),
+          // FR-P011: 생성된 설명은 원문과 구분해 표시. 설명이 늦거나 실패해도 위의 정보·지도는 그대로(NFR-P001·P004)
+          child: st.narrationFailed
+              ? Text(pt('noDesc', l), style: const TextStyle(fontSize: 13, color: C.text3))
+              : st.narration != null
+                  ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(st.narration!, style: const TextStyle(fontSize: 14, height: 1.6, color: C.text2)), Src('${pt('generated', l)} · ${p.source ?? 'ⓒ한국관광공사'}')])
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(pt('writing', l), style: const TextStyle(fontSize: 12.5, color: C.text3)), const Skel(.9), const Skel(.66)]),
         ),
-        XBtn(icon: 'route', title: '여기서 출발하는 코스', sub: '이 가게를 1번으로 고정해 코스를 만들어요', iconBg: C.blueT, iconFg: C.blue, onTap: () => photoToCourse(context, ref, p)),
+        XBtn(icon: 'route', title: pt('toCourse', l), sub: pt('toCourseSub', l), iconBg: C.blueT, iconFg: C.blue, onTap: () => photoToCourse(context, ref, p)),
       ]),
     );
   }
@@ -160,12 +179,13 @@ class PhotoCandidatesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cands = ref.watch(photoProvider).result?.candidates ?? const [];
+    final l = ref.watch(langProvider);
     return ScreenFrame(
-      head: const AppHead('비슷한 가게', '사진 기반 안내', backTo: '/photo'),
+      head: AppHead(pt('similar', l), pt('sub', l), backTo: '/photo'),
       body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('어느 가게인가요?', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+        Text(pt('which', l), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
         const SizedBox(height: 4),
-        const Text('간판 글자가 일부만 읽혀 점수가 높은 3곳을 보여드려요.', style: TextStyle(fontSize: 13.5, color: C.text3, height: 1.5)),
+        Text(pt('whichSub', l), style: const TextStyle(fontSize: 13.5, color: C.text3, height: 1.5)),
         const SizedBox(height: 12),
         for (var i = 0; i < cands.length; i++)
           Padding(
@@ -181,14 +201,14 @@ class PhotoCandidatesScreen extends ConsumerWidget {
                     Container(width: 28, height: 28, alignment: Alignment.center, decoration: const BoxDecoration(color: C.text, shape: BoxShape.circle), child: Text('${i + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(cands[i].place.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)), Text([cands[i].place.category, if (cands[i].place.distM != null) '${cands[i].place.distM}m'].join(' · '), style: const TextStyle(fontSize: 12.5, color: C.text3))])),
-                    Text.rich(TextSpan(children: [TextSpan(text: '${cands[i].score}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: C.blue)), const TextSpan(text: '점', style: TextStyle(fontSize: 12, color: C.text3))])),
+                    Text.rich(TextSpan(children: [TextSpan(text: '${cands[i].score}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: C.blue)), TextSpan(text: pt('pts', l), style: const TextStyle(fontSize: 12, color: C.text3))])),
                   ]),
                 ),
               ),
             ),
           ),
         const SizedBox(height: 6),
-        Btn('목록에 없어요 · 이름으로 찾기', icon: 'search', onTap: () => context.go('/photo/fail')),
+        Btn(pt('notListed', l), icon: 'search', onTap: () => context.go('/photo/fail')),
       ]),
     );
   }
@@ -214,32 +234,37 @@ class _PhotoFailState extends ConsumerState<PhotoFailScreen> {
     context.go(r != null && r.decision == MatchDecision.candidates ? '/photo/candidates' : '/photo/fail');
   }
 
-  bool get _notFound => ref.watch(photoProvider).result?.decision == MatchDecision.notFound;
-
   @override
-  Widget build(BuildContext context) => ScreenFrame(
-        head: const AppHead('찾지 못했어요', '사진 기반 안내', backTo: '/photo'),
+  Widget build(BuildContext context) {
+    final st = ref.watch(photoProvider);
+    final l = ref.watch(langProvider);
+    final notFound = st.result?.decision == MatchDecision.notFound;
+    return ScreenFrame(
+        head: AppHead(pt('notFoundT', l), pt('sub', l), backTo: '/photo'),
         body: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Center(child: Column(children: [
             const SizedBox(height: 18),
             Container(width: 56, height: 56, decoration: BoxDecoration(color: C.amberT, borderRadius: BorderRadius.circular(rLg)), child: const Ic('image', size: 26, color: C.amber)),
             const SizedBox(height: 14),
             // FR-P014: OCR_FAIL 이면 재촬영 안내, NOT_FOUND 이면 미등록 안내
-            Text(_notFound ? '등록된 가게를 찾지 못했어요' : '간판 글자를 읽지 못했어요', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
+            Text(pt(notFound ? 'nfTitle' : 'ocrTitle', l), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            Text(_notFound ? '공식 관광데이터에 없는 가게일 수 있어요.\n가게 이름으로 다시 찾아보세요.' : '흔들리거나 어두우면 잘 읽히지 않아요.\n밝은 곳에서 간판을 정면으로 찍어 주세요.', textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: C.text3, height: 1.55)),
+            Text(pt(notFound ? 'nfBody' : 'ocrBody', l), textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: C.text3, height: 1.55)),
           ])),
           const SizedBox(height: 16),
-          Btn('다시 찍기', icon: 'camera', kind: BtnKind.primary, onTap: () => context.go('/photo')),
-          const SecTitle('가게 이름으로 찾기'),
+          Btn(pt('retake', l), icon: 'camera', kind: BtnKind.primary, onTap: () => context.go('/photo')),
+          SecTitle(pt('byName', l)),
           Container(
             decoration: cardDeco(), padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Row(children: [
               const Padding(padding: EdgeInsets.all(8), child: Ic('search', color: C.text3)),
-              Expanded(child: TextField(controller: _c, onSubmitted: (_) => _search(), decoration: const InputDecoration(hintText: '예: 암소갈비', border: InputBorder.none))),
+              Expanded(child: TextField(controller: _c, onSubmitted: (_) => _search(), decoration: InputDecoration(hintText: pt('nameHint', l), border: InputBorder.none))),
               IconButton(onPressed: _search, icon: const Ic('right', color: C.blue)),
             ]),
           ),
+          if (st.error != null) Padding(padding: const EdgeInsets.only(top: 10), child: ErrorCard(st.error!, onRetry: _search))
+          else if (notFound && st.lastQuery != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(pt('searchNone', l, [st.lastQuery!]), style: const TextStyle(fontSize: 13, color: C.text3))),
         ]),
       );
+  }
 }
