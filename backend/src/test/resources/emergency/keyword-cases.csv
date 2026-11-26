@@ -141,3 +141,8 @@ text,expectedType,expectedGroup
 "말이 안 통해서 도와주세요",WAY,WAY
 "言葉が通じなくて困っています",WAY,WAY
 "韓国語がわからないので助けてください",WAY,WAY
+"I sprained my ankle walking on the beach",MILD,NEEDS_MEDS
+"발목을 접질렸어요",MILD,NEEDS_MEDS
+"足首をひねりました",MILD,NEEDS_MEDS
+"발목 보호대 파는 곳",,
+"sprain-free hiking trail",,
