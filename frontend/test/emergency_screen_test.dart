@@ -269,4 +269,27 @@ void main() {
     await t.tap(find.text('문자 보내기'));
     expect(links.last, 'sms:112');
   });
+
+  testWidgets('결과 화면과 카드 전체 화면에 3개 국어 면책 문구가 표시된다 (#127)', (t) async {
+    final sent = <http.Request>[];
+    await pumpApp(t, _contractRepo(sent));
+    await send(t, '친구가 쓰러졌어요');
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('em-disclaimer')), findsOneWidget);
+    expect(find.text('이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.'), findsOneWidget);
+
+    await t.tap(find.text(tr('full', Lang.ko)));
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('card-disclaimer')), findsOneWidget);
+    expect(find.text('이 안내는 의료 판단이 아닙니다. 위급하면 바로 119에 전화하세요.'), findsWidgets);
+
+    // 영어·일본어 전환 확인
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('This guide is not medical advice. In an emergency, call 119 immediately.'), findsWidgets);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('この案内は医療判断ではありません。緊急時はすぐ119に電話してください。'), findsWidgets);
+  });
 }

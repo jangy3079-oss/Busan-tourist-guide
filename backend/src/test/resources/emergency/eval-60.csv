@@ -1,0 +1,61 @@
+id,lang,text,expectedType,expectedUrgent,expectedTopContact,note
+E01,ko,엄마가 갑자기 쓰러지셨어요,URGENT,true,119,기존-의식없음
+E02,ko,친구가 쓰러젓어요 숨을 안셔요,URGENT,true,119,신규-오타
+E03,ko,친구가계단에서떨어져피가안멈춰요,URGENT,true,119,신규-띄어쓰기없음
+E04,ko,완전 뻗어서 불러도 눈을 안 떠요,URGENT,true,119,신규-은어구어체
+E05,ko,배가 좀 아픈데 갑자기 숨이 안 쉬어져요,URGENT,true,119,신규-복합(경증+위급)
+E06,en,My husband collapsed,URGENT,true,119,기존-의식없음
+E07,en,bro he just passed out cold on the beach,URGENT,true,119,신규-은어구어체
+E08,en,he is bleedng from his hed after falling,URGENT,true,119,신규-오타
+E09,en,Someone is drowning near Haeundae beach,URGENT,true,119,신규-익수
+E10,en,My child ate shrimp and her throat is closing up,URGENT,true,119,신규-아나필락시스
+E11,ja,父が倒れました,URGENT,true,119,기존-의식없음
+E12,ja,マジでヤバい友達が息してない,URGENT,true,119,신규-은어+띄어쓰기없음
+E13,ja,胸が締め付けられて息ができません,URGENT,true,119,신규-흉통호흡곤란
+E14,ja,子供がけいれんして意識がありません,URGENT,true,119,신규-경련의식없음
+E15,ja,ピーナッツを食べて顔が腫れて苦しそうです,URGENT,true,119,신규-알레르기부종
+E16,ko,호텔에 불이 났어요,FIRE,true,119,기존-화재
+E17,ko,호텔방에서가스냄새가심해요,FIRE,true,119,신규-띄어쓰기없음(가스)
+E18,ko,땅이 크게 흔들리고 지진 경보가 울렸어요,FIRE,true,119,신규-지진
+E19,en,There's a fire in the building,FIRE,true,119,기존-화재
+E20,en,theres a huge fier and smke in my htel,FIRE,true,119,신규-오타(화재연기)
+E21,en,A tsunami warning just went off at the beach,FIRE,true,119,신규-해일
+E22,ja,火事です,FIRE,true,119,기존-화재
+E23,ja,ホテルに戻れないし建物から煙と火が出ています,FIRE,true,119,신규-복합(길잃음+화재)
+E24,ja,強い地震が起きて津波警報が出ました,FIRE,true,119,신규-지진해일
+E25,ko,누가 계속 따라와요,THREAT,true,112,기존-미행
+E26,ko,술취한사람이계속따라오면서욕해요,THREAT,true,112,신규-띄어쓰기없음
+E27,ko,지하철에서 누가 몸을 만졌어요 도와주세요,THREAT,true,112,신규-추행
+E28,en,A man is following me,THREAT,true,112,기존-미행
+E29,en,I lost my way and now a stranger is chasing me with a knife,THREAT,true,112,신규-복합(길잃음+위협)
+E30,en,some creep wont stop grabbing my arm at the bar,THREAT,true,112,신규-은어구어체(폭행위협)
+E31,ja,誰かにつけられています,THREAT,true,112,기존-미행
+E32,ja,知らない男に殴られました助けてください,THREAT,true,112,신규-폭행
+E33,ja,変な人がずっと後をつけてきて怖いです,THREAT,true,112,신규-미행위협
+E34,ko,벌레에 물렸어요,MILD,false,1330,기존-벌레물림
+E35,ko,아 진짜 속 뒤집어질 것 같아 배탈 났어요,MILD,false,1330,신규-구어체(복통)
+E36,ko,어제부터 미열이 있고 목이 칼칼해요,MILD,false,1330,신규-감기발열
+E37,en,I have a headache,MILD,false,1330,기존-두통
+E38,en,My stomach hurts and I think I have food poisoning,MILD,false,1330,신규-복통
+E39,en,i spraind my ankle walking on the beach,MILD,false,1330,신규-오타(경증통증)
+E40,ja,熱があります,MILD,false,1330,기존-발열
+E41,ja,海産物を食べてからお腹を下しました,MILD,false,1330,신규-설사복통
+E42,ja,転んで膝をすりむいてしまいました,MILD,false,1330,신규-가벼운상처
+E43,ko,여권 분실했어요,LOST,false,1330,기존-여권분실
+E44,ko,지하철에서소매치기당했어요지갑이없어요,LOST,false,112,신규-띄어쓰기없음(도난)
+E45,en,Someone stole my wallet,LOST,false,112,기존-도난
+E46,en,I left my phone in a taxi and cant find it,LOST,false,1330,신규-분실
+E47,ja,財布を盗まれました,LOST,false,112,기존-도난
+E48,ja,パスポートをなくしてしましました,LOST,false,1330,신규-오타(여권분실)
+E49,ko,숙소를 못 찾겠어요,WAY,false,1330,기존-숙소
+E50,ko,광안리골목에서길을완전히잃었어요,WAY,false,1330,신규-띄어쓰기없음
+E51,en,I can't find my hotel,WAY,false,1330,기존-숙소
+E52,en,I dont speak Korean and I'm totally lost please help,WAY,false,1330,신규-언어+길잃음
+E53,ja,ホテルが見つかりません,WAY,false,1330,기존-숙소
+E54,ja,道に迷って駅に戻る方法がわかりません,WAY,false,1330,신규-길잃음
+E55,ko,광안리 불꽃축제 명당이랑 횟집 알려주세요,NON,false,1330,신규-관광(불꽃함정)
+E56,ko,해운대에서 비 오는 날 실내 데이트 코스 추천해 줘,NON,false,1330,신규-관광
+E57,en,"I don't speak Korean, can you recommend a 3 hour seafood walk in Haeundae?",NON,false,1330,신규-관광(언어함정)
+E58,en,Best rooftop bar to watch the Gwangalli drone show tonight,NON,false,1330,신규-관광
+E59,ja,広安里で花火と夜景が見えるカフェを教えてください,NON,false,1330,신규-관광(불꽃함정)
+E60,ja,海雲台で有名なデジクッパの店の営業時間を知りたいです,NON,false,1330,신규-관광
