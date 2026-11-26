@@ -61,7 +61,13 @@ class CourseRequestScreen extends ConsumerWidget {
         if (st.chat.isEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 36, top: 14),
-            child: Wrap(spacing: 8, runSpacing: 8, children: [for (final x in [ct('ex1', l), ct('ex2', l), ct('ex3', l)]) ActionChip(label: Text(x, style: const TextStyle(fontSize: 13)), onPressed: () => ctrl.start(x), backgroundColor: Colors.white, side: const BorderSide(color: C.line2))]),
+            child: Wrap(spacing: 8, runSpacing: 8, children: [for (final x in [ct('ex1', l), ct('ex2', l), ct('ex3', l)]) Material(
+                color: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: const BorderSide(color: C.line2)),
+                clipBehavior: Clip.antiAlias,
+                // 칩은 한 줄로 잘려 360px에서 영·일 예시가 끊긴다(#28). 폭이 모자라면 줄을 바꾼다
+                child: InkWell(onTap: () => ctrl.start(x), child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Text(x, style: const TextStyle(fontSize: 13)))),
+              )]),
           ),
         for (final m in st.chat) bubble(m),
         if (st.error != null) Padding(padding: const EdgeInsets.only(top: 12), child: ErrorCard(st.error!, onRetry: ctrl.retry)),
