@@ -39,8 +39,8 @@ class ContractFixtureTest {
         m.put("C01_course_ok", new CourseDtos.CourseResponse(CourseDtos.Status.OK, "c_8f2a", 1, null,
                 List.of(new CourseDtos.Assumption("durationMin", "180", "3시간", false), new CourseDtos.Assumption("area", "GWANGALLI", "광안리", false)),
                 List.of("실내 조건 해제"),
-                List.of(new CourseDtos.Stop(1, "126081", "광안리해수욕장", "관광지", 35.1532, 129.1186, "14:00", "15:10", null, false, false, false),
-                        new CourseDtos.Stop(2, "264570", "민락수변공원", "관광지", 35.1553, 129.1328, "15:22", "15:50", new CourseDtos.Move("WALK", 12), true, false, false)),
+                List.of(new CourseDtos.Stop(1, "126081", "광안리해수욕장", "관광지", 35.1532, 129.1186, "14:00", "15:10", null, false, false, false, "Gwangalli Beach", "広安里海水浴場"),
+                        new CourseDtos.Stop(2, "264570", "민락수변공원", "관광지", 35.1553, 129.1328, "15:22", "15:50", new CourseDtos.Move("WALK", 12), true, false, false, "Millak Waterside Park", "民楽水辺公園")),
                 List.of(new MapPointDto(35.1532, 129.1186), new MapPointDto(35.1553, 129.1328)), null));
         m.put("C01_course_emergency", new CourseDtos.CourseResponse(CourseDtos.Status.EMERGENCY, null, null, null, null, null, null, null,
                 new CourseDtos.Notice(EmType.URGENT, "긴급 안내로 연결합니다", List.of(), List.of())));

@@ -63,7 +63,7 @@ public final class CourseDtos {
     public record Move(String mode, int minutes) {}
     public record Stop(int order, String contentId, String name, String category, double lat, double lng,
                        String arriveAt, String departAt, Move moveFromPrev,
-                       boolean hoursUncertain, boolean fixed, boolean changed) {}
+                       boolean hoursUncertain, boolean fixed, boolean changed, String nameEn, String nameJa) {}
     public record Notice(EmType emergencyType, String message, List<String> examples, List<String> suggestions) {}
 
     /** API-C01 / C03 응답. status 가 OK 가 아니면 notice 만 채운다 */

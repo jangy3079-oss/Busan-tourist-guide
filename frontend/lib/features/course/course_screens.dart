@@ -186,7 +186,7 @@ class _StopRow extends ConsumerWidget {
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text([s.time, if (s.changed) ct('changed', l), if (s.fixed) ct('fixed', l)].join(' · '), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: s.changed ? C.blue : C.text3)),
-            GestureDetector(onTap: () => showEvidenceSheet(context, ref, s.id, s.name), child: Text(s.name, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, decoration: TextDecoration.underline, decorationColor: C.line2))),
+            GestureDetector(onTap: () => showEvidenceSheet(context, ref, s.id, s.name), child: Text(s.nameIn(l), style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, decoration: TextDecoration.underline, decorationColor: C.line2))),
             Text(stopText(s, l), style: const TextStyle(fontSize: 13, color: C.text3, height: 1.45)),
             if (about != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(about!, style: const TextStyle(fontSize: 13.5, color: C.text2, height: 1.5))),
             if (s.hoursUncertain) Padding(padding: const EdgeInsets.only(top: 4), child: TagC.amber(ct('uncertain', l))), // FR-C009
