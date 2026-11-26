@@ -19,7 +19,7 @@ class MapView extends StatelessWidget {
   final String caption;
   /// 핀을 누르면 그 핀의 순번(0부터). null이면 지도는 보기 전용 (FR-C014 출발 장소 고르기에서 사용)
   final void Function(int index)? onPinTap;
-  const MapView({super.key, required this.pins, this.path, this.route = false, this.showMe = true, required this.area, this.me, this.height = 190, this.caption = '공통 지도 위젯 (COMP-C09) · 예시', this.onPinTap});
+  const MapView({super.key, required this.pins, this.path, this.route = false, this.showMe = true, required this.area, this.me, this.height = 190, this.caption = '', this.onPinTap});
 
   MapPoint? get _me => showMe ? (me ?? MapPoint(kAreas[area]!.lat, kAreas[area]!.lng)) : null;
 
@@ -63,7 +63,7 @@ class MapView extends StatelessWidget {
                 child: paint,
               );
             })),
-            Positioned(
+            if (caption.isNotEmpty) Positioned( // #215 캡션을 안 넘기면 배지를 그리지 않는다
               left: 8, bottom: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
