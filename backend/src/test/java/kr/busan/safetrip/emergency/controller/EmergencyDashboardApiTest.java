@@ -51,7 +51,8 @@ class EmergencyDashboardApiTest {
         DashboardQueryService queries = new DashboardQueryService(jdbc, new DashboardConfig());
         mvc = MockMvcBuilders.standaloneSetup(
                         new EmergencyController(null, calls),
-                        new EmergencyDashboardController(queries, stream))
+                        new EmergencyDashboardController(queries, stream),
+                        new EmergencyDashboardPageController())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
     }
@@ -112,6 +113,9 @@ class EmergencyDashboardApiTest {
                 .andExpect(jsonPath("$.calls['119']").value(0))
                 .andExpect(jsonPath("$.llmFailRate").value(0.25))
                 .andExpect(jsonPath("$.fallbackRate").value(0.5));
+        // PostgreSQL JDBC 는 Instant 를 묶지 못한다(실서버에서 500): 시각은 OffsetDateTime 으로 넘겨야 함
+        verify(jdbc).queryForMap(anyString(), org.mockito.ArgumentMatchers.<Map<String, ?>>argThat(m ->
+                m.get("from") instanceof java.time.OffsetDateTime && m.get("to") instanceof java.time.OffsetDateTime));
 
         when(jdbc.queryForList(anyString(), anyMap())).thenReturn(List.of(Map.of(
                 "created_at", java.sql.Timestamp.from(Instant.parse("2026-11-26T05:07:00Z")), "em_type", "URGENT", "urgency", "URGENT",
@@ -136,5 +140,14 @@ class EmergencyDashboardApiTest {
         assertThat(result.getResponse().getContentType()).startsWith(MediaType.TEXT_EVENT_STREAM_VALUE);
         String body = result.getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
         assertThat(body).contains("event:emergency").contains("\"at\":\"2026-11-26T14:07:00+09:00\"").contains("\"type\":\"URGENT\"");
+    }
+
+    @Test
+    void dashboardPageIsServedAndCallsOnlyE09ToE11() throws Exception {
+        var res = mvc.perform(get("/admin/emergency/dashboard")).andExpect(status().isOk()).andReturn().getResponse();
+        assertThat(res.getContentType()).startsWith(MediaType.TEXT_HTML_VALUE);
+        String html = res.getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        assertThat(html).contains("/api/v1/admin/emergency/dashboard").contains("/summary").contains("/recent").contains("/stream")
+                .contains("\"emergency\"").contains("\"alert\"");
     }
 }

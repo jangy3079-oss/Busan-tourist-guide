@@ -54,7 +54,7 @@ public class DashboardQueryService {
 
     public Summary summary(Instant from, Instant to) {
         validateRange(from, to);
-        Map<String, Object> parameters = Map.of("from", from, "to", to);
+        Map<String, Object> parameters = Map.of("from", ts(from), "to", ts(to));
         Map<String, Long> byEmType = groupedCounts(
                 "SELECT em_type AS group_key, COUNT(*) AS count FROM emergency_event" + RANGE_CLAUSE
                         + "GROUP BY em_type ORDER BY em_type",
@@ -144,7 +144,7 @@ public class DashboardQueryService {
                         "SELECT id, created_at, em_type, urgency, district, dong, grid_id, top_contact, "
                                 + "llm_failed, steps_fallback FROM emergency_event "
                                 + "WHERE created_at >= :from AND created_at <= :to ORDER BY created_at",
-                        Map.of("from", from, "to", to))
+                        Map.of("from", ts(from), "to", ts(to)))
                 .stream()
                 .map(row -> new DashboardEvent(
                         uuid(row.get("id")),
@@ -173,6 +173,11 @@ public class DashboardQueryService {
                 || Duration.between(from, to).compareTo(Duration.ofDays(settings.summaryMaxRangeDays())) > 0) {
             throw invalidInput("상황판 집계 기간이 올바르지 않거나 허용 범위를 초과했습니다.");
         }
+    }
+
+    /** PostgreSQL JDBC 는 java.time.Instant 의 SQL 형을 모른다. timestamptz 로 묶이게 OffsetDateTime(UTC)으로 넘긴다 */
+    private static java.time.OffsetDateTime ts(Instant instant) {
+        return instant.atOffset(java.time.ZoneOffset.UTC);
     }
 
     private static BusinessException invalidInput(String message) {
