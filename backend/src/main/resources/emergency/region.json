@@ -1,8 +1,8 @@
 {
-  "_comment": "대상 지역 판별·대표 좌표 설정(FR-E002, FR-E017, EXTRA D5·D6). 해안 GPS 오차 허용 반경과 위치 거부 시 대표 좌표.",
+  "_comment": "대상 지역 판별·대표 좌표 설정(FR-E002, FR-E017, EXTRA D5·D6). 해안 GPS 오차 허용 반경과 위치 거부 시 대표 좌표·자치구 매핑.",
   "coastToleranceM": 300,
   "anchors": {
-    "GWANGALLI": { "lat": 35.1532, "lng": 129.1186, "label": "광안리해수욕장" },
-    "HAEUNDAE": { "lat": 35.1587, "lng": 129.1604, "label": "해운대해수욕장" }
+    "GWANGALLI": { "lat": 35.1532, "lng": 129.1186, "label": "광안리해수욕장", "district": "수영구" },
+    "HAEUNDAE": { "lat": 35.1587, "lng": 129.1604, "label": "해운대해수욕장", "district": "해운대구" }
   }
 }

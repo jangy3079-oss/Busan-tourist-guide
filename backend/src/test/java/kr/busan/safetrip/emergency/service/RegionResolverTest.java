@@ -49,11 +49,13 @@ class RegionResolverTest {
         assertThat(gwangalli.lat()).isEqualTo(35.1532);
         assertThat(gwangalli.lng()).isEqualTo(129.1186);
         assertThat(gwangalli.label()).isEqualTo("광안리해수욕장");
+        assertThat(gwangalli.district()).isEqualTo("수영구");
 
         RegionResolver.Anchor haeundae = resolver.anchor(Area.HAEUNDAE);
         assertThat(haeundae.lat()).isEqualTo(35.1587);
         assertThat(haeundae.lng()).isEqualTo(129.1604);
         assertThat(haeundae.label()).isEqualTo("해운대해수욕장");
+        assertThat(haeundae.district()).isEqualTo("해운대구");
 
         assertThat(resolver.district(Double.NaN, 129.1186)).isEmpty();
         assertThat(resolver.district(35.1532, Double.POSITIVE_INFINITY)).isEmpty();

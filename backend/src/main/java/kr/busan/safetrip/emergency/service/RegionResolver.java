@@ -29,7 +29,7 @@ import kr.busan.safetrip.common.api.Area;
  */
 @Component
 public class RegionResolver {
-    public record Anchor(double lat, double lng, String label) {}
+    public record Anchor(double lat, double lng, String label, String district) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record RawRegion(Integer coastToleranceM, Map<Area, Anchor> anchors) {}
@@ -65,8 +65,9 @@ public class RegionResolver {
         Map<Area, Anchor> map = new EnumMap<>(Area.class);
         for (Area area : Area.values()) {
             Anchor anchor = raw.anchors().get(area);
-            if (anchor == null) {
-                throw new IllegalStateException("region.json에 대표 좌표가 빠졌습니다: " + area);
+            if (anchor == null || anchor.label() == null || anchor.label().isBlank()
+                    || anchor.district() == null || anchor.district().isBlank()) {
+                throw new IllegalStateException("region.json에 대표 좌표 또는 자치구가 빠졌습니다: " + area);
             }
             map.put(area, anchor);
         }

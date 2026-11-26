@@ -1,5 +1,6 @@
 package kr.busan.safetrip.emergency.service;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -35,11 +36,16 @@ import kr.busan.safetrip.emergency.service.OpenNowEvaluator.PlaceHours;
  */
 @Component
 public class HelpPlaceFinder {
-    public record FindResult(List<HelpPlace> places, int radiusUsedM, boolean usedFallback) {}
+    public record FindResult(List<HelpPlace> places, int radiusUsedM, boolean usedFallback, Instant oldestUpdatedAt) {
+        public FindResult(List<HelpPlace> places, int radiusUsedM, boolean usedFallback) {
+            this(places, radiusUsedM, usedFallback, null);
+        }
+    }
 
     private record OpenCandidate(HelpPlaceEntity entity, PlaceKind kind, int distanceM, PlaceHours hours) {}
 
-    private record ResolvedPlace(HelpPlace dto, boolean noTreatment, int distanceM, long sortId, Object dedupKey) {}
+    private record ResolvedPlace(
+            HelpPlace dto, boolean noTreatment, int distanceM, long sortId, Object dedupKey, Instant updatedAt) {}
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
     private static final double METERS_PER_DEG_LAT = 110_574.0;
@@ -118,6 +124,7 @@ public class HelpPlaceFinder {
 
         // 1. alsoShow 종류마다 가장 가까운 OPEN 1곳을 반경 단계 순으로 예약
         List<HelpPlace> alsoShowPlaces = new ArrayList<>();
+        Instant oldestUpdatedAt = null;
         for (PlaceKind kind : plan.alsoShow()) {
             if (alsoShowPlaces.size() >= maxPlaces) {
                 break;
@@ -126,6 +133,7 @@ public class HelpPlaceFinder {
             if (!pick.places().isEmpty()) {
                 alsoShowPlaces.addAll(pick.places());
                 radiusUsedM = Math.max(radiusUsedM, pick.radiusUsedM());
+                oldestUpdatedAt = minInstant(oldestUpdatedAt, pick.oldestUpdatedAt());
             }
         }
 
@@ -138,6 +146,7 @@ public class HelpPlaceFinder {
         List<HelpPlace> primaryPlaces = primaryPick.places();
         if (!primaryPlaces.isEmpty()) {
             radiusUsedM = Math.max(radiusUsedM, primaryPick.radiusUsedM());
+            oldestUpdatedAt = minInstant(oldestUpdatedAt, primaryPick.oldestUpdatedAt());
         }
 
         // 3. primary가 남은 칸을 못 채우면 fallback 종류로 남은 칸 채우기
@@ -148,6 +157,7 @@ public class HelpPlaceFinder {
         List<HelpPlace> fallbackPlaces = fallbackPick.places();
         if (!fallbackPlaces.isEmpty()) {
             radiusUsedM = Math.max(radiusUsedM, fallbackPick.radiusUsedM());
+            oldestUpdatedAt = minInstant(oldestUpdatedAt, fallbackPick.oldestUpdatedAt());
         }
 
         // 4. 결과 순서: primary -> fallback -> alsoShow (각 묶음 내부는 진료불가 응급실 뒤로, 거리순)
@@ -157,11 +167,11 @@ public class HelpPlaceFinder {
         combined.addAll(alsoShowPlaces);
 
         boolean usedFallback = primaryPlaces.isEmpty() && !fallbackPlaces.isEmpty();
-        return new FindResult(List.copyOf(combined), radiusUsedM, usedFallback);
+        return new FindResult(List.copyOf(combined), radiusUsedM, usedFallback, oldestUpdatedAt);
     }
 
-    private record TierPick(List<HelpPlace> places, int radiusUsedM) {
-        static final TierPick EMPTY = new TierPick(List.of(), 0);
+    private record TierPick(List<HelpPlace> places, int radiusUsedM, Instant oldestUpdatedAt) {
+        static final TierPick EMPTY = new TierPick(List.of(), 0, null);
     }
 
     private TierPick pickByRadiusSteps(
@@ -199,7 +209,8 @@ public class HelpPlaceFinder {
                         todayHours,
                         OpenStatus.OPEN,
                         erInfo);
-                resolved.add(new ResolvedPlace(dto, noTreatment, c.distanceM(), safeId(c.entity()), dedupKey(c.entity())));
+                resolved.add(new ResolvedPlace(
+                        dto, noTreatment, c.distanceM(), safeId(c.entity()), dedupKey(c.entity()), c.entity().getUpdatedAt()));
             }
             // FR-E012: 진료불가(noTreatment=true) 응급실은 같은 묶음 맨 뒤로, 그 안에서는 거리순
             resolved.sort(Comparator.comparing(ResolvedPlace::noTreatment)
@@ -208,12 +219,14 @@ public class HelpPlaceFinder {
 
             int take = Math.min(limit, resolved.size());
             List<HelpPlace> selected = new ArrayList<>(take);
+            Instant oldest = null;
             for (int i = 0; i < take; i++) {
                 ResolvedPlace picked = resolved.get(i);
                 selected.add(picked.dto());
                 usedKeys.add(picked.dedupKey());
+                oldest = minInstant(oldest, picked.updatedAt());
             }
-            return new TierPick(List.copyOf(selected), radiusM);
+            return new TierPick(List.copyOf(selected), radiusM, oldest);
         }
         return TierPick.EMPTY;
     }
@@ -279,5 +292,11 @@ public class HelpPlaceFinder {
 
     private static Object dedupKey(HelpPlaceEntity entity) {
         return entity.getId() != null ? entity.getId() : System.identityHashCode(entity);
+    }
+
+    private static Instant minInstant(Instant a, Instant b) {
+        if (a == null) return b;
+        if (b == null) return a;
+        return a.isBefore(b) ? a : b;
     }
 }
