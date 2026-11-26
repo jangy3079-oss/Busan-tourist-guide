@@ -31,5 +31,11 @@
       "scope": "DISTRICT",
       "emTypes": ["THREAT"]
     }
-  ]
+  ],
+  "nightGap": {
+    "startHour": 22,
+    "endHour": 6,
+    "kinds": ["PHARMACY", "CONVENIENCE"],
+    "requestTypes": ["MILD"]
+  }
 }

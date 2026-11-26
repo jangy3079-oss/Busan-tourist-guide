@@ -14,7 +14,7 @@ import kr.busan.safetrip.common.api.EmType;
  * 상태: 완료(계약)
  * 수정 규칙: 긴급 담당만 수정. 코스·사진 담당은 수정 금지(필요하면 긴급 담당에게 요청).
  *
- * 긴급 API 요청·응답(docs/API.md API-E01~E07). 바꾸려면 models.dart · API.md 와 같은 커밋에서.
+ * 긴급 API 요청·응답(docs/API.md API-E01~E12). 바꾸려면 models.dart · API.md 와 같은 커밋에서.
  */
 public final class EmergencyDtos {
     private EmergencyDtos() {}
@@ -78,6 +78,16 @@ public final class EmergencyDtos {
     /** API-E11 event: alert */
     public record DashboardAlert(String ruleId, String level, String scope, String scopeValue, int count, int windowSec,
                                  String at) {}
+
+    /** API-E12 심야 의료 공백. hour는 Asia/Seoul 오프셋을 포함한다. */
+    public record NightGapReport(String date, int startHour, int endHour, List<NightGapRow> rows) {}
+    public record NightGapRow(
+            String hour,
+            String district,
+            int openPharmacies,
+            int openConvenience,
+            int mildRequests,
+            String gap) {}
 
     /** API-E04 */
     public record ImportResult(int inserted, int updated, List<Rejected> rejected) {
