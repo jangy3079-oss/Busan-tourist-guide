@@ -1,9 +1,9 @@
 {
-  "_comment": "한국어 카드 슬롯 사전(FR-E015, AI-REQ-E01, AI-REQ-E04, AI-REQ-E07, ADR-E03). 슬롯은 정해진 코드값만 허용하며, 약 이름·진단·보장 표현을 넣지 않는다. 수정 후 API-E05로 다시 적재한다(FR-E022).",
+  "_comment": "한국어 카드 슬롯 사전(FR-E015, AI-REQ-E01, AI-REQ-E04, AI-REQ-E07, ADR-E03). 슬롯은 정해진 코드값만 허용하며, 약 이름·진단·보장 표현을 넣지 않는다. LOST.how는 결정표·템플릿 분기용이며 카드 본문 자리표시자에는 쓰지 않는다. 수정 후 API-E05로 다시 적재한다(FR-E022).",
   "allowedSlots": {
     "URGENT": ["who", "symptom"],
     "MILD": ["who", "symptom"],
-    "LOST": ["item"],
+    "LOST": ["item", "how"],
     "THREAT": ["situation"],
     "FIRE": ["situation"],
     "WAY": ["situation"],
@@ -23,6 +23,10 @@
       "PHONE": { "ko": "휴대폰을 ", "en": "phone", "ja": "携帯電話" },
       "BAG": { "ko": "가방을 ", "en": "bag", "ja": "バッグ" },
       "CARD": { "ko": "카드를 ", "en": "card", "ja": "カード" }
+    },
+    "how": {
+      "STOLEN": { "ko": "도난", "en": "stolen", "ja": "盗難" },
+      "LOST": { "ko": "분실", "en": "lost", "ja": "紛失" }
     },
     "symptom": {
       "URGENT": {
@@ -79,7 +83,8 @@
       "symptom": { "ko": "몸이 좋지 않습니다.", "en": "not feeling well", "ja": "体調がよくありません" }
     },
     "LOST": {
-      "item": { "ko": "소지품을 ", "en": "belongings", "ja": "所持品" }
+      "item": { "ko": "소지품을 ", "en": "belongings", "ja": "所持品" },
+      "how": { "code": "LOST" }
     },
     "THREAT": {
       "situation": { "ko": "위험한 상황입니다.", "en": "I am in a dangerous situation", "ja": "危険な状況です" }
@@ -106,6 +111,20 @@
     },
     "FIRE": {
       "FIRE": { "situation": "FIRE" }
+    }
+  },
+  "groupRules": {
+    "MILD": {
+      "slot": "symptom",
+      "matchCodes": ["STOMACH", "MINOR_CUT", "RASH", "INSECT"],
+      "matchGroup": "NEEDS_MEDS",
+      "defaultGroup": "GENERAL"
+    },
+    "LOST": {
+      "slot": "how",
+      "matchCodes": ["STOLEN"],
+      "matchGroup": "STOLEN",
+      "defaultGroup": "LOST"
     }
   }
 }

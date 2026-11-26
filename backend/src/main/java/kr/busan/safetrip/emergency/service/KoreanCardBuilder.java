@@ -33,6 +33,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos;
  *
  * 유형별 템플릿(/emergency/card-templates.json)과 슬롯 사전(/emergency/slots.json)을 조합해
  * 한국어 전달 카드 + 사용자 언어 번역(템플릿, LLM 미사용 — ADR-E03)을 생성한다.
+ * LLM 분류 슬롯 → 결정표 그룹 매핑(groupFromSlots)과 허용 코드 조회(allowedCodes)도 제공한다.
  * 입력 문장·주소는 로그에 남기지 않는다(NFR-E004).
  */
 @Component
@@ -55,15 +56,20 @@ public class KoreanCardBuilder {
     record RawValues(
             Map<String, LocalizedText> who,
             Map<String, LocalizedText> item,
+            Map<String, LocalizedText> how,
             Map<EmType, Map<String, LocalizedText>> symptom,
             Map<EmType, Map<String, LocalizedText>> situation) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record RawGroupRule(String slot, List<String> matchCodes, String matchGroup, String defaultGroup) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record RawSlots(
             Map<EmType, List<String>> allowedSlots,
             RawValues values,
             Map<EmType, Map<String, RawDefault>> defaults,
-            Map<EmType, Map<String, Map<String, String>>> groupHints) {}
+            Map<EmType, Map<String, Map<String, String>>> groupHints,
+            Map<EmType, RawGroupRule> groupRules) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record RawTemplate(EmType type, String group, String ko, String en, String ja) {}
@@ -71,11 +77,14 @@ public class KoreanCardBuilder {
     @JsonIgnoreProperties(ignoreUnknown = true)
     record RawTemplates(List<RawTemplate> templates) {}
 
+    private record GroupRule(String slot, Set<String> matchCodes, String matchGroup, String defaultGroup) {}
+
     private record CompiledData(
             Map<EmType, Set<String>> allowedSlots,
             Map<EmType, Map<String, Map<String, LocalizedText>>> valuesByTypeAndSlot,
             Map<EmType, Map<String, LocalizedText>> defaultsByTypeAndSlot,
             Map<EmType, Map<String, Map<String, String>>> groupHints,
+            Map<EmType, GroupRule> groupRules,
             Map<EmType, LocalizedText> defaultTemplates,
             Map<EmType, Map<String, LocalizedText>> groupTemplates,
             int templateCount) {}
@@ -151,6 +160,27 @@ public class KoreanCardBuilder {
         }
         Map<String, String> hint = byGroup.get(group.trim().toUpperCase(Locale.ROOT));
         return hint == null ? Map.of() : hint;
+    }
+
+    /** LLM 슬롯 코드로부터 결정표·카드 그룹을 도출한다(MILD: NEEDS_MEDS|GENERAL, LOST: STOLEN|LOST, 그 외 null). */
+    public String groupFromSlots(EmType type, Map<String, String> slots) {
+        if (type == null || type == EmType.NON) {
+            return null;
+        }
+        GroupRule rule = this.data.groupRules().get(type);
+        if (rule == null) {
+            return null;
+        }
+        if (slots != null) {
+            String raw = slots.get(rule.slot());
+            if (raw != null && !raw.isBlank()) {
+                String normalized = raw.trim().toUpperCase(Locale.ROOT);
+                if (rule.matchCodes().contains(normalized)) {
+                    return rule.matchGroup();
+                }
+            }
+        }
+        return rule.defaultGroup();
     }
 
     /** slots.json과 card-templates.json을 다시 읽고 검증한 뒤 메모리를 교체한다. 로드된 템플릿 개수를 돌려준다(API-E05). */
@@ -318,7 +348,38 @@ public class KoreanCardBuilder {
             }
         }
 
-        // 3) 카드 템플릿 컴파일 및 자리표시자·다국어 검증
+        // 3) groupRules 검증 (LLM 슬롯 → 결정표 그룹)
+        Map<EmType, GroupRule> compiledGroupRules = new EnumMap<>(EmType.class);
+        if (rawSlots.groupRules() != null) {
+            for (Map.Entry<EmType, RawGroupRule> entry : rawSlots.groupRules().entrySet()) {
+                EmType type = entry.getKey();
+                RawGroupRule raw = entry.getValue();
+                if (type == null || type == EmType.NON || raw == null) {
+                    throw new IllegalStateException("groupRules에 잘못된 항목이 있습니다: " + type);
+                }
+                String slotKey = raw.slot() == null ? "" : raw.slot().trim();
+                Set<String> allowed = allowedSlots.getOrDefault(type, Set.of());
+                if (!allowed.contains(slotKey)) {
+                    throw new IllegalStateException("groupRules에 허용되지 않은 슬롯 키가 있습니다: " + type + "." + slotKey);
+                }
+                Map<String, LocalizedText> validCodes = valuesByTypeAndSlot.getOrDefault(type, Map.of()).getOrDefault(slotKey, Map.of());
+                Set<String> codes = new LinkedHashSet<>();
+                if (raw.matchCodes() != null) {
+                    for (String c : raw.matchCodes()) {
+                        String norm = normalizeKey(c, "groupRules." + type + ".matchCodes");
+                        if (!validCodes.containsKey(norm)) {
+                            throw new IllegalStateException("groupRules에 사전에 없는 슬롯 코드가 있습니다: " + type + "." + slotKey + "=" + norm);
+                        }
+                        codes.add(norm);
+                    }
+                }
+                String matchGroup = normalizeKey(raw.matchGroup(), "groupRules." + type + ".matchGroup");
+                String defaultGroup = normalizeKey(raw.defaultGroup(), "groupRules." + type + ".defaultGroup");
+                compiledGroupRules.put(type, new GroupRule(slotKey, Collections.unmodifiableSet(codes), matchGroup, defaultGroup));
+            }
+        }
+
+        // 4) 카드 템플릿 컴파일 및 자리표시자(허용 슬롯의 부분집합)·다국어 검증
         Map<EmType, LocalizedText> defaultTemplates = new EnumMap<>(EmType.class);
         Map<EmType, Map<String, LocalizedText>> groupTemplates = new EnumMap<>(EmType.class);
 
@@ -328,10 +389,10 @@ public class KoreanCardBuilder {
             }
             String label = raw.type() + (raw.group() == null || raw.group().isBlank() ? "" : "(" + raw.group() + ")");
             LocalizedText text = validateLocalized(new LocalizedText(raw.ko(), raw.en(), raw.ja()), "template." + label);
-            Set<String> expectedPlaceholders = allowedSlots.get(raw.type());
-            validatePlaceholders(text.ko(), expectedPlaceholders, label + ".ko");
-            validatePlaceholders(text.en(), expectedPlaceholders, label + ".en");
-            validatePlaceholders(text.ja(), expectedPlaceholders, label + ".ja");
+            Set<String> allowedForType = allowedSlots.get(raw.type());
+            validatePlaceholders(text.ko(), allowedForType, label + ".ko");
+            validatePlaceholders(text.en(), allowedForType, label + ".en");
+            validatePlaceholders(text.ja(), allowedForType, label + ".ja");
 
             if (raw.group() == null || raw.group().isBlank()) {
                 if (defaultTemplates.put(raw.type(), text) != null) {
@@ -361,6 +422,7 @@ public class KoreanCardBuilder {
                 valuesByTypeAndSlot,
                 defaultsByTypeAndSlot,
                 compiledHints,
+                compiledGroupRules,
                 defaultTemplates,
                 frozenGroupTemplates,
                 rawTemplates.templates().size());
@@ -370,6 +432,7 @@ public class KoreanCardBuilder {
         return switch (slotKey) {
             case "who" -> values.who();
             case "item" -> values.item();
+            case "how" -> values.how();
             case "symptom" -> values.symptom() == null ? null : values.symptom().get(type);
             case "situation" -> values.situation() == null ? null : values.situation().get(type);
             default -> throw new IllegalStateException("알 수 없는 슬롯 키입니다: " + type + "." + slotKey);
@@ -393,7 +456,7 @@ public class KoreanCardBuilder {
         return text;
     }
 
-    private static void validatePlaceholders(String template, Set<String> expected, String label) {
+    private static void validatePlaceholders(String template, Set<String> allowed, String label) {
         Set<String> found = new LinkedHashSet<>();
         Matcher matcher = PLACEHOLDER.matcher(template);
         String stripped = matcher.replaceAll(mr -> {
@@ -403,9 +466,9 @@ public class KoreanCardBuilder {
         if (stripped.indexOf('{') >= 0 || stripped.indexOf('}') >= 0) {
             throw new IllegalStateException("닫히지 않은 자리표시자 중괄호가 있습니다: " + label);
         }
-        if (!found.equals(expected)) {
+        if (found.isEmpty() || !allowed.containsAll(found)) {
             throw new IllegalStateException(
-                    "템플릿 자리표시자가 허용 슬롯과 일치하지 않습니다(" + label + "): expected=" + expected + ", found=" + found);
+                    "템플릿 자리표시자가 허용 슬롯의 부분집합이 아닙니다(" + label + "): allowed=" + allowed + ", found=" + found);
         }
     }
 

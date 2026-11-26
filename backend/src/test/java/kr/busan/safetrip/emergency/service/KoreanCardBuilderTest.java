@@ -133,6 +133,25 @@ class KoreanCardBuilderTest {
     }
 
     @Test
+    void derivesDecisionGroupFromLlmSlots() {
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "STOMACH"))).isEqualTo("NEEDS_MEDS");
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "MINOR_CUT"))).isEqualTo("NEEDS_MEDS");
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "RASH"))).isEqualTo("NEEDS_MEDS");
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "INSECT"))).isEqualTo("NEEDS_MEDS");
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of("symptom", "FEVER"))).isEqualTo("GENERAL");
+        assertThat(builder.groupFromSlots(EmType.MILD, Map.of())).isEqualTo("GENERAL");
+
+        assertThat(builder.groupFromSlots(EmType.LOST, Map.of("how", "STOLEN", "item", "PASSPORT"))).isEqualTo("STOLEN");
+        assertThat(builder.groupFromSlots(EmType.LOST, Map.of("how", "LOST", "item", "WALLET"))).isEqualTo("LOST");
+        assertThat(builder.groupFromSlots(EmType.LOST, Map.of())).isEqualTo("LOST");
+
+        assertThat(builder.groupFromSlots(EmType.URGENT, Map.of("symptom", "UNCONSCIOUS"))).isNull();
+        assertThat(builder.groupFromSlots(EmType.NON, Map.of())).isNull();
+        assertThat(builder.allowedCodes(EmType.LOST)).containsKeys("item", "how");
+        assertThat(builder.allowedCodes(EmType.LOST).get("how")).containsExactlyInAnyOrder("STOLEN", "LOST");
+    }
+
+    @Test
     void reloadReturnsTemplateCount() {
         assertThat(builder.reload()).isEqualTo(7);
     }

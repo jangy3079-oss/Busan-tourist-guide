@@ -13,6 +13,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import kr.busan.safetrip.emergency.dto.EmergencyDtos.GuideRequest;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.GuideResponse;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.HelpPlace;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.PlaceKind;
+import kr.busan.safetrip.emergency.dto.EmergencyDtos.Triage;
 import kr.busan.safetrip.emergency.dto.EmergencyDtos.Urgency;
 import kr.busan.safetrip.emergency.entity.HelpPlaceEntity;
 import kr.busan.safetrip.emergency.repository.HelpPlaceRepository;
@@ -40,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +66,9 @@ class EmergencyServiceGuideTest {
     @Mock
     private ErRealtimeClient erClient;
 
+    @Mock
+    private SituationClassifier classifier;
+
     private EmergencyService service;
 
     @BeforeEach
@@ -70,7 +77,7 @@ class EmergencyServiceGuideTest {
         HelpPlaceFinder finder = new HelpPlaceFinder(placeRepo, decisionTable, new OpenNowEvaluator(), erClient);
         service = new EmergencyService(
                 new KeywordRuleEngineImpl(),
-                new SituationClassifier(), // 아직 NotImplementedYetException → try/catch 대체 경로 검증
+                classifier,
                 decisionTable,
                 finder,
                 new KoreanCardBuilder(),
@@ -81,6 +88,9 @@ class EmergencyServiceGuideTest {
                 new EmergencyMessages(),
                 FIXED_CLOCK);
 
+        lenient().when(classifier.confidenceThreshold()).thenReturn(0.6);
+        lenient().when(classifier.classify(anyString()))
+                .thenThrow(new BusinessException(ErrorCode.AI_UNAVAILABLE, "AI offline"));
         lenient().when(erClient.fetch(anyString()))
                 .thenThrow(new NotImplementedYetException("긴급 담당", "ErRealtimeClient.fetch"));
         lenient().when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
@@ -323,6 +333,113 @@ class EmergencyServiceGuideTest {
             }
             assertThat(forbiddenWords.matcher(line).find()).as("forbidden word in: %s", line).isFalse();
         }
+    }
+
+    @Test
+    void keepsKeywordUrgentOverLlmMildToPreventMisses() {
+        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.9, Map.of("symptom", "FEVER"))))
+                .when(classifier).classify(anyString());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "친구가 쓰러졌어요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.triage().type()).isEqualTo(EmType.URGENT);
+        assertThat(res.triage().urgency()).isEqualTo(Urgency.URGENT);
+        assertThat(res.triage().confidence()).isEqualTo(1.0);
+        assertThat(res.topContact()).isEqualTo("119");
+        assertThat(res.card().ko()).contains("쓰러져서 의식이 없습니다.");
+    }
+
+    @Test
+    void usesLlmUrgentWhenNoKeywordMatches() {
+        doReturn(Optional.of(new Triage(EmType.URGENT, Urgency.URGENT, 0.9, Map.of("who", "FRIEND", "symptom", "INJURY"))))
+                .when(classifier).classify(anyString());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "친구가 계단에서 굴러서 움직이질 못해요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.triage().type()).isEqualTo(EmType.URGENT);
+        assertThat(res.triage().urgency()).isEqualTo(Urgency.URGENT);
+        assertThat(res.triage().confidence()).isEqualTo(0.9);
+        assertThat(res.topContact()).isEqualTo("119");
+        assertThat(res.card().ko()).contains("제 친구가 크게 다쳤습니다.");
+    }
+
+    @Test
+    void promotesTopContactTo119WhenLlmMarksMildAsUrgent() {
+        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.URGENT, 0.85, Map.of("who", "CHILD", "symptom", "FEVER"))))
+                .when(classifier).classify(anyString());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "아이가 열이 너무 높아요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.triage().type()).isEqualTo(EmType.MILD);
+        assertThat(res.triage().urgency()).isEqualTo(Urgency.URGENT);
+        assertThat(res.topContact()).isEqualTo("119");
+    }
+
+    @Test
+    void routesLostStolenFromLlmHowSlotTo112AndStolenCard() {
+        doReturn(Optional.of(new Triage(EmType.LOST, Urgency.NORMAL, 0.93, Map.of("how", "STOLEN", "item", "PASSPORT"))))
+                .when(classifier).classify(anyString());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "누가 제 여권을 가져갔어요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.triage().type()).isEqualTo(EmType.LOST);
+        assertThat(res.topContact()).isEqualTo("112");
+        assertThat(res.extras()).containsExactly(Extra.EMBASSY);
+        assertThat(res.card().ko()).contains("여권을 도난당했습니다");
+    }
+
+    @Test
+    void routesMildInsectSlotToNeedsMedsFallbackErAndInsectCard() {
+        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.91, Map.of("who", "SELF", "symptom", "INSECT"))))
+                .when(classifier).classify(anyString());
+
+        HelpPlaceEntity convenience = entity(
+                20L, "CONVENIENCE", "GS25 광안점", 35.1535, 129.1188,
+                null, true, Instant.parse("2026-10-12T00:00:00Z"), null);
+        HelpPlaceEntity er = entity(
+                21L, "ER", "좋은강안병원 응급실", 35.1605, 129.1170,
+                null, true, Instant.parse("2026-10-12T00:00:00Z"), "A1200008");
+        when(placeRepo.findByKindInAndLatBetweenAndLngBetween(
+                anyCollection(), anyDouble(), anyDouble(), anyDouble(), anyDouble()))
+                .thenReturn(List.of(convenience, er));
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "해변에서 이상한 벌레한테 쏘였어요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.triage().type()).isEqualTo(EmType.MILD);
+        assertThat(res.places()).extracting(HelpPlace::kind).containsExactly(PlaceKind.ER);
+        assertThat(res.card().ko()).contains("벌레에 물렸습니다.");
+    }
+
+    @Test
+    void requestsTypeSelectionWhenLlmConfidenceBelowThresholdAndNoKeyword() {
+        doReturn(Optional.of(new Triage(EmType.MILD, Urgency.NORMAL, 0.4, Map.of())))
+                .when(classifier).classify(anyString());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "도와주세요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, null));
+
+        assertThat(res.needTypeSelection()).isTrue();
+        assertThat(res.triage()).isNull();
+        assertThat(res.topContact()).isNull();
+    }
+
+    @Test
+    void usesLlmSlotsWhenUserSelectedTypeMatchesLlmType() {
+        doReturn(Optional.of(new Triage(EmType.THREAT, Urgency.URGENT, 0.75, Map.of("situation", "FOLLOWED"))))
+                .when(classifier).classify(anyString());
+
+        GuideResponse res = service.guide(new GuideRequest(
+                "뒤에서 계속 걷는 사람이 무서워요", "ko", GWANGALLI_LAT, GWANGALLI_LNG, null, EmType.THREAT));
+
+        assertThat(res.triage().type()).isEqualTo(EmType.THREAT);
+        assertThat(res.triage().confidence()).isEqualTo(1.0);
+        assertThat(res.topContact()).isEqualTo("112");
+        assertThat(res.card().ko()).contains("따라오고");
     }
 
     private static HelpPlaceEntity entity(
