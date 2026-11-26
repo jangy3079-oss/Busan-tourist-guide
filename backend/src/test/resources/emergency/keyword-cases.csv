@@ -126,3 +126,11 @@ text,expectedType,expectedGroup
 "刃物を持った人がいます",THREAT,THREAT
 "津波が来ています",FIRE,FIRE
 "I have a cold and fever",MILD,GENERAL
+"친구가자살하려고해요",URGENT,SELF_HARM
+"호텔에불났어요",FIRE,FIRE
+"건물화재발생",FIRE,FIRE
+"다리가골절된것같아요",URGENT,TRAUMA
+"지갑분실했어요",LOST,LOST
+"여권도난당했어요",LOST,STOLEN
+"남자가날때렸어요",THREAT,THREAT
+"아이가경련해요",URGENT,SEIZURE
