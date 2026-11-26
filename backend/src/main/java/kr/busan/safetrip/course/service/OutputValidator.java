@@ -27,17 +27,31 @@ public class OutputValidator {
      * @param otherNames 코스 밖 장소 이름(나오면 거부, AI-REQ-C01)
      */
     public boolean isValid(String text, List<Place> grounding, Collection<String> otherNames, Lang lang, int maxChars) {
-        if (text == null || text.isBlank() || text.codePointCount(0, text.length()) > maxChars) return false;
-        if (!inLanguage(text, lang)) return false;
+        return reason(text, grounding, otherNames, lang, maxChars) == null;
+    }
+
+    /** 통과하면 null, 아니면 걸린 규칙 이름(로그용. 문장 내용은 담지 않는다) */
+    public String reason(String text, List<Place> grounding, Collection<String> otherNames, Lang lang, int maxChars) {
+        if (text == null || text.isBlank()) return "empty";
+        if (text.codePointCount(0, text.length()) > maxChars) return "length";
+        if (!inLanguage(withoutNames(text, grounding, lang), lang)) return "language";
         StringBuilder src = new StringBuilder();
         for (Place p : grounding) src.append(p.getName()).append(' ').append(p.getOverview()).append(' ').append(p.getHoursText()).append(' ');
         Matcher m = NUMBER.matcher(text);
-        while (m.find()) if (src.indexOf(m.group()) < 0) return false;
+        while (m.find()) if (src.indexOf(m.group()) < 0) return "number";
         // 원문(개요)에 나오는 이웃 장소(예: 광안대교)는 근거가 있으므로 허용
         for (String other : otherNames) {
-            if (other != null && other.length() >= 2 && text.contains(other) && src.indexOf(other) < 0) return false;
+            if (other != null && other.length() >= 2 && text.contains(other) && src.indexOf(other) < 0) return "otherPlace";
         }
-        return true;
+        return null;
+    }
+
+    /** 화면은 장소 이름을 원문(한글) 그대로 보여 준다. 영·일 문장에 코스 장소 이름이 한글로 들어간 것은 언어 위반으로 보지 않는다 */
+    private static String withoutNames(String text, List<Place> grounding, Lang lang) {
+        if (lang == Lang.KO) return text;
+        String t = text;
+        for (Place p : grounding) if (p.getName() != null && !p.getName().isBlank()) t = t.replace(p.getName(), "");
+        return t;
     }
 
     /** ko = 한글, ja = 가나(또는 한자만), en = 라틴 글자. ja·en 은 다른 글자가 하나라도 섞이면 거부("海운대は" 같은 답) */

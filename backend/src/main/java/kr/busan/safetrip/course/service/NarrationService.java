@@ -93,15 +93,22 @@ public class NarrationService {
                 .filter(p -> !courseIds.contains(p.getContentId())).map(Place::getName).collect(Collectors.toSet());
 
         String title = n.path("title").asText("");
-        if (!validator.isValid(title, grounding, others, lang, titleMax)) return null;
+        String why = validator.reason(title, grounding, others, lang, titleMax);
+        if (why != null) return rejected("title", why, lang);
         List<CourseDtos.NarrationItem> items = new ArrayList<>();
         for (CourseDtos.Stop s : stops) {
             String text = null;
             for (JsonNode it : n.path("items")) if (s.contentId().equals(it.path("contentId").asText())) text = it.path("text").asText(null);
-            if (!validator.isValid(text, grounding, others, lang, itemMax)) return null;
+            why = validator.reason(text, grounding, others, lang, itemMax);
+            if (why != null) return rejected("item", why, lang);
             items.add(new CourseDtos.NarrationItem(s.contentId(), text));
         }
         return new CourseDtos.NarrationResponse(courseId, title, items, false);
+    }
+
+    private static CourseDtos.NarrationResponse rejected(String field, String why, Lang lang) {
+        log.info("course.narration reject field={} rule={} lang={}", field, why, lang);
+        return null;
     }
 
     /** AI-REQ-C02 대체: 첫 장소 이름 제목 + "장소명 (유형)" */
