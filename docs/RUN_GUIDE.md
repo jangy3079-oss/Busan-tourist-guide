@@ -46,6 +46,11 @@ curl localhost:8080/api/v1/admin/knowledge/status              # state=DONE, pro
 - 다시 돌리면 수정일이 바뀐 장소만 상세를 다시 받습니다. **주 1회 수동 실행**(NFR-C008).
 - 관리자 API는 `local-admin` 프로필에서만 켜집니다.
 
+### 긴급 데이터 넣기 (도움처·공휴일·지식베이스)
+- 긴급 상세 안내(`API-E02`)에 도움처가 나오려면 `help_place`(839행)·`holiday`(22행)가 필요함(`kb_document` 39행은 서버 기동 시 저장소 원고로 자동 적재됨).
+- 키·CSV 없이 로컬 DB에 넣으려면 공용 DB에서 `help_place`·`holiday`만 덤프하거나 개인 전달받은 `em_seed.sql`을 `psql`로 적재함.
+- 처음부터 `local-admin` API(`API-E04`~`E07`)로 적재·동기화하는 절차와 공용 DB 규칙(`SPRING_FLYWAY_ENABLED=false`)은 [긴급 데이터 적재 가이드](../backend/src/main/resources/emergency/README.md)를 따름.
+
 ## 4. LLM
 | | 설정 |
 |---|---|
