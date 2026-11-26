@@ -34,5 +34,5 @@ public record AppProperties(Ai ai, Embedding embedding, TourApi tourApi, Cors co
     public record Retention(int logDays) {}
 
     /** FR-E019·FR-E020·FR-E013·DATA-E11: 긴급 외부 API 인증키(국립중앙의료원·특일 정보, V-World) */
-    public record Emergency(String serviceKey, String vworldKey) {}
+    public record Emergency(String serviceKey, String vworldKey, String holidayKey) {}
 }
