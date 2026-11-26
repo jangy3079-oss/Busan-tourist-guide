@@ -228,7 +228,6 @@ class AppHead extends ConsumerWidget {
   const AppHead(this.title, this.sub, {super.key, this.backTo, this.onBack});
   @override
   Widget build(BuildContext context, WidgetRef ref) => Container(
-        color: Colors.white,
         padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
         decoration: const BoxDecoration(color: Colors.white, border: Border(bottom: BorderSide(color: C.line))),
         child: Row(children: [
