@@ -63,3 +63,4 @@ safetrip:
   emergency:
     service-key: ${NMC_API_KEY:}     # data.go.kr 인증키(국립중앙의료원 약국·응급실, 한국천문연구원 특일 정보)
     vworld-key: ${VWORLD_API_KEY:}   # V-World 좌표→주소(T16)
+    holiday-key: ${KASI_API_KEY:}   # 한국천문연구원 특일 정보. 비우면 service-key 사용
