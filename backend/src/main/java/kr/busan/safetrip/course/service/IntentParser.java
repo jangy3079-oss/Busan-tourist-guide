@@ -82,6 +82,9 @@ public class IntentParser {
     private static final Pattern REMOVE = Pattern.compile(
             "(\\d+)\\s*번\\S*\\s*(?:빼|제외|없애|삭제|말고|대신)|(?:remove|drop|skip|replace)\\s+(?:stop\\s*|#|no\\.?\\s*)?(\\d+)|(\\d+)\\s*番\\S*?\\s*(?:外|除|削除|代わり|やめ)",
             Pattern.CASE_INSENSITIVE);
+    /** 규칙 대체용 시작 시각(#240): "2시 반", "午後2時30分", "2pm", "14:00". "3시간"·"3時間"은 길이라 제외 */
+    private static final Pattern CLOCK = Pattern.compile(
+            "(\\d{1,2})\\s*(?:시(?!간)|時(?!間))(?:\\s*(반|半)|\\s*(\\d{1,2})\\s*(?:분|分))?|(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm|a\\.m\\.|p\\.m\\.)|(\\d{1,2}):(\\d{2})");
     private static final Pattern MINUTES = Pattern.compile("(\\d+)\\s*(분|min(?:ute)?s?|分)", Pattern.CASE_INSENSITIVE);
 
     private final KeywordRuleEngine keywords;
@@ -107,7 +110,7 @@ public class IntentParser {
             return fromLlm(ai.complete(new AiRequest("course.intent", prompt, text, true, Duration.ofSeconds(8))));
         } catch (RuntimeException e) {
             log.warn("course.intent LLM 실패 → 규칙 대체: {}", e.getClass().getSimpleName());
-            return byRules(text);
+            return byRules(text, today);
         }
     }
 
@@ -211,8 +214,8 @@ public class IntentParser {
                 .withIndoor(n.path("indoorOnly").asBoolean(false)).withPreference(search.isEmpty() ? null : search);
     }
 
-    /** NFR-C002 규칙 대체: 시간·지역·장소 유형·범위 밖 키워드만 본다 */
-    Intent byRules(String text) {
+    /** NFR-C002 규칙 대체: 날짜·시각(#240)·시간·지역·장소 유형·범위 밖 키워드만 본다 */
+    Intent byRules(String text, LocalDate today) {
         String t = text.toLowerCase(Locale.ROOT);
         CourseSettings.Intent cfg = settings.intent();
         boolean out = cfg.outOfScopeKeywords().stream().anyMatch(k -> t.contains(k.toLowerCase(Locale.ROOT)));
@@ -227,8 +230,41 @@ public class IntentParser {
         cfg.categoryKeywords().forEach((cat, ks) -> {
             if (ks.stream().anyMatch(k -> t.contains(k.toLowerCase(Locale.ROOT)))) cats.add(cat);
         });
-        return new Intent(null, null, duration(t), area, cats, null, out, Optional.empty())
+        LocalDate date = null;
+        for (Map.Entry<String, Integer> e : cfg.ruleWhen().dayWords().entrySet()) {
+            if (t.contains(e.getKey().toLowerCase(Locale.ROOT))) { date = today.plusDays(e.getValue()); break; }
+        }
+        LocalTime time = null;
+        String rest = t;
+        Matcher m = CLOCK.matcher(t);
+        if (m.find()) {
+            time = clock(m, t.substring(0, m.start()).stripTrailing(), cfg.ruleWhen().pmWords());
+            if (time != null) rest = t.substring(0, m.start()) + " " + t.substring(m.end()); // "2時30分から3時間"의 30分을 길이로 세지 않게
+        }
+        return new Intent(date, time, duration(rest), area, cats, null, out, Optional.empty())
                 .withIndoor(cfg.indoorKeywords().stream().anyMatch(t::contains));
+    }
+
+    /** CLOCK 일치 → 시각. 앞에 pmWords 가 있거나 pm 이면 오후. 범위 밖이면 null */
+    private static LocalTime clock(Matcher m, String before, List<String> pmWords) {
+        int h, min = 0;
+        boolean pm = pmWords.stream().anyMatch(before::endsWith), am = false;
+        if (m.group(1) != null) {
+            h = Integer.parseInt(m.group(1));
+            if (m.group(2) != null) min = 30;
+            else if (m.group(3) != null) min = Integer.parseInt(m.group(3));
+        } else if (m.group(4) != null) {
+            h = Integer.parseInt(m.group(4));
+            if (m.group(5) != null) min = Integer.parseInt(m.group(5));
+            pm = m.group(6).startsWith("p");
+            am = !pm;
+        } else {
+            h = Integer.parseInt(m.group(7));
+            min = Integer.parseInt(m.group(8));
+        }
+        if (pm && h < 12) h += 12;
+        if (am && h == 12) h = 0;
+        return h <= 23 && min <= 59 ? LocalTime.of(h, min) : null;
     }
 
     /** "3시간", "90분", "2 hours" → 분. 없으면 null */
