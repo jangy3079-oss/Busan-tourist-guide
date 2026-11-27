@@ -32,6 +32,11 @@
   "termFix": {"ja": {"光安": "広安", "送亭": "松亭"}},
   "_nextDay": "#230 날짜를 말하지 않았는데 말한 시각이 지났거나, 시각도 말하지 않았고 lateHour 시 이후면 내일 코스(시각을 말하지 않았으면 startTime). 결과에 relax.nextDay 문구를 붙인다",
   "nextDay": {"lateHour": 20, "startTime": "10:00"},
+  "_ruleWhen": "#240 LLM 장애 때 규칙으로 읽는 날짜·시각. dayWords 는 위에서부터 먼저 맞는 것을 쓴다(긴 말을 앞에: 'day after tomorrow' > 'tomorrow'). pmWords 가 시각 바로 앞에 오면 12시간을 더한다",
+  "ruleWhen": {
+    "dayWords": {"모레": 2, "내일": 1, "오늘": 0, "day after tomorrow": 2, "tomorrow": 1, "today": 0, "tonight": 0, "明後日": 2, "明日": 1, "今日": 0, "今夜": 0},
+    "pmWords": ["오후", "저녁", "밤", "午後", "夜", "夕方"]
+  },
   "_unsupported": "수정 문장 중 지원하지 않는 요청. 식사 단어 + 시각(timePattern), 또는 가격 단어가 있으면 코스를 바꾸지 않고 안내만 한다. 식사 시각 고정·가격 데이터는 없다",
   "unsupported": {
     "mealWords": ["저녁", "점심", "아침", "식사", "밥", "브런치", "dinner", "lunch", "breakfast", "brunch", "meal", "夕食", "昼食", "朝食", "ご飯", "ごはん", "ランチ", "ディナー"],

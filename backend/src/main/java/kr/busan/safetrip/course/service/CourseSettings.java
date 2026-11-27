@@ -30,7 +30,10 @@ public class CourseSettings {
                          List<String> outOfScopeKeywords, List<String> relaxOrder,
                          int narrationMaxChars, int titleMaxChars, double promptLengthRatio, int wantedPerCategory, String preferenceNoise,
                          List<String> indoorCodes, List<String> indoorKeywords, Demoted demoted, Unsupported unsupported, NextDay nextDay,
-                         Map<String, Map<String, String>> termFix) {}
+                         Map<String, Map<String, String>> termFix, RuleWhen ruleWhen) {}
+
+    /** LLM 이 없을 때 규칙으로 읽는 날짜·시각(#240). dayWords = 단어 → 오늘부터 며칠 뒤(적힌 순서대로 먼저 맞는 것), pmWords = 시각 앞에 오면 오후 */
+    public record RuleWhen(Map<String, Integer> dayWords, List<String> pmWords) {}
 
     /** 날짜를 말하지 않았는데 시간이 지났으면 내일로(#230). lateHour 이후에 시각도 말하지 않았으면 내일 startTime */
     public record NextDay(int lateHour, String startTime) {}

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import kr.busan.safetrip.common.api.Area;
@@ -83,6 +84,27 @@ class IntentParserTest {
         assertEquals(Area.HAEUNDAE, i.area());
         assertEquals(120, i.durationMin());
         assertEquals(List.of("카페"), i.categories());
+    }
+
+    @Test
+    void rulesReadDateAndTime() { // #240
+        IntentParser.Intent ja = parser(null).parse("明日の午後2時から3時間、広安里の海辺を散歩して、刺身とカフェ", TODAY);
+        assertEquals(TODAY.plusDays(1), ja.visitDate());
+        assertEquals(LocalTime.of(14, 0), ja.startTime());
+        assertEquals(180, ja.durationMin());
+        assertEquals(List.of("음식점", "카페"), ja.categories());
+        IntentParser.Intent ko = parser(null).parse("모레 오후 2시 반부터 2시간 해운대", TODAY);
+        assertEquals(TODAY.plusDays(2), ko.visitDate());
+        assertEquals(LocalTime.of(14, 30), ko.startTime());
+        assertEquals(120, ko.durationMin());
+        IntentParser.Intent en = parser(null).parse("the day after tomorrow at 5pm, 2 hours", TODAY);
+        assertEquals(TODAY.plusDays(2), en.visitDate());
+        assertEquals(LocalTime.of(17, 0), en.startTime());
+        IntentParser.Intent mins = parser(null).parse("2時30分から3時間", TODAY);
+        assertEquals(LocalTime.of(2, 30), mins.startTime());
+        assertEquals(180, mins.durationMin());
+        assertEquals(LocalTime.of(10, 0), parser(null).parse("today 10:00", TODAY).startTime());
+        assertNull(parser(null).parse("광안리 3시간", TODAY).startTime());
     }
 
     @Test
