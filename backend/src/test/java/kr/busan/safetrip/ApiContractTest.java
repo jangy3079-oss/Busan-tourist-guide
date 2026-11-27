@@ -39,7 +39,7 @@ class ApiContractTest {
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders.standaloneSetup(
-                new CourseController(new CourseService(null, null, null, null), new kr.busan.safetrip.course.service.EvidenceTranslationService(null, null)),
+                new CourseController(new CourseService(null, null, null, null), new kr.busan.safetrip.course.service.EvidenceTranslationService(null, null, null)),
                 new CourseAdminController(new KnowledgeIngestor(null, null, new AppProperties(null, null, null, null, null), null, null)),
                 new PhotoController(new PhotoMatchService(null, null, null, null, null), new PlaceSearchService(), new PlaceNarrationService()),
                 new EmergencyController(new EmergencyService(null, null, null, null, null, null)),

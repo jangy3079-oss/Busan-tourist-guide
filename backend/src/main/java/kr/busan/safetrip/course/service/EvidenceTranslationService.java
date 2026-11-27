@@ -38,13 +38,15 @@ public class EvidenceTranslationService {
 
     private final AIService ai;
     private final PlaceRepository places;
+    private final CourseSettings settings;
     private final String prompt;
     private final Map<String, Object> cfg;
     private final Map<String, CourseDtos.Translation> cache = new ConcurrentHashMap<>();
 
-    public EvidenceTranslationService(AIService ai, PlaceRepository places) {
+    public EvidenceTranslationService(AIService ai, PlaceRepository places, CourseSettings settings) {
         this.ai = ai;
         this.places = places;
+        this.settings = settings;
         this.prompt = text("/course/translate-prompt.txt");
         this.cfg = read("/course/translate.json");
     }
@@ -68,12 +70,19 @@ public class EvidenceTranslationService {
         try {
             String user = JSON.writeValueAsString(Map.of("overview", overview == null ? "" : overview, "hours", hours == null ? "" : hours));
             int timeout = ((Number) cfg.getOrDefault("timeoutSec", 10)).intValue();
-            String raw = ai.complete(new AiRequest("course.evidence-translate", prompt.replace("{lang}", LANG_NAME.get(lang)), user, true, Duration.ofSeconds(timeout)));
-            JsonNode n = JSON.readTree(raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
-            String ov = blankToNull(n.path("overview").asText(null));
-            String hr = blankToNull(n.path("hours").asText(null));
+            // JSON 모드를 쓰지 않고 여기서 읽는다: 실패하면 응답 앞부분을 남겨 원인을 본다(입력·출력이 공개 관광 문장이라 개인정보 없음, #242)
+            String raw = ai.complete(new AiRequest("course.evidence-translate", prompt.replace("{lang}", LANG_NAME.get(lang)), user, false, Duration.ofSeconds(timeout)));
+            JsonNode n;
+            try {
+                n = JSON.readTree(raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
+            } catch (IOException | RuntimeException e) {
+                log.info("course.translate JSON 아님 lang={} head={}", code, raw.substring(0, Math.min(raw.length(), 200)).replace('\n', ' '));
+                return none;
+            }
+            String ov = settings.fixTerms(blankToNull(n.path("overview").asText(null)), lang);
+            String hr = settings.fixTerms(blankToNull(n.path("hours").asText(null)), lang);
             if (!ok(overview, ov) || !ok(hours, hr)) {
-                log.info("course.translate 거절 lang={} (원문만 표시)", code);
+                log.info("course.translate 거절 lang={} 한글비율 overview={} hours={} (원문만 표시)", code, ratio(ov), ratio(hr));
                 return none;
             }
             return new CourseDtos.Translation(p.getContentId(), code, ov, hr, true);
@@ -91,6 +100,13 @@ public class EvidenceTranslationService {
         long hangul = translated.codePoints().filter(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.HANGUL).count();
         double max = ((Number) cfg.getOrDefault("maxHangulRatio", 0.2)).doubleValue();
         return letters > 0 && (double) hangul / letters <= max;
+    }
+
+    private static String ratio(String s) {
+        if (s == null) return "-";
+        long letters = s.codePoints().filter(Character::isLetter).count();
+        long hangul = s.codePoints().filter(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.HANGUL).count();
+        return letters == 0 ? "0" : String.format("%.2f", (double) hangul / letters);
     }
 
     private static String blankToNull(String s) { return s == null || s.isBlank() || "null".equals(s) ? null : s.strip(); }

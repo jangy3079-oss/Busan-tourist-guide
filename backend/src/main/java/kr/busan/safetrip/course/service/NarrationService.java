@@ -109,10 +109,7 @@ public class NarrationService {
 
     /** 프롬프트로 일러도 가끔 나오는 지명 오표기를 바로잡는다(intent.json termFix, 예: 光安→広安) */
     String fix(String text, Lang lang) {
-        Map<String, String> m = settings.intent().termFix() == null ? null : settings.intent().termFix().get(lang.name().toLowerCase(java.util.Locale.ROOT));
-        if (text == null || m == null) return text;
-        for (Map.Entry<String, String> e : m.entrySet()) text = text.replace(e.getKey(), e.getValue());
-        return text;
+        return settings.fixTerms(text, lang);
     }
 
     private static CourseDtos.NarrationResponse rejected(String field, String why, Lang lang) {
