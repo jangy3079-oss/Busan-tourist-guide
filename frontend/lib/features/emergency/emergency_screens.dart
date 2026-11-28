@@ -536,6 +536,51 @@ Future<void> showEmbassySheet(BuildContext context, WidgetRef ref) {
   );
 }
 
+/// 한국어 카드 전체 화면 하단 버튼: 360px 3개 국어에서도 단어 중간 줄바꿈 없이 한 줄로 맞춘다(#207).
+class _CardActionBtn extends StatelessWidget {
+  final Key? labelKey;
+  final String label;
+  final String? icon;
+  final bool dark;
+  final VoidCallback onTap;
+  const _CardActionBtn({super.key, this.labelKey, required this.label, this.icon, this.dark = false, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final bg = dark ? C.text : Colors.white;
+    final fg = dark ? Colors.white : C.text;
+    final bd = dark ? Colors.white24 : C.line2;
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(rMd),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(rMd),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(rMd), border: Border.all(color: bd)),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (icon != null) ...[Ic(icon!, size: 16, color: fg), const SizedBox(width: 4)],
+                Text(
+                  label,
+                  key: labelKey,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: fg),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// UI-E03 한국어 카드 전체 화면 (FR-E015, NFR-E010: 한국어 24pt 이상, 크게 키우기)
 Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
       context: context,
@@ -572,9 +617,37 @@ Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
                       ],
                     ]))),
                     Row(children: [
-                      Expanded(child: Btn(tr('bigger', l), onTap: () => ref.read(emergencyProvider.notifier).toggleBig())), const SizedBox(width: 8),
-                      Expanded(child: Btn(tr('copyLoc', l), icon: 'copy', onTap: () { Clipboard.setData(ClipboardData(text: addr)); toast(ctx, et('copied', l)); })), const SizedBox(width: 8),
-                      Expanded(child: Btn(tr('close', l), kind: BtnKind.dark, onTap: () => Navigator.of(ctx).pop())),
+                      Expanded(
+                        flex: 11,
+                        child: _CardActionBtn(
+                          key: const ValueKey('card-bigger-btn'),
+                          labelKey: const ValueKey('card-bigger-label'),
+                          label: tr('bigger', l),
+                          onTap: () => ref.read(emergencyProvider.notifier).toggleBig(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 13,
+                        child: _CardActionBtn(
+                          key: const ValueKey('card-copy-btn'),
+                          labelKey: const ValueKey('card-copy-label'),
+                          label: tr('copyLoc', l),
+                          icon: 'copy',
+                          onTap: () { Clipboard.setData(ClipboardData(text: addr)); toast(ctx, et('copied', l)); },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 8,
+                        child: _CardActionBtn(
+                          key: const ValueKey('card-close-btn'),
+                          labelKey: const ValueKey('card-close-label'),
+                          label: tr('close', l),
+                          dark: true,
+                          onTap: () => Navigator.of(ctx).pop(),
+                        ),
+                      ),
                     ]),
                     const SizedBox(height: 10),
                     ClipRRect(borderRadius: BorderRadius.circular(rMd), child: ContactBar(top: st.top)), // FR-E004

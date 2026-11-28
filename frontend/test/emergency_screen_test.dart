@@ -400,4 +400,40 @@ void main() {
     expect(repo.calls.last['lang'], Lang.en);
     expect(repo.calls.last['type'], EmType.lost);
   });
+
+  testWidgets('360px 한국어 카드 전체 화면 하단 버튼 3개가 3개 국어 모두 한 줄로 표시된다 (#207)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        cardKo: '외국인 관광객입니다. 저는 배가 아픕니다. 약을 사고 싶습니다. 도와주세요.',
+        cardTranslated: 'I am a foreign tourist. Who: myself. Problem: stomach pain. I want to buy medicine. Please help.',
+        address: '부산광역시 수영구 광안동 1306-2',
+      );
+    await pumpApp(t, repo);
+    t.view.physicalSize = const Size(360, 800);
+    t.view.devicePixelRatio = 1;
+    await t.pumpAndSettle();
+
+    await send(t, '배가 아파요');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('full-screen-btn')));
+    await t.pumpAndSettle();
+
+    for (final lang in [Lang.ko, Lang.en, Lang.ja]) {
+      box.read(langProvider.notifier).set(lang);
+      await t.pumpAndSettle();
+      for (final id in ['bigger', 'copy', 'close']) {
+        final btn = find.byKey(ValueKey('card-$id-btn'));
+        final lbl = find.byKey(ValueKey('card-$id-label'));
+        expect(btn, findsOneWidget, reason: '$lang/$id btn');
+        expect(lbl, findsOneWidget, reason: '$lang/$id label');
+        final txt = t.widget<Text>(lbl);
+        expect(txt.maxLines, 1, reason: '$lang/$id maxLines');
+        expect(txt.softWrap, isFalse, reason: '$lang/$id softWrap');
+        expect(t.getSize(btn).height, lessThanOrEqualTo(52), reason: '$lang/$id height');
+      }
+      expect(t.takeException(), isNull, reason: '$lang overflow');
+    }
+  });
 }
