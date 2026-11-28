@@ -142,7 +142,14 @@ class _EmInState extends ConsumerState<EmergencyInputScreen> {
         const SizedBox(height: 12),
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (var i = 0; i < chips.length; i++)
-            ActionChip(onPressed: () => _submit(chips[i]), avatar: Ic(chipIcons[i], size: 16, color: C.red), label: Text(chips[i], style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600)), backgroundColor: Colors.white, side: const BorderSide(color: C.line2)),
+            // Material ActionChip(RawChip)의 TextOverflow.fade 가 웹에서 日 전환 직후 한자 폴백 글꼴 로드와 맞물려
+            // 글자를 흐리게 자르는 문제(#239)를 피하기 위해 일반 필 버튼 + 언어 키로 그린다.
+            _SituationChip(
+              key: ValueKey('em-chip-${l.name}-$i'),
+              icon: chipIcons[i],
+              label: chips[i],
+              onTap: () => _submit(chips[i]),
+            ),
         ]),
         const SizedBox(height: 14),
         Container(padding: const EdgeInsets.all(12), decoration: cardDeco(), child: _locBox(st, l)),
@@ -218,13 +225,6 @@ class EmergencyResultScreen extends ConsumerWidget {
         context.go('/emergency/area');
       });
     }
-    if (st.needTypeSheet) { // FR-E008 → UI-E04
-      after(() {
-        if (!ref.read(emergencyProvider).needTypeSheet) return;
-        ref.read(emergencyProvider.notifier).ackTypeSheet();
-        showTypeSheet(context, ref);
-      });
-    }
     if (st.type == EmType.non) after(() => context.go('/emergency/non'));
     final g = st.guide;
     Widget frame(Widget body) => ScreenFrame(head: _head(ref), bar: ContactBar(top: st.top), body: body);
@@ -239,9 +239,9 @@ class EmergencyResultScreen extends ConsumerWidget {
         TypeGrid(onPick: (t) => _pickType(context, ref, t)),
       ]));
     }
-    // 분류 불가(needTypeSelection): 시트를 닫아도 같은 유형 버튼이 본문에 남는다
+    // 분류 불가(needTypeSelection): 본문 유형 버튼만 표시한다(하단 시트 중복 표시 제거, FR-E008, #239)
     if (st.phase == EmPhase.idle && g == null) {
-      return frame(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      return frame(Column(key: const ValueKey('type-select-body'), crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(tr('typeT', l), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         Text(tr('typeS', l), style: const TextStyle(fontSize: 14, color: C.text2, height: 1.5)),
@@ -277,11 +277,22 @@ class EmergencyResultScreen extends ConsumerWidget {
         if (g.extra == EmExtra.embassy)
           XBtn(icon: 'bank', title: tr('embassy', l), sub: tr('embassySub', l), iconBg: C.seaT, iconFg: C.sea, onTap: () => showEmbassySheet(context, ref)),
         if (places.isNotEmpty) ...[
-          SecTitle(tr('helpNow', l), sub: tr('helpSub', l)),
-          MapView(pins: [for (final p in places) p.point], area: st.area, me: st.hasCoords ? MapPoint(st.lat!, st.lng!) : null, height: 170,
+          SecTitle(tr('helpNow', l), sub: et('helpSub', l)),
+          MapView(pins: [for (final p in places) p.pointIn(l)], area: st.area, me: st.hasCoords ? MapPoint(st.lat!, st.lng!) : null, height: 170,
               caption: st.hasCoords ? et('hereMe', l) : et('hereArea', l, [area.nameOf(l)])),
           const SizedBox(height: 8),
-          for (var i = 0; i < places.length; i++) PlaceRow(i, places[i]),
+          for (var i = 0; i < places.length; i++) ...[
+            if (places.map((p) => p.kind).toSet().length > 1 && (i == 0 || places[i].kind != places[i - 1].kind))
+              Padding(
+                padding: EdgeInsets.only(top: i == 0 ? 2 : 6, bottom: 4, left: 2),
+                child: Text(
+                  trWord(places[i].kind, l),
+                  key: ValueKey('place-kind-header-$i'),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: C.text3),
+                ),
+              ),
+            PlaceRow(i, places[i]),
+          ],
         ] else if (st.type != EmType.fire)
           Padding(padding: const EdgeInsets.only(top: 14), child: Text(et('noPlaces', l), style: const TextStyle(fontSize: 13.5, color: C.text2, height: 1.5))),
         const SizedBox(height: 6),
@@ -337,6 +348,32 @@ void _pickType(BuildContext context, WidgetRef ref, EmType t) {
   context.go(t == EmType.non ? '/emergency/non' : '/emergency/result');
 }
 
+/// 입력 화면 상황 칩: Material ActionChip(RawChip)의 TextOverflow.fade 가 웹에서 언어 전환 직후
+/// 한자 폴백 글꼴 로드와 겹쳐 글자를 흐리게 자르는 문제(#239)를 방지한다.
+class _SituationChip extends StatelessWidget {
+  final String icon, label;
+  final VoidCallback onTap;
+  const _SituationChip({super.key, required this.icon, required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) => Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(rSm),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(rSm),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(rSm), border: Border.all(color: C.line2)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Ic(icon, size: 16, color: C.red),
+              const SizedBox(width: 6),
+              Flexible(child: Text(label, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: C.text))),
+            ]),
+          ),
+        ),
+      );
+}
+
 /// 한국어 카드 '전체 화면' 버튼: 360px 영어("Full screen")에서도 한 줄로 유지한다(#208).
 class _FullScreenBtn extends StatelessWidget {
   final String label;
@@ -390,7 +427,7 @@ class PlaceRow extends ConsumerWidget {
         Container(width: 28, height: 28, alignment: Alignment.center, decoration: BoxDecoration(color: p.isEr ? const Color(0xFFC2410C) : C.text, shape: BoxShape.circle), child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(p.name, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+          Text(p.nameIn(l), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 3),
           Text('${trWord(p.kind, l)} · ${p.distM} m', style: const TextStyle(fontSize: 12.5, color: C.text3)),
           const SizedBox(height: 4),
@@ -400,6 +437,7 @@ class PlaceRow extends ConsumerWidget {
             if (p.sub.isNotEmpty) Text(trWord(p.sub, l), style: TextStyle(fontSize: 12.5, color: p.noTreatment ? C.red : C.text3)),
           ]),
         ])),
+        const SizedBox(width: 8),
         if (p.phone != null && p.phone!.isNotEmpty) ...[_sq('phone', et('phone', l), () => open(telUrl(p.phone!))), const SizedBox(width: 6)],
         _sq('nav', et('nav', l), () => open(kakaoRouteUrl(p.name, p.lat, p.lng))),
       ]),
@@ -536,6 +574,51 @@ Future<void> showEmbassySheet(BuildContext context, WidgetRef ref) {
   );
 }
 
+/// 한국어 카드 전체 화면 하단 버튼: 360px 3개 국어에서도 단어 중간 줄바꿈 없이 한 줄로 맞춘다(#207).
+class _CardActionBtn extends StatelessWidget {
+  final Key? labelKey;
+  final String label;
+  final String? icon;
+  final bool dark;
+  final VoidCallback onTap;
+  const _CardActionBtn({super.key, this.labelKey, required this.label, this.icon, this.dark = false, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    final bg = dark ? C.text : Colors.white;
+    final fg = dark ? Colors.white : C.text;
+    final bd = dark ? Colors.white24 : C.line2;
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(rMd),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(rMd),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(rMd), border: Border.all(color: bd)),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (icon != null) ...[Ic(icon!, size: 16, color: fg), const SizedBox(width: 4)],
+                Text(
+                  label,
+                  key: labelKey,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: fg),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// UI-E03 한국어 카드 전체 화면 (FR-E015, NFR-E010: 한국어 24pt 이상, 크게 키우기)
 Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
       context: context,
@@ -572,9 +655,37 @@ Future<void> showKoreanCard(BuildContext context) => showGeneralDialog(
                       ],
                     ]))),
                     Row(children: [
-                      Expanded(child: Btn(tr('bigger', l), onTap: () => ref.read(emergencyProvider.notifier).toggleBig())), const SizedBox(width: 8),
-                      Expanded(child: Btn(tr('copyLoc', l), icon: 'copy', onTap: () { Clipboard.setData(ClipboardData(text: addr)); toast(ctx, et('copied', l)); })), const SizedBox(width: 8),
-                      Expanded(child: Btn(tr('close', l), kind: BtnKind.dark, onTap: () => Navigator.of(ctx).pop())),
+                      Expanded(
+                        flex: 11,
+                        child: _CardActionBtn(
+                          key: const ValueKey('card-bigger-btn'),
+                          labelKey: const ValueKey('card-bigger-label'),
+                          label: tr('bigger', l),
+                          onTap: () => ref.read(emergencyProvider.notifier).toggleBig(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 13,
+                        child: _CardActionBtn(
+                          key: const ValueKey('card-copy-btn'),
+                          labelKey: const ValueKey('card-copy-label'),
+                          label: tr('copyLoc', l),
+                          icon: 'copy',
+                          onTap: () { Clipboard.setData(ClipboardData(text: addr)); toast(ctx, et('copied', l)); },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 8,
+                        child: _CardActionBtn(
+                          key: const ValueKey('card-close-btn'),
+                          labelKey: const ValueKey('card-close-label'),
+                          label: tr('close', l),
+                          dark: true,
+                          onTap: () => Navigator.of(ctx).pop(),
+                        ),
+                      ),
                     ]),
                     const SizedBox(height: 10),
                     ClipRRect(borderRadius: BorderRadius.circular(rMd), child: ContactBar(top: st.top)), // FR-E004

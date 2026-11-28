@@ -240,8 +240,10 @@ API-C05의 국문 개요·운영시간을 요청 언어로 번역한 **참고 �
                                      // ER|PHARMACY|CONVENIENCE|POLICE|TOURIST_INFO|HOSPITAL|FIRE_STATION
     "lat": 35.16, "lng": 129.12, "distanceM": 640, "phone": "051-…",
     "todayHours": "24시간", "openStatus": "OPEN",     // OPEN|CLOSED|UNKNOWN(미확인, FR-E010)
-    "er": { "availableBeds": 3, "message": null, "noTreatment": false, "fetchedAt": "…" }   // 응급실만(FR-E012)
-  }],                                // 최대 3곳, 거리순(진료불가 응급실은 뒤로)
+    "er": { "availableBeds": 3, "message": null, "noTreatment": false, "fetchedAt": "…" },   // 응급실만(FR-E012)
+    "nameEn": "Good Gangan Hospital ER",              // 읽는 법(#222, CHG-125). 없으면 null. 영·일 화면은 "원문 (읽는 법)"으로 표시, name 은 원문 그대로
+    "nameJa": "グッド広安病院救急外来"
+  }],                                // 최대 3곳, 종류별 가까운 순(진료불가 응급실은 뒤로)
   "card": { "ko": "제 친구가 쓰러졌어요. 119를 불러주세요.", "translated": "My friend collapsed …",
             "address": "부산 수영구 광안해변로 219" },          // FR-E015 (템플릿, LLM 아님)
   "steps": ["숨을 쉬는지 확인하세요", "…"],                    // 2~3줄(FR-E016)

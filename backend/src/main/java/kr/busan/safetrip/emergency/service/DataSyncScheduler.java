@@ -64,10 +64,11 @@ public class DataSyncScheduler {
     private final SyncLogRepository syncLogRepo;
     private final TransactionTemplate txTemplate;
     private final Clock clock;
+    private final HelpPlaceNameReader nameReader;
 
     /** 공용 계약 테스트(ApiContractTest) 호환용 기본 생성자. */
     public DataSyncScheduler() {
-        this(null, null, null, null, null, null, null, null, (TransactionTemplate) null, Clock.system(SEOUL));
+        this(null, null, null, null, null, null, null, null, (TransactionTemplate) null, Clock.system(SEOUL), null);
     }
 
     @Autowired
@@ -80,11 +81,13 @@ public class DataSyncScheduler {
             HelpPlaceRepository helpPlaceRepo,
             HolidayRepository holidayRepo,
             SyncLogRepository syncLogRepo,
-            PlatformTransactionManager txManager) {
+            PlatformTransactionManager txManager,
+            HelpPlaceNameReader nameReader) {
         this(syncConfig, props, nmcClient, holidayClient, holidayCalendar,
                 helpPlaceRepo, holidayRepo, syncLogRepo,
                 txManager == null ? null : new TransactionTemplate(txManager),
-                Clock.system(SEOUL));
+                Clock.system(SEOUL),
+                nameReader);
     }
 
     DataSyncScheduler(
@@ -98,6 +101,22 @@ public class DataSyncScheduler {
             SyncLogRepository syncLogRepo,
             TransactionTemplate txTemplate,
             Clock clock) {
+        this(syncConfig, props, nmcClient, holidayClient, holidayCalendar,
+                helpPlaceRepo, holidayRepo, syncLogRepo, txTemplate, clock, null);
+    }
+
+    DataSyncScheduler(
+            SyncConfig syncConfig,
+            AppProperties props,
+            NmcClient nmcClient,
+            HolidayClient holidayClient,
+            HolidayCalendar holidayCalendar,
+            HelpPlaceRepository helpPlaceRepo,
+            HolidayRepository holidayRepo,
+            SyncLogRepository syncLogRepo,
+            TransactionTemplate txTemplate,
+            Clock clock,
+            HelpPlaceNameReader nameReader) {
         this.syncConfig = syncConfig;
         this.props = props;
         this.nmcClient = nmcClient;
@@ -108,6 +127,7 @@ public class DataSyncScheduler {
         this.syncLogRepo = syncLogRepo;
         this.txTemplate = txTemplate;
         this.clock = clock == null ? Clock.system(SEOUL) : clock;
+        this.nameReader = nameReader;
     }
 
     @Scheduled(cron = "0 0 4 * * *", zone = "Asia/Seoul")
@@ -138,6 +158,11 @@ public class DataSyncScheduler {
                 nmcOk, pharmacy.rows(), er.rows(),
                 pharmacy.skippedNoCoords() + er.skippedNoCoords(),
                 nmcClient.callCount());
+
+        // 동기화에서 새 행이 들어왔거나 이름이 바뀌었을 수 있으므로 읽는 법 채우기를 비동기로 시작한다(#222).
+        if (nameReader != null && (pharmacy.ok() || er.ok())) {
+            nameReader.start();
+        }
 
         // 공휴일 동기화(실패해도 약국·응급실 결과에 영향 없음)
         syncHolidaysIfNeeded(seoulNow.toLocalDate(), now);

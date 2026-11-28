@@ -27,11 +27,12 @@ class ApiEmergencyRepository implements EmergencyRepository {
     final extras = strList(j['extras']);
     final src = (j['sources'] as List? ?? const []).map((s) => s['title'] as String).join(' · ');
     final fallback = j['stepsFallback'] as bool? ?? false;
+    final guideType = emTypeFrom((j['triage'] as Map<String, dynamic>?)?['type'] as String?);
     return EmGuideResult(
-      type: emTypeFrom((j['triage'] as Map<String, dynamic>?)?['type'] as String?),
+      type: guideType,
       outOfArea: j['outOfArea'] as bool? ?? false,
       topContact: j['topContact'] as String?,
-      places: [for (final p in (j['places'] as List? ?? const []).cast<Map<String, dynamic>>()) _place(p, lang)],
+      places: [for (final p in (j['places'] as List? ?? const []).cast<Map<String, dynamic>>()) _place(p, lang, guideType)],
       extra: extras.contains('SILENT_REPORT') ? EmExtra.silent : extras.contains('EMBASSY') ? EmExtra.embassy : EmExtra.none,
       todo: strList(j['steps']),
       // FR-E016: 근거 문서 제목, 근거가 없어 저장된 기본 문구면 그 사실을 표시
@@ -47,8 +48,9 @@ class ApiEmergencyRepository implements EmergencyRepository {
     await api.post('/emergency/call-event', {'eventId': eventId, 'number': number, 'lang': langCode(lang)});
   }
 
-  HelpPlace _place(Map<String, dynamic> p, Lang lang) {
+  HelpPlace _place(Map<String, dynamic> p, Lang lang, EmType? guideType) {
     final kind = p['kind'] as String? ?? '';
+    final kindKey = (kind == 'CONVENIENCE' && guideType == EmType.threat) ? 'kind.CONVENIENCE.THREAT' : 'kind.$kind';
     final er = p['er'] as Map<String, dynamic>?;
     final open = p['openStatus'] as String? ?? 'UNKNOWN';
     final noTreat = er?['noTreatment'] == true;
@@ -56,10 +58,11 @@ class ApiEmergencyRepository implements EmergencyRepository {
         ? ''
         : [if (er['availableBeds'] != null) et('beds', lang, [er['availableBeds']]), if (noTreat) et('noTreat', lang), if (er['message'] != null) er['message'] as String].join(' · ');
     return HelpPlace(
-      p['id'], p['name'], kEmText.containsKey('kind.$kind') ? et('kind.$kind', lang) : kind, dbl(p['lat']), dbl(p['lng']), p['distanceM'] as int,
+      p['id'], p['name'], kEmText.containsKey(kindKey) ? et(kindKey, lang) : kind, dbl(p['lat']), dbl(p['lng']), p['distanceM'] as int,
       // 오늘 운영시간은 서버가 요청 언어로 준다(FR-E010). 운영 상태를 앞에 붙인다
       [et('open.$open', lang), p['todayHours'] as String? ?? ''].where((e) => e.isNotEmpty).join(' · '), sub,
       isEr: kind == 'ER', openNow: open == 'OPEN', phone: p['phone'] as String?, noTreatment: noTreat,
+      nameEn: p['nameEn'] as String?, nameJa: p['nameJa'] as String?,
     );
   }
 

@@ -137,7 +137,7 @@ class EmergencyServiceGuideTest {
                 .containsExactly(PlaceKind.PHARMACY, PlaceKind.CONVENIENCE, PlaceKind.ER);
         assertThat(res.card()).isNotNull();
         assertThat(res.card().ko()).isEqualTo("외국인 관광객입니다. 저는 몸이 좋지 않습니다. 약을 사고 싶습니다. 도와주세요.");
-        assertThat(res.card().translated()).isEqualTo("外国人観光客です。私：体調がよくありません。薬を買いたいです。助けてください。");
+        assertThat(res.card().translated()).isEqualTo("外国人観光客です。対象：本人。症状：体調がよくありません。薬を買いたいです。助けてください。");
         assertThat(res.card().address()).isEqualTo("부산 수영구 GS25 광안해변점 근처");
         assertThat(res.stepsFallback()).isTrue();
         assertThat(res.steps()).hasSize(2);

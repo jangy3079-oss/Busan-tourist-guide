@@ -234,7 +234,9 @@ public class HelpPlaceFinder {
                         c.entity().getPhone(),
                         todayHours,
                         OpenStatus.OPEN,
-                        erInfo);
+                        erInfo,
+                        c.entity().getNameEn(),
+                        c.entity().getNameJa());
                 resolved.add(new ResolvedPlace(
                         dto, noTreatment, c.distanceM(), safeId(c.entity()), dedupKey(c.entity()), c.entity().getUpdatedAt()));
             }

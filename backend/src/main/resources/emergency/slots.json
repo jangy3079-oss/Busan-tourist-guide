@@ -11,11 +11,11 @@
   },
   "values": {
     "who": {
-      "SELF": { "ko": "저는 ", "en": "I", "ja": "私" },
-      "FRIEND": { "ko": "제 친구가 ", "en": "My friend", "ja": "友人" },
-      "FAMILY": { "ko": "제 가족이 ", "en": "My family member", "ja": "家族" },
-      "CHILD": { "ko": "제 아이가 ", "en": "My child", "ja": "子ども" },
-      "COMPANION": { "ko": "일행이 ", "en": "My companion", "ja": "同行者" }
+      "SELF": { "ko": "저는 ", "en": "myself", "ja": "本人" },
+      "FRIEND": { "ko": "제 친구가 ", "en": "my friend", "ja": "友人" },
+      "FAMILY": { "ko": "제 가족이 ", "en": "my family member", "ja": "家族" },
+      "CHILD": { "ko": "제 아이가 ", "en": "my child", "ja": "子ども" },
+      "COMPANION": { "ko": "일행이 ", "en": "my companion", "ja": "同行者" }
     },
     "item": {
       "PASSPORT": { "ko": "여권을 ", "en": "passport", "ja": "パスポート" },

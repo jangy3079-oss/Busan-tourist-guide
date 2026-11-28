@@ -34,7 +34,7 @@ class KoreanCardBuilderTest {
 
         assertThat(card).isNotNull();
         assertThat(card.ko()).isEqualTo("외국인 관광객입니다. 제 친구가 열이 납니다. 약을 사고 싶습니다. 도와주세요.");
-        assertThat(card.translated()).isEqualTo("外国人観光客です。友人：熱があります。薬を買いたいです。助けてください。");
+        assertThat(card.translated()).isEqualTo("外国人観光客です。対象：友人。症状：熱があります。薬を買いたいです。助けてください。");
         assertThat(card.address()).isEqualTo("부산 수영구 광안해변로 219");
     }
 
@@ -44,7 +44,7 @@ class KoreanCardBuilderTest {
 
         assertThat(card).isNotNull();
         assertThat(card.ko()).isEqualTo("외국인 관광객입니다. 일행이 위급한 상태입니다. 119에 신고해 주세요.");
-        assertThat(card.translated()).isEqualTo("I am a foreign tourist. My companion: medical emergency. Please call 119.");
+        assertThat(card.translated()).isEqualTo("I am a foreign tourist. Who: my companion. Emergency: medical emergency. Please call 119.");
         assertThat(card.address()).isNull();
     }
 
@@ -68,28 +68,65 @@ class KoreanCardBuilderTest {
         EmergencyDtos.Card threat = builder.build(EmType.THREAT, "THREAT", Map.of("situation", "FOLLOWED"), null, Lang.EN);
         assertThat(threat).isNotNull();
         assertThat(threat.ko()).isEqualTo("외국인 관광객입니다. 누군가 저를 따라오고 있습니다. 경찰(112)에 신고해 주세요.");
-        assertThat(threat.translated()).isEqualTo("I am a foreign tourist. Someone is following me. Please call the police (112).");
+        assertThat(threat.translated()).isEqualTo("I am a foreign tourist. Situation: Someone is following me. Please call the police (112).");
 
         EmergencyDtos.Card harass = builder.build(EmType.THREAT, "THREAT", Map.of("situation", "HARASS"), null, Lang.EN);
         assertThat(harass).isNotNull();
         assertThat(harass.ko()).isEqualTo("외국인 관광객입니다. 추행을 당했습니다. 경찰(112)에 신고해 주세요.");
-        assertThat(harass.translated()).isEqualTo("I am a foreign tourist. I was sexually harassed. Please call the police (112).");
+        assertThat(harass.translated()).isEqualTo("I am a foreign tourist. Situation: I was sexually harassed. Please call the police (112).");
 
         EmergencyDtos.Card drowning = builder.build(
                 EmType.URGENT, "DROWNING", Map.of("who", "COMPANION", "symptom", "DROWNING"), null, Lang.EN);
         assertThat(drowning).isNotNull();
         assertThat(drowning.ko()).isEqualTo("외국인 관광객입니다. 일행이 물에 빠졌습니다. 119에 신고해 주세요.");
-        assertThat(drowning.translated()).isEqualTo("I am a foreign tourist. My companion: fell into the water. Please call 119.");
+        assertThat(drowning.translated()).isEqualTo("I am a foreign tourist. Who: my companion. Emergency: fell into the water. Please call 119.");
 
         EmergencyDtos.Card fire = builder.build(EmType.FIRE, "FIRE", Map.of("situation", "SMOKE"), null, Lang.JA);
         assertThat(fire).isNotNull();
         assertThat(fire.ko()).isEqualTo("외국인 관광객입니다. 연기가 나고 있습니다. 119에 신고해 주세요.");
-        assertThat(fire.translated()).isEqualTo("外国人観光客です。煙が出ています。119番に通報してください。");
+        assertThat(fire.translated()).isEqualTo("外国人観光客です。状況：煙が出ています。119番に通報してください。");
 
         EmergencyDtos.Card way = builder.build(EmType.WAY, null, Map.of(), null, Lang.EN);
         assertThat(way).isNotNull();
         assertThat(way.ko()).isEqualTo("외국인 관광객입니다. 길을 잃었습니다. 도와주세요.");
-        assertThat(way.translated()).isEqualTo("I am a foreign tourist. I am lost. Please help.");
+        assertThat(way.translated()).isEqualTo("I am a foreign tourist. Situation: I am lost. Please help.");
+    }
+
+    @Test
+    void buildsLabelFormatForAllSevenTemplatesInEnglishAndJapanese() {
+        EmergencyDtos.Card mildDefaultEn = builder.build(EmType.MILD, null, Map.of(), null, Lang.EN);
+        assertThat(mildDefaultEn.translated())
+                .isEqualTo("I am a foreign tourist. Who: myself. Problem: not feeling well. I want to buy medicine. Please help.")
+                .doesNotContain("I:");
+
+        EmergencyDtos.Card mildDefaultJa = builder.build(EmType.MILD, null, Map.of(), null, Lang.JA);
+        assertThat(mildDefaultJa.translated())
+                .isEqualTo("外国人観光客です。対象：本人。症状：体調がよくありません。薬を買いたいです。助けてください。")
+                .doesNotContain("私：");
+
+        EmergencyDtos.Card urgentDefaultJa = builder.build(EmType.URGENT, null, Map.of(), null, Lang.JA);
+        assertThat(urgentDefaultJa.translated())
+                .isEqualTo("外国人観光客です。対象：同行者。状況：緊急の状態です。119番に通報してください。");
+
+        EmergencyDtos.Card lostDefaultEn = builder.build(EmType.LOST, null, Map.of(), null, Lang.EN);
+        assertThat(lostDefaultEn.translated())
+                .isEqualTo("I am a foreign tourist. Lost item: belongings. Please help me file a lost-item report.");
+
+        EmergencyDtos.Card stolenDefaultJa = builder.build(EmType.LOST, "STOLEN", Map.of(), null, Lang.JA);
+        assertThat(stolenDefaultJa.translated())
+                .isEqualTo("外国人観光客です。盗難品：所持品。届出を手伝ってください。");
+
+        EmergencyDtos.Card threatDefaultJa = builder.build(EmType.THREAT, null, Map.of(), null, Lang.JA);
+        assertThat(threatDefaultJa.translated())
+                .isEqualTo("外国人観光客です。状況：危険な状況です。警察（112番）に通報してください。");
+
+        EmergencyDtos.Card fireDefaultEn = builder.build(EmType.FIRE, null, Map.of(), null, Lang.EN);
+        assertThat(fireDefaultEn.translated())
+                .isEqualTo("I am a foreign tourist. Situation: There is a dangerous situation. Please call 119.");
+
+        EmergencyDtos.Card wayDefaultJa = builder.build(EmType.WAY, null, Map.of(), null, Lang.JA);
+        assertThat(wayDefaultJa.translated())
+                .isEqualTo("外国人観光客です。状況：道に迷いました。助けてください。");
     }
 
     @Test
