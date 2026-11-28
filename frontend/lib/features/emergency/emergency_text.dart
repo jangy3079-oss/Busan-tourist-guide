@@ -14,6 +14,7 @@ const Map<String, List<String>> kEmText = {
   // 연락 버튼 (FR-E003, FR-E004)
   'call': ['{0}에 전화', 'Call {0}', '{0}に電話'],
   // UI-E02 결과
+  'helpSub': ['종류별 가까운 순', 'Nearest by type', '種類別に近い順'],
   'hereMe': ['현재 위치 기준', 'Around you', '現在地周辺'],
   'hereArea': ['{0} 기준', 'Around {0}', '{0}周辺'],
   'noPlaces': ['지금 안내할 수 있는 도움처를 찾지 못했어요. 위 번호로 바로 연락하세요.', 'We could not find a place to send you right now. Please call a number above.', '今ご案内できる支援先が見つかりませんでした。上の番号に連絡してください。'],
@@ -25,6 +26,7 @@ const Map<String, List<String>> kEmText = {
   'kind.ER': ['응급실', 'Emergency room', '救急外来'],
   'kind.PHARMACY': ['약국', 'Pharmacy', '薬局'],
   'kind.CONVENIENCE': ['상비약 판매 편의점', 'Convenience store (basic medicine)', 'コンビニ(常備薬)'],
+  'kind.CONVENIENCE.THREAT': ['24시간 편의점', '24-hour convenience store', '24時間コンビニ'],
   'kind.POLICE': ['지구대·파출소', 'Police station', '交番・派出所'],
   'kind.TOURIST_INFO': ['관광안내소', 'Tourist information', '観光案内所'],
   'kind.HOSPITAL': ['병원', 'Hospital', '病院'],

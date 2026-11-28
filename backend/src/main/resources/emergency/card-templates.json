@@ -5,15 +5,15 @@
       "type": "URGENT",
       "group": null,
       "ko": "외국인 관광객입니다. {who}{symptom} 119에 신고해 주세요.",
-      "en": "I am a foreign tourist. {who}: {symptom}. Please call 119.",
-      "ja": "外国人観光客です。{who}：{symptom}。119番に通報してください。"
+      "en": "I am a foreign tourist. Who: {who}. Emergency: {symptom}. Please call 119.",
+      "ja": "外国人観光客です。対象：{who}。状況：{symptom}。119番に通報してください。"
     },
     {
       "type": "MILD",
       "group": null,
       "ko": "외국인 관광객입니다. {who}{symptom} 약을 사고 싶습니다. 도와주세요.",
-      "en": "I am a foreign tourist. {who}: {symptom}. I would like to buy medicine. Please help.",
-      "ja": "外国人観光客です。{who}：{symptom}。薬を買いたいです。助けてください。"
+      "en": "I am a foreign tourist. Who: {who}. Problem: {symptom}. I want to buy medicine. Please help.",
+      "ja": "外国人観光客です。対象：{who}。症状：{symptom}。薬を買いたいです。助けてください。"
     },
     {
       "type": "LOST",
@@ -33,22 +33,22 @@
       "type": "THREAT",
       "group": null,
       "ko": "외국인 관광객입니다. {situation} 경찰(112)에 신고해 주세요.",
-      "en": "I am a foreign tourist. {situation}. Please call the police (112).",
-      "ja": "外国人観光客です。{situation}。警察（112番）に通報してください。"
+      "en": "I am a foreign tourist. Situation: {situation}. Please call the police (112).",
+      "ja": "外国人観光客です。状況：{situation}。警察（112番）に通報してください。"
     },
     {
       "type": "FIRE",
       "group": null,
       "ko": "외국인 관광객입니다. {situation} 119에 신고해 주세요.",
-      "en": "I am a foreign tourist. {situation}. Please call 119.",
-      "ja": "外国人観光客です。{situation}。119番に通報してください。"
+      "en": "I am a foreign tourist. Situation: {situation}. Please call 119.",
+      "ja": "外国人観光客です。状況：{situation}。119番に通報してください。"
     },
     {
       "type": "WAY",
       "group": null,
       "ko": "외국인 관광객입니다. {situation} 도와주세요.",
-      "en": "I am a foreign tourist. {situation}. Please help.",
-      "ja": "外国人観光客です。{situation}。助けてください。"
+      "en": "I am a foreign tourist. Situation: {situation}. Please help.",
+      "ja": "外国人観光客です。状況：{situation}。助けてください。"
     }
   ]
 }

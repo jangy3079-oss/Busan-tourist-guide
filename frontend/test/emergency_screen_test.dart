@@ -169,14 +169,16 @@ void main() {
     expect(no.calls.single['lat'], isNull);
   });
 
-  testWidgets('needTypeSelection 이면 유형 시트가 열린다 (FR-E008, Mock 저장소)', (t) async {
+  testWidgets('needTypeSelection 이면 본문에 유형 버튼만 표시되고 시트는 자동으로 열리지 않는다 (FR-E008, #239)', (t) async {
     await pumpApp(t, MockEmergencyRepository());
     await send(t, '???');
     await t.pump(const Duration(seconds: 2));
     await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('type-sheet')), findsOneWidget);
+    expect(find.byKey(const ValueKey('type-select-body')), findsOneWidget);
+    expect(find.byKey(const ValueKey('type-sheet')), findsNothing);
+    expect(find.byKey(const ValueKey('type-lost')), findsOneWidget);
     expectThreeButtons();
-    await t.tap(find.byKey(const ValueKey('type-lost')).last);
+    await t.tap(find.byKey(const ValueKey('type-lost')));
     await t.pump(const Duration(seconds: 2));
     await t.pumpAndSettle();
     expect(find.text(tr('embassy', Lang.ko)), findsOneWidget); // EMBASSY 확장
@@ -399,5 +401,120 @@ void main() {
     await t.pumpAndSettle();
     expect(repo.calls.last['lang'], Lang.en);
     expect(repo.calls.last['type'], EmType.lost);
+  });
+
+  testWidgets('360px 한국어 카드 전체 화면 하단 버튼 3개가 3개 국어 모두 한 줄로 표시된다 (#207)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        cardKo: '외국인 관광객입니다. 저는 배가 아픕니다. 약을 사고 싶습니다. 도와주세요.',
+        cardTranslated: 'I am a foreign tourist. Who: myself. Problem: stomach pain. I want to buy medicine. Please help.',
+        address: '부산광역시 수영구 광안동 1306-2',
+      );
+    await pumpApp(t, repo);
+    t.view.physicalSize = const Size(360, 800);
+    t.view.devicePixelRatio = 1;
+    await t.pumpAndSettle();
+
+    await send(t, '배가 아파요');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const ValueKey('full-screen-btn')));
+    await t.pumpAndSettle();
+
+    for (final lang in [Lang.ko, Lang.en, Lang.ja]) {
+      box.read(langProvider.notifier).set(lang);
+      await t.pumpAndSettle();
+      for (final id in ['bigger', 'copy', 'close']) {
+        final btn = find.byKey(ValueKey('card-$id-btn'));
+        final lbl = find.byKey(ValueKey('card-$id-label'));
+        expect(btn, findsOneWidget, reason: '$lang/$id btn');
+        expect(lbl, findsOneWidget, reason: '$lang/$id label');
+        final txt = t.widget<Text>(lbl);
+        expect(txt.maxLines, 1, reason: '$lang/$id maxLines');
+        expect(txt.softWrap, isFalse, reason: '$lang/$id softWrap');
+        expect(t.getSize(btn).height, lessThanOrEqualTo(52), reason: '$lang/$id height');
+      }
+      expect(t.takeException(), isNull, reason: '$lang overflow');
+    }
+  });
+
+  testWidgets('위협(THREAT) 결과의 편의점은 24시간 편의점으로, 경증(MILD)은 상비약 판매 편의점으로 표시된다 (#207)', (t) async {
+    var respType = 'THREAT';
+    final repo = ApiEmergencyRepository(ApiClient('http://t', client: MockClient((req) async {
+      if (req.url.path.endsWith('/quick')) {
+        return http.Response(jsonEncode({'urgent': respType == 'THREAT', 'topContact': respType == 'THREAT' ? '112' : '1330'}), 200);
+      }
+      return http.Response.bytes(
+        utf8.encode(jsonEncode({
+          'triage': {'type': respType, 'urgency': respType == 'THREAT' ? 'URGENT' : 'NORMAL', 'confidence': 0.95, 'slots': {}},
+          'needTypeSelection': false,
+          'outOfArea': false,
+          'topContact': respType == 'THREAT' ? '112' : '1330',
+          'places': [
+            {
+              'id': 'hp_cu', 'name': 'CU광안아이빌점', 'kind': 'CONVENIENCE',
+              'lat': 35.153, 'lng': 129.118, 'distanceM': 81, 'phone': null, 'todayHours': '24시간', 'openStatus': 'OPEN', 'er': null,
+            }
+          ],
+          'card': {'ko': '외국인 관광객입니다.', 'translated': 'I am a foreign tourist.', 'address': '부산 수영구'},
+          'steps': ['가까운 24시간 편의점으로 피하세요.'],
+          'stepsFallback': false,
+          'sources': [],
+          'extras': respType == 'THREAT' ? ['SILENT_REPORT'] : [],
+          'dataAsOf': {'places': '2026-11-26T10:39:00+09:00', 'source': '경찰청'},
+        })),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    })));
+
+    await pumpApp(t, repo);
+    await send(t, '누가 따라와요');
+    await t.pumpAndSettle();
+    expect(find.text('24시간 편의점 · 81 m'), findsOneWidget);
+
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('24-hour convenience store · 81 m'), findsOneWidget);
+    expect(find.textContaining('basic medicine'), findsNothing);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('24時間コンビニ · 81 m'), findsOneWidget);
+
+    // MILD 로 바뀌면 기존 상비약 라벨 유지 확인
+    respType = 'MILD';
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('Convenience store (basic medicine) · 81 m'), findsOneWidget);
+  });
+
+  testWidgets('도움처 목록 부제는 종류별 가까운 순(3개 국어)이고, 종류가 섞이면 종류 구분 헤더가 표시된다 (#239)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        places: [
+          HelpPlace('p1', '세종약국', '약국', 35.15, 129.11, 202, '운영 중', ''),
+          HelpPlace('p2', 'CU광안아이빌점', '상비약 판매 편의점', 35.15, 129.11, 81, '운영 중', ''),
+          HelpPlace('p3', '좋은강안병원', '응급실', 35.16, 129.12, 792, '운영 중', '', isEr: true),
+        ],
+      );
+    await pumpApp(t, repo);
+    await send(t, '열이 나요');
+    await t.pumpAndSettle();
+    expect(find.text('종류별 가까운 순'), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-kind-header-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-kind-header-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-kind-header-2')), findsOneWidget);
+
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('Nearest by type'), findsOneWidget);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('種類別に近い順'), findsOneWidget);
   });
 }
