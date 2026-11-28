@@ -169,14 +169,16 @@ void main() {
     expect(no.calls.single['lat'], isNull);
   });
 
-  testWidgets('needTypeSelection 이면 유형 시트가 열린다 (FR-E008, Mock 저장소)', (t) async {
+  testWidgets('needTypeSelection 이면 본문에 유형 버튼만 표시되고 시트는 자동으로 열리지 않는다 (FR-E008, #239)', (t) async {
     await pumpApp(t, MockEmergencyRepository());
     await send(t, '???');
     await t.pump(const Duration(seconds: 2));
     await t.pumpAndSettle();
-    expect(find.byKey(const ValueKey('type-sheet')), findsOneWidget);
+    expect(find.byKey(const ValueKey('type-select-body')), findsOneWidget);
+    expect(find.byKey(const ValueKey('type-sheet')), findsNothing);
+    expect(find.byKey(const ValueKey('type-lost')), findsOneWidget);
     expectThreeButtons();
-    await t.tap(find.byKey(const ValueKey('type-lost')).last);
+    await t.tap(find.byKey(const ValueKey('type-lost')));
     await t.pump(const Duration(seconds: 2));
     await t.pumpAndSettle();
     expect(find.text(tr('embassy', Lang.ko)), findsOneWidget); // EMBASSY 확장
@@ -486,5 +488,33 @@ void main() {
     box.read(langProvider.notifier).set(Lang.en);
     await t.pumpAndSettle();
     expect(find.text('Convenience store (basic medicine) · 81 m'), findsOneWidget);
+  });
+
+  testWidgets('도움처 목록 부제는 종류별 가까운 순(3개 국어)이고, 종류가 섞이면 종류 구분 헤더가 표시된다 (#239)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        places: [
+          HelpPlace('p1', '세종약국', '약국', 35.15, 129.11, 202, '운영 중', ''),
+          HelpPlace('p2', 'CU광안아이빌점', '상비약 판매 편의점', 35.15, 129.11, 81, '운영 중', ''),
+          HelpPlace('p3', '좋은강안병원', '응급실', 35.16, 129.12, 792, '운영 중', '', isEr: true),
+        ],
+      );
+    await pumpApp(t, repo);
+    await send(t, '열이 나요');
+    await t.pumpAndSettle();
+    expect(find.text('종류별 가까운 순'), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-kind-header-0')), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-kind-header-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('place-kind-header-2')), findsOneWidget);
+
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('Nearest by type'), findsOneWidget);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('種類別に近い順'), findsOneWidget);
   });
 }
