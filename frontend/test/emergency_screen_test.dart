@@ -436,4 +436,55 @@ void main() {
       expect(t.takeException(), isNull, reason: '$lang overflow');
     }
   });
+
+  testWidgets('위협(THREAT) 결과의 편의점은 24시간 편의점으로, 경증(MILD)은 상비약 판매 편의점으로 표시된다 (#207)', (t) async {
+    var respType = 'THREAT';
+    final repo = ApiEmergencyRepository(ApiClient('http://t', client: MockClient((req) async {
+      if (req.url.path.endsWith('/quick')) {
+        return http.Response(jsonEncode({'urgent': respType == 'THREAT', 'topContact': respType == 'THREAT' ? '112' : '1330'}), 200);
+      }
+      return http.Response.bytes(
+        utf8.encode(jsonEncode({
+          'triage': {'type': respType, 'urgency': respType == 'THREAT' ? 'URGENT' : 'NORMAL', 'confidence': 0.95, 'slots': {}},
+          'needTypeSelection': false,
+          'outOfArea': false,
+          'topContact': respType == 'THREAT' ? '112' : '1330',
+          'places': [
+            {
+              'id': 'hp_cu', 'name': 'CU광안아이빌점', 'kind': 'CONVENIENCE',
+              'lat': 35.153, 'lng': 129.118, 'distanceM': 81, 'phone': null, 'todayHours': '24시간', 'openStatus': 'OPEN', 'er': null,
+            }
+          ],
+          'card': {'ko': '외국인 관광객입니다.', 'translated': 'I am a foreign tourist.', 'address': '부산 수영구'},
+          'steps': ['가까운 24시간 편의점으로 피하세요.'],
+          'stepsFallback': false,
+          'sources': [],
+          'extras': respType == 'THREAT' ? ['SILENT_REPORT'] : [],
+          'dataAsOf': {'places': '2026-11-26T10:39:00+09:00', 'source': '경찰청'},
+        })),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    })));
+
+    await pumpApp(t, repo);
+    await send(t, '누가 따라와요');
+    await t.pumpAndSettle();
+    expect(find.text('24시간 편의점 · 81 m'), findsOneWidget);
+
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('24-hour convenience store · 81 m'), findsOneWidget);
+    expect(find.textContaining('basic medicine'), findsNothing);
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('24時間コンビニ · 81 m'), findsOneWidget);
+
+    // MILD 로 바뀌면 기존 상비약 라벨 유지 확인
+    respType = 'MILD';
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('Convenience store (basic medicine) · 81 m'), findsOneWidget);
+  });
 }

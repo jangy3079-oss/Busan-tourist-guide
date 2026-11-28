@@ -25,6 +25,7 @@ const Map<String, List<String>> kEmText = {
   'kind.ER': ['응급실', 'Emergency room', '救急外来'],
   'kind.PHARMACY': ['약국', 'Pharmacy', '薬局'],
   'kind.CONVENIENCE': ['상비약 판매 편의점', 'Convenience store (basic medicine)', 'コンビニ(常備薬)'],
+  'kind.CONVENIENCE.THREAT': ['24시간 편의점', '24-hour convenience store', '24時間コンビニ'],
   'kind.POLICE': ['지구대·파출소', 'Police station', '交番・派出所'],
   'kind.TOURIST_INFO': ['관광안내소', 'Tourist information', '観光案内所'],
   'kind.HOSPITAL': ['병원', 'Hospital', '病院'],
