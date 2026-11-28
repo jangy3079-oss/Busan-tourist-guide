@@ -1,0 +1,7 @@
+{
+  "_comment": "도움처 이름 영·일 읽는 법 채우기 설정(NFR-E009, #222, CHG-125). Claude·로컬 Ollama 모두 안정적으로 동작하도록 묶음 15건·타임아웃 90초로 둔다.",
+  "enabled": true,
+  "batchSize": 15,
+  "timeoutSeconds": 90,
+  "maxLength": 200
+}

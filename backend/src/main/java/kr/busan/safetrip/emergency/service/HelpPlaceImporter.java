@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import kr.busan.safetrip.common.exception.BusinessException;
 import kr.busan.safetrip.common.exception.ErrorCode;
@@ -71,13 +73,22 @@ public class HelpPlaceImporter {
     private final RegionResolver regionResolver;
     private final HelpPlaceRepository helpPlaceRepo;
     private final Clock clock;
+    private final HelpPlaceNameReader nameReader;
+
+    public HelpPlaceImporter(
+            ImportConfig importConfig,
+            RegionResolver regionResolver,
+            HelpPlaceRepository helpPlaceRepo) {
+        this(importConfig, regionResolver, helpPlaceRepo, Clock.system(SEOUL), null);
+    }
 
     @Autowired
     public HelpPlaceImporter(
             ImportConfig importConfig,
             RegionResolver regionResolver,
-            HelpPlaceRepository helpPlaceRepo) {
-        this(importConfig, regionResolver, helpPlaceRepo, Clock.system(SEOUL));
+            HelpPlaceRepository helpPlaceRepo,
+            HelpPlaceNameReader nameReader) {
+        this(importConfig, regionResolver, helpPlaceRepo, Clock.system(SEOUL), nameReader);
     }
 
     HelpPlaceImporter(
@@ -85,10 +96,20 @@ public class HelpPlaceImporter {
             RegionResolver regionResolver,
             HelpPlaceRepository helpPlaceRepo,
             Clock clock) {
+        this(importConfig, regionResolver, helpPlaceRepo, clock, null);
+    }
+
+    HelpPlaceImporter(
+            ImportConfig importConfig,
+            RegionResolver regionResolver,
+            HelpPlaceRepository helpPlaceRepo,
+            Clock clock,
+            HelpPlaceNameReader nameReader) {
         this.importConfig = importConfig;
         this.regionResolver = regionResolver;
         this.helpPlaceRepo = helpPlaceRepo;
         this.clock = clock == null ? Clock.system(SEOUL) : clock;
+        this.nameReader = nameReader;
     }
 
     /** multipart CSV 파일을 메모리에서만 읽어 검증·적재한다. */
@@ -229,12 +250,29 @@ public class HelpPlaceImporter {
 
         if (!toSaveByExtId.isEmpty()) {
             helpPlaceRepo.saveAll(toSaveByExtId.values());
+            scheduleNameReadingAfterCommit();
         }
 
         log.info("emergency.import kind={} inserted={} updated={} rejected={} skippedStatus={} skippedOutOfArea={}",
                 kind, inserted, updated, allRejected.size(), skippedStatus, skippedOutOfArea);
 
         return new ImportResult(inserted, updated, capRejected(allRejected, cfg.maxRejected()));
+    }
+
+    private void scheduleNameReadingAfterCommit() {
+        if (nameReader == null) {
+            return;
+        }
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    nameReader.start();
+                }
+            });
+        } else {
+            nameReader.start();
+        }
     }
 
     private static String validateKind(String rawKind, ImportConfig.Settings cfg) {

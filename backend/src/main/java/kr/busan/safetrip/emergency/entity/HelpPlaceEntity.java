@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Objects;
 import org.hibernate.annotations.ColumnTransformer;
 
 /**
@@ -62,6 +63,12 @@ public class HelpPlaceEntity {
     @Column(name = "always_open", nullable = false)
     private boolean alwaysOpen;
 
+    @Column(name = "name_en", length = 200)
+    private String nameEn;
+
+    @Column(name = "name_ja", length = 200)
+    private String nameJa;
+
     protected HelpPlaceEntity() {}
 
     public HelpPlaceEntity(
@@ -104,6 +111,11 @@ public class HelpPlaceEntity {
             String district,
             String hoursJson,
             boolean alwaysOpen) {
+        // 원문 이름이 바뀌면 옛 이름의 읽는 법이 남지 않도록 초기화한다(#222).
+        if (!Objects.equals(this.name, name)) {
+            this.nameEn = null;
+            this.nameJa = null;
+        }
         this.name = name;
         this.address = address;
         this.phone = phone;
@@ -114,6 +126,11 @@ public class HelpPlaceEntity {
         this.district = district;
         this.hoursJson = hoursJson;
         this.alwaysOpen = alwaysOpen;
+    }
+
+    public void setNameReading(String nameEn, String nameJa) {
+        this.nameEn = nameEn;
+        this.nameJa = nameJa;
     }
 
     public Long getId() { return id; }
@@ -130,4 +147,6 @@ public class HelpPlaceEntity {
     public String getDistrict() { return district; }
     public String getHoursJson() { return hoursJson; }
     public boolean isAlwaysOpen() { return alwaysOpen; }
+    public String getNameEn() { return nameEn; }
+    public String getNameJa() { return nameJa; }
 }
