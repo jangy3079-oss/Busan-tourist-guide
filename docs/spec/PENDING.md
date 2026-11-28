@@ -26,7 +26,11 @@
 | CHG-201 | SDD 7.2·ADR-P05, SRS NFR-P005·DATA-P03 | VLM을 쓰지 않고 로컬 `PaddleOcrEngine`(PP-OCRv5 server 검출 + 한국어 인식)을 기본 `OcrEngine`으로 확정. `CloudOcrEngine`은 미구현 자리(설정으로 교체). DATA-P03·ADR-P05의 "PoC 후 결정"을 이 결정으로 바꿈. 평가 사진 30장 정답 1위 23·3위 안 24, 맥 OCR 중간값 2.4초·최대 4.0초 | #40, #41, #42 | 김희찬(문서) | 합의 |
 | CHG-202 | SRS FR-P002, API-P01 | 업로드 형식 `jpg/jpeg/png`(10MB 이하) 확정, HEIC 미지원 명시. 웹 업로드는 브라우저가 보통 JPEG로 바꿔 보내므로 영향이 작음 | #39, `docs/API.md` 열린 결정 1 | 김희찬(문서) | 합의 |
 | CHG-203 | SRS FR-P012 | 템플릿 설명의 주소를 영·일에서는 구 이름(그 언어 표기, 예: `Suyeong-gu, Busan`·`釜山・水営区`)으로 씀. 한국어는 주소 원문 그대로. 주소 원문은 가게 정보 카드(FR-P010)에 그대로 표시 | #153 | 장연수 | 합의 |
-| CHG-208 | SRS FR-P010, API-P01·P03 | 상호는 원문 그대로 두되, 영·일 화면에서는 읽는 법을 덧붙임(후보 목록 "원문 (읽는 법)", 확정 카드는 원문 아래 한 줄). 읽는 법은 장소 데이터의 `name_en`/`name_ja`(V6, 코스와 같은 값)이고 없으면 원문만. "번역·음역하지 않음"에서 "원문 유지 + 읽는 법 병기"로 바뀜 | #216, #220, #232 | 장연수 | 제안 |
+| CHG-204 | SDD 3.3 COMP-P05 | OCR 출력은 `OcrBlock` 목록(텍스트·신뢰도·x·y·w·h). 구현은 `PaddleOcrEngine`(로컬 OCR 서버에 HTTP), `CloudOcrEngine`은 미구현 자리. 교체는 `safetrip.ocr.engine` | #195-4, main 구현 | 장연수 | 합의 |
+| CHG-205 | SDD 10장 배포 | 실행 프로세스 3개: 백엔드, PostgreSQL, PaddleOCR 서버(파이썬 3.9~3.13, `127.0.0.1:8866`, `PHOTO_OCR_URL`로 주소 변경). 실행 방법은 `photo/ocr-server/README.md`. OCR 서버가 꺼지면 사진은 모두 `OCR_FAIL` | #195-5, #192 | 장연수 | 합의 |
+| CHG-206 | SDD 5.2 테이블 | `photo_match_log`: `id`, `match_id`(고유), `ocr_text`(전화번호·이메일 마스킹), `candidates`, `top_score`, `decision`, `selected_content_id`, `created_at`. 사진·좌표 컬럼 없음, 30일 후 삭제 | #195-6, V20·V21 | 장연수 | 합의 |
+| CHG-207 | SDD 7장 AI 설계 | VLM 행 삭제. 설명 LLM은 `claude-haiku-5-5`(CHG-003). 장소 원문 뒤에서 언어를 다시 지시, LLM에는 줄인 글자 수(한·일 45자, 영 33자)를 알리고 검증은 60자. 검증 실패 이유 코드(LENGTH·LANGUAGE·NUMBER·OTHER_PLACE)만 로그에 남김 | #195-7, #153 | 장연수 | 합의 |
+| CHG-208 | SRS FR-P010, API-P01·P03 | 상호는 원문 그대로 두되, 영·일 화면에서는 읽는 법을 덧붙임(후보 목록 "원문 (읽는 법)", 확정 카드는 원문 아래 한 줄). 읽는 법은 장소 데이터의 `name_en`/`name_ja`(V6, 코스와 같은 값)이고 없으면 원문만. "번역·음역하지 않음"에서 "원문 유지 + 읽는 법 병기"로 바뀜 | #216, #220, #232 | 장연수 | 합의 |
 
 ## 긴급
 | ID | 대상 | 바꿀 내용 | 근거 | 제안 | 상태 |
