@@ -278,7 +278,7 @@ class EmergencyResultScreen extends ConsumerWidget {
           XBtn(icon: 'bank', title: tr('embassy', l), sub: tr('embassySub', l), iconBg: C.seaT, iconFg: C.sea, onTap: () => showEmbassySheet(context, ref)),
         if (places.isNotEmpty) ...[
           SecTitle(tr('helpNow', l), sub: et('helpSub', l)),
-          MapView(pins: [for (final p in places) p.point], area: st.area, me: st.hasCoords ? MapPoint(st.lat!, st.lng!) : null, height: 170,
+          MapView(pins: [for (final p in places) p.pointIn(l)], area: st.area, me: st.hasCoords ? MapPoint(st.lat!, st.lng!) : null, height: 170,
               caption: st.hasCoords ? et('hereMe', l) : et('hereArea', l, [area.nameOf(l)])),
           const SizedBox(height: 8),
           for (var i = 0; i < places.length; i++) ...[
@@ -427,7 +427,7 @@ class PlaceRow extends ConsumerWidget {
         Container(width: 28, height: 28, alignment: Alignment.center, decoration: BoxDecoration(color: p.isEr ? const Color(0xFFC2410C) : C.text, shape: BoxShape.circle), child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13))),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(p.name, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
+          Text(p.nameIn(l), style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 3),
           Text('${trWord(p.kind, l)} · ${p.distM} m', style: const TextStyle(fontSize: 12.5, color: C.text3)),
           const SizedBox(height: 4),
@@ -437,6 +437,7 @@ class PlaceRow extends ConsumerWidget {
             if (p.sub.isNotEmpty) Text(trWord(p.sub, l), style: TextStyle(fontSize: 12.5, color: p.noTreatment ? C.red : C.text3)),
           ]),
         ])),
+        const SizedBox(width: 8),
         if (p.phone != null && p.phone!.isNotEmpty) ...[_sq('phone', et('phone', l), () => open(telUrl(p.phone!))), const SizedBox(width: 6)],
         _sq('nav', et('nav', l), () => open(kakaoRouteUrl(p.name, p.lat, p.lng))),
       ]),

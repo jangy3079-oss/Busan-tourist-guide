@@ -25,7 +25,9 @@
       "message" : null,
       "noTreatment" : false,
       "fetchedAt" : "2026-11-11T14:02:00+09:00"
-    }
+    },
+    "nameEn" : "Good Gangan Hospital ER",
+    "nameJa" : "グッド広安病院救急外来"
   } ],
   "card" : {
     "ko" : "제 친구가 쓰러졌어요. 119를 불러주세요.",

@@ -517,4 +517,40 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('種類別に近い順'), findsOneWidget);
   });
+
+  testWidgets('도움처 이름은 ko에서 원문만, en·ja에서 "원문 (읽는 법)"으로 표시되고 길찾기 링크는 원문을 유지한다 (#222)', (t) async {
+    final repo = _Repo()
+      ..guideR = const EmGuideResult(
+        type: EmType.mild,
+        topContact: '1330',
+        places: [
+          HelpPlace(
+            'p1', '세종약국', '약국', 35.153, 129.118, 202, '운영 중', '',
+            phone: '051-752-0001',
+            nameEn: 'Sejong Pharmacy',
+            nameJa: 'セジョン薬局',
+          ),
+        ],
+      );
+    await pumpApp(t, repo);
+    await send(t, '열이 나요');
+    await t.pumpAndSettle();
+    expect(find.text('세종약국'), findsOneWidget);
+    expect(find.textContaining('Sejong Pharmacy'), findsNothing);
+    expect(t.widget<MapView>(find.byType(MapView)).pins.single.name, '세종약국');
+
+    box.read(langProvider.notifier).set(Lang.ja);
+    await t.pumpAndSettle();
+    expect(find.text('세종약국 (セジョン薬局)'), findsOneWidget);
+    expect(t.widget<MapView>(find.byType(MapView)).pins.single.name, '세종약국 (セジョン薬局)');
+
+    box.read(langProvider.notifier).set(Lang.en);
+    await t.pumpAndSettle();
+    expect(find.text('세종약국 (Sejong Pharmacy)'), findsOneWidget);
+    expect(t.widget<MapView>(find.byType(MapView)).pins.single.name, '세종약국 (Sejong Pharmacy)');
+
+    // 길찾기 링크는 원문 한글 이름 유지
+    await t.tap(find.bySemanticsLabel('Directions').first);
+    expect(links.last, 'https://map.kakao.com/link/to/${Uri.encodeComponent('세종약국')},35.153,129.118');
+  });
 }

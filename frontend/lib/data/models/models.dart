@@ -35,8 +35,14 @@ class HelpPlace {
   final bool isEr, openNow;
   final bool noTreatment; // FR-E012 응급실 진료불가 메시지 → 경고 표시
   final String? phone; // FR-E014 전화 걸기
-  const HelpPlace(this.id, this.name, this.kind, this.lat, this.lng, this.distM, this.status, this.sub, {this.isEr = false, this.openNow = true, this.phone, this.noTreatment = false});
+  final String? nameEn, nameJa; // #222 읽는 법. 원문 name 은 그대로 두고 영·일 화면에서 괄호로 덧붙인다
+  const HelpPlace(this.id, this.name, this.kind, this.lat, this.lng, this.distM, this.status, this.sub, {this.isEr = false, this.openNow = true, this.phone, this.noTreatment = false, this.nameEn, this.nameJa});
+  String nameIn(Lang l) {
+    final r = switch (l) { Lang.en => nameEn, Lang.ja => nameJa, Lang.ko => null };
+    return r == null || r.isEmpty || r == name ? name : '$name ($r)';
+  }
   MapPoint get point => MapPoint(lat, lng, name: name, isEr: isEr);
+  MapPoint pointIn(Lang l) => MapPoint(lat, lng, name: nameIn(l), isEr: isEr);
 }
 
 /// API-E01 즉시 응답: 키워드만으로 1초 안에 오는 연락 버튼 강조 정보

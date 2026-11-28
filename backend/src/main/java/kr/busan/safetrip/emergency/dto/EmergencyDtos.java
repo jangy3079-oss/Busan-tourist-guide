@@ -36,7 +36,13 @@ public final class EmergencyDtos {
     public record Triage(EmType type, Urgency urgency, double confidence, Map<String, String> slots) {}
     public record ErInfo(Integer availableBeds, String message, boolean noTreatment, String fetchedAt) {}
     public record HelpPlace(String id, String name, PlaceKind kind, double lat, double lng, int distanceM,
-                            String phone, String todayHours, OpenStatus openStatus, ErInfo er) {}
+                            String phone, String todayHours, OpenStatus openStatus, ErInfo er,
+                            String nameEn, String nameJa) {
+        public HelpPlace(String id, String name, PlaceKind kind, double lat, double lng, int distanceM,
+                         String phone, String todayHours, OpenStatus openStatus, ErInfo er) {
+            this(id, name, kind, lat, lng, distanceM, phone, todayHours, openStatus, er, null, null);
+        }
+    }
     public record Card(String ko, String translated, String address) {}
     public record Source(String id, String title) {}
     public record DataAsOf(String places, String source) {}

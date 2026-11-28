@@ -62,6 +62,7 @@ class ApiEmergencyRepository implements EmergencyRepository {
       // 오늘 운영시간은 서버가 요청 언어로 준다(FR-E010). 운영 상태를 앞에 붙인다
       [et('open.$open', lang), p['todayHours'] as String? ?? ''].where((e) => e.isNotEmpty).join(' · '), sub,
       isEr: kind == 'ER', openNow: open == 'OPEN', phone: p['phone'] as String?, noTreatment: noTreat,
+      nameEn: p['nameEn'] as String?, nameJa: p['nameJa'] as String?,
     );
   }
 
